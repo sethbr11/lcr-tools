@@ -19,12 +19,12 @@ This extension aims to streamline common tasks and add helpful utilities for lea
   - Generates a summary CSV detailing which names were successfully marked, already present, or not found.
   - Generates a detailed action log CSV for debugging and transparency.
   - Allows users to abort long processes by pressing the Escape key.
-- Report Data Export:
+- **Report Data Export:**
   - Download data from various LCR reports directly into a CSV file.
   - Handles LCR's report pagination to export all data.
   - Correctly interprets and exports boolean values (e.g., checkmarks) from tables.
-- Loading Indicators: Visual feedback for long-running operations.
-- And more planned!
+- **Loading Indicators:** Visual feedback for long-running operations.
+- **And more planned!**
 
 ## Installation
 
