@@ -41,7 +41,7 @@ _Unfortunately, this option is not yet available. When it is, it will be linked 
 1. Download the Source Code:
 
    - Clone this repository: `git clone https://github.com/sethbr11/lcr-tools.git`
-   - Or, download the ZIP file from the repository and extract it.
+   - Or, download the [ZIP file](https://github.com/sethbr11/lcr-tools/archive/refs/tags/v1.0.0-alpha.zip) from the repository and extract it.
 
 2. Open Chrome Extensions Page:
 
