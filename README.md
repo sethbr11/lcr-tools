@@ -115,7 +115,7 @@ A brief overview of the project's organization:
 
 ### Permissions
 
-- `"activeTab"`, `"scripting"`: For script injection and tab access.
+- `"scripting"`: For script injection.
 - `"host_permissions"`: Restricted to `https://lcr.churchofjesuschrist.org/*`.
 
 ## Troubleshooting
