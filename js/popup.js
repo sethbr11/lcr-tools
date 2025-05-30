@@ -123,17 +123,38 @@ document.addEventListener("DOMContentLoaded", () => {
 });
 
 /**
+ * Checks if the given URL matches the specified pattern(s), assuming the URL starts with "lcr.churchofjesuschrist.org/".
+ * @param {string} url - The URL to check.
+ * @param {string|Array<string>} patterns - A single URL pattern or an array of URL patterns to match against (without the base LCR URL).
+ * @returns {boolean} - True if the URL matches any of the patterns, false otherwise.
+ */
+function lcrUrlMatch(url, patterns) {
+  const LCR = "lcr.churchofjesuschrist.org/";
+
+  if (typeof patterns === "string") {
+    const fullPattern = patterns.startsWith(LCR) ? patterns : LCR + patterns;
+    return url.includes(fullPattern);
+  } else if (Array.isArray(patterns)) {
+    return patterns.some((pattern) => {
+      const fullPattern = pattern.startsWith(LCR) ? pattern : LCR + pattern;
+      return url.includes(fullPattern);
+    });
+  }
+  return false;
+}
+
+/**
  * Determines available actions based on the current URL.
  * @param {string} url - The current page URL.
  * @returns {Array<Object>} - An array of action objects.
  */
 function getActionsForUrl(url) {
   const actions = [];
-  const LCR = "lcr.churchofjesuschrist.org/";
   const loadInd = "js/utils/loading_indicator.js";
 
   // Actions for reports pages
-  if (url.includes(LCR + "report")) {
+  const reportUrls = ["report", "orgs/members-without-callings"];
+  if (lcrUrlMatch(url, reportUrls)) {
     actions.push({
       title: "Download Report Data (CSV)",
       type: "script",
@@ -142,7 +163,7 @@ function getActionsForUrl(url) {
   }
 
   // Actions for "Member Directory" page
-  if (url.includes(LCR + "records/member-list")) {
+  if (lcrUrlMatch(url, "records/member-list")) {
     actions.push({
       title: "Export Member List",
       type: "script",
@@ -158,7 +179,7 @@ function getActionsForUrl(url) {
   }
 
   // Actions for Member Profile pages
-  if (url.includes(LCR + "records/member-profile")) {
+  if (lcrUrlMatch(url, "records/member-profile")) {
     actions.push({
       title: "Edit Member Profile",
       type: "script",
@@ -167,7 +188,7 @@ function getActionsForUrl(url) {
   }
 
   // Actions for "Manage Photos" page
-  if (url.includes(LCR + "manage-photos")) {
+  if (lcrUrlMatch(url, "manage-photos")) {
     actions.push({
       title: "Download List of Members with No Photo",
       type: "script",
@@ -176,7 +197,7 @@ function getActionsForUrl(url) {
   }
 
   // Actions for "Class & Quorum Attendance" page
-  if (url.includes(LCR + "report/class-and-quorum-attendance")) {
+  if (lcrUrlMatch(url, "report/class-and-quorum-attendance")) {
     actions.push({
       title: "Input Class/Quorum Attendance",
       type: "script",
