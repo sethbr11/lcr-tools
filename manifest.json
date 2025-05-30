@@ -3,7 +3,7 @@
   "name": "LCR Tools",
   "version": "1.0.0",
   "description": "An extension to help make LCR easier to use.",
-  "permissions": ["activeTab", "scripting"],
+  "permissions": ["scripting"],
   "host_permissions": ["https://lcr.churchofjesuschrist.org/*"],
   "action": {
     "default_popup": "popup.html",
