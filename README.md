@@ -77,7 +77,8 @@ _Unfortunately, this option is not yet available. When it is, it will be linked 
 
 ```
 lcr-extension/
-├── background.js
+├── css/
+├── images/
 ├── js/
 │   ├── actions/
 │   │   ├── attendance/
@@ -85,20 +86,24 @@ lcr-extension/
 │   │   ├── member_profile/
 │   │   ├── photos/
 │   │   └── reports/
-│   ├── popup.js
-│   └── options_page.js
-├── options_page.html
+│   ├── utils/
+│   │   └── loading_indicator.js
+│   ├── options_page.js
+│   └── popup.js
 ├── options_page_partials/
-├── css/
-├── images/
+├── .gitignore
+├── background.js
+├── LICENSE
 ├── manifest.json
+├── options_page.html
+├── popup.html
 └── README.md
 ```
 
 A brief overview of the project's organization:
 
 - `manifest.json`: The core configuration file for the extension.
-- `background.js`: The background worker file that handles extension lifecycle events and messaging.
+- `background.js`: The background worker file that handles extension lifecycle events and messaging (not currently really being used).
 - `popup.html` / `js/popup.js`: Defines the UI and logic for the extension's popup menu.
 - `css/`: Stylesheets for the popup and any injected UI.
 - `images/`: Icons for the extension.
