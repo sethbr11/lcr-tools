@@ -152,9 +152,16 @@ function getActionsForUrl(url) {
   const actions = [];
   const loadInd = "js/utils/loading_indicator.js";
 
-  // Actions for reports pages
-  const reportUrls = ["report", "orgs/members-without-callings"];
-  if (lcrUrlMatch(url, reportUrls)) {
+  // Download report data action, available on most pages
+  const excludedPathsForDownload = [
+    "records/member-list",
+    "records/member-profile",
+    "manage-photos",
+  ];
+  if (
+    url.includes("lcr.churchofjesuschrist.org/") &&
+    !lcrUrlMatch(url, excludedPathsForDownload)
+  ) {
     actions.push({
       title: "Download Report Data (CSV)",
       type: "script",
