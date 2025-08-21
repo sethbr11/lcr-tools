@@ -39,9 +39,14 @@ This extension aims to streamline common tasks and add helpful utilities for lea
 
 #### Option 1: From the Chrome Web Store (Recommended for most users)
 
-1. Go to the LCR Tools page on the Chrome Web Store by clicking [here](https://chromewebstore.google.com/detail/lcr-tools/camjilfjkjmgcpmnheoeoomfndedpmbn).
+1. Go to the [LCR Tools page](https://chromewebstore.google.com/detail/lcr-tools/camjilfjkjmgcpmnheoeoomfndedpmbn?hl=en) on the Chrome Web Store.
 
-2. Click "Add to Chrome".
+2. Click **"Add to Chrome"**.
+
+After clicking, you may see one or two pop-up messages:
+
+- **"Proceed with Caution" / "This extension is not trusted by Enhanced Safe Browsing"**: This warning appears because I’m a new publisher on the Chrome Web Store. As [Google explains](https://support.google.com/chrome_webstore/answer/2664769?visit_id=638878101694725064-2717977188&rd=2#10745467&zippy=%2Cinstall-with-enhanced-protection), it typically takes a few months for new developers to become “trusted” status once their extensions comply with all program policies.
+- **Permissions Confirmation"**: You’ll be asked to confirm that the extension can **“Read and change your data on lcr.churchofjesuschrist.org.”** This permission is tied to the `host_permissions` in the [manifest.json](https://github.com/sethbr11/lcr-tools/blob/main/manifest.json) file and ensures the extension only runs on the LCR website.
 
 #### Option 2: Manual Installation (For development or testing)
 
