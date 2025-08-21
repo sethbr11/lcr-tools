@@ -2,32 +2,7 @@
 // and then export names of individuals without photos, showing a loading indicator.
 
 (async function () {
-  // Helper function to introduce a delay
-  function sleep(ms) {
-    return new Promise((resolve) => setTimeout(resolve, ms));
-  }
-
-  // Helper function to set select value and dispatch change event
-  function setSelectValue(selectElement, value, elementName = "element") {
-    if (selectElement) {
-      if (selectElement.value === value) {
-        console.log(
-          `LCR Tools: Select ${elementName} is already set to ${value}. Skipping.`
-        );
-        return true;
-      }
-      selectElement.value = value;
-      // Dispatch 'change' event for AngularJS or other frameworks to detect the change
-      const event = new Event("change", { bubbles: true });
-      selectElement.dispatchEvent(event);
-      console.log(`LCR Tools: Set select ${elementName} to ${value}`);
-      return true;
-    }
-    console.warn(
-      `LCR Tools: Select ${elementName} not found for value ${value}.`
-    );
-    return false;
-  }
+  window.lcrToolsShouldStopProcessing = false; // Reset abort flag
 
   // Ensure the loading indicator functions are available
   if (
@@ -61,7 +36,7 @@
           "LCR Tools: 'Manage' tab is not active. Clicking 'Manage' tab."
         );
         manageTabLink.click();
-        await sleep(1500);
+        await scrapingUtils.sleep(1500);
       } else {
         console.error(
           "LCR Tools: 'Manage' tab link not found, though li element was present."
@@ -88,13 +63,19 @@
       return { result: { error: "'Subject Type' filter dropdown not found." } };
     }
     if (subjectTypeSelect.value !== "INDIVIDUAL") {
-      if (!setSelectValue(subjectTypeSelect, "INDIVIDUAL", "'Subject Type'")) {
+      if (
+        !scrapingUtils.setSelectValue(
+          subjectTypeSelect,
+          "INDIVIDUAL",
+          "'Subject Type'"
+        )
+      ) {
         alert(
           "LCR Tools: Failed to set 'Subject Type' filter to 'Individual'."
         );
         return { result: { error: "Could not set 'Subject Type' filter." } };
       }
-      await sleep(1000);
+      await scrapingUtils.sleep(1000);
     } else {
       console.log(
         "LCR Tools: 'Subject Type' filter already set to 'INDIVIDUAL'."
@@ -111,7 +92,7 @@
     }
     if (photoFilterSelect.value !== "MEMBERS_WITHOUT_PHOTO") {
       if (
-        !setSelectValue(
+        !scrapingUtils.setSelectValue(
           photoFilterSelect,
           "MEMBERS_WITHOUT_PHOTO",
           "'Photo Filter'"
@@ -122,7 +103,7 @@
         );
         return { result: { error: "Could not set 'Photo Filter'." } };
       }
-      await sleep(1500);
+      await scrapingUtils.sleep(1500);
     } else {
       console.log(
         "LCR Tools: 'Photo Filter' already set to 'MEMBERS_WITHOUT_PHOTO'."
@@ -132,61 +113,20 @@
     // --- 4. Implement auto-scrolling ---
     showLoadingIndicator("Scrolling page to load all names...");
     console.log("LCR Tools: Starting auto-scroll to load all names.");
-    const scrollContainer = window;
-    let lastScrollHeight = 0;
-    let consecutiveNoChange = 0;
-    const maxConsecutiveNoChange = 5;
 
-    await new Promise((resolveScroll) => {
-      const scrollInterval = setInterval(async () => {
-        const currentScroll =
-          scrollContainer.scrollY !== undefined
-            ? scrollContainer.scrollY
-            : scrollContainer.scrollTop;
-        const clientHeight =
-          scrollContainer.innerHeight !== undefined
-            ? scrollContainer.innerHeight
-            : scrollContainer.clientHeight;
-        const currentScrollHeight = document.body.scrollHeight;
-
-        if (currentScroll + clientHeight >= currentScrollHeight - 10) {
-          if (currentScrollHeight === lastScrollHeight) {
-            consecutiveNoChange++;
-            if (consecutiveNoChange >= maxConsecutiveNoChange) {
-              clearInterval(scrollInterval);
-              console.log(
-                "LCR Tools: Reached bottom or scroll height stabilized."
-              );
-              resolveScroll();
-            }
-          } else {
-            lastScrollHeight = currentScrollHeight;
-            consecutiveNoChange = 0;
-          }
-        } else {
-          lastScrollHeight = currentScrollHeight;
-          consecutiveNoChange = 0;
-        }
-
-        scrollContainer.scrollBy(0, 400);
-
-        if (consecutiveNoChange > maxConsecutiveNoChange + 5) {
-          clearInterval(scrollInterval);
-          console.warn(
-            "LCR Tools: Auto-scroll stopped due to excessive no-change iterations."
-          );
-          resolveScroll();
-        }
-      }, 200);
+    await scrapingUtils.autoScrollToLoadContent({
+      scrollStep: 400,
+      scrollInterval: 200,
+      maxConsecutiveNoChange: 5,
     });
 
     showLoadingIndicator("Finalizing export...");
-    await sleep(2000);
+    await scrapingUtils.sleep(2000);
     console.log(
       "LCR Tools: Page fully scrolled, attempting to navigate back to the top..."
     );
-    scrollContainer.scrollTo({ top: 0, behavior: "smooth" });
-    await sleep(1500);
+
+    await scrapingUtils.scrollToTop();
     console.log("LCR Tools: Back at the top, starting CSV export...");
 
     // --- 5. Extract names and export CSV ---
@@ -234,24 +174,14 @@
     const csvRows = processedNames
       .map(
         (n) =>
-          `"${n.firstName.replace(/"/g, '""')}","${n.lastName.replace(
-            /"/g,
-            '""'
+          `"${csvUtils.formatCsvCell(n.firstName)}","${csvUtils.formatCsvCell(
+            n.lastName
           )}"`
       )
       .join("\n");
     const csvContent = csvHeader + csvRows;
 
-    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
-    const url = URL.createObjectURL(blob);
-
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = "individuals_without_photos.csv";
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
+    csvUtils.downloadCsv(csvContent, "individuals_without_photos.csv");
 
     console.log(
       "LCR Tools: CSV export initiated for individuals without photos."
@@ -262,6 +192,7 @@
     alert(`LCR Tools: An error occurred: ${error.message}`);
     return { result: { error: error.message } };
   } finally {
+    window.lcrToolsShouldStopProcessing = false; // Ensure flag is reset
     hideLoadingIndicator();
   }
 })();
