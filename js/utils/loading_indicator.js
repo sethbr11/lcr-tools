@@ -6,9 +6,9 @@ if (typeof LOADER_ID_SHARED === "undefined") {
   // by attaching them to window, but only if they don't exist.
   if (typeof window.lcrToolsShowLoadingIndicator === "undefined") {
     window.lcrToolsShowLoadingIndicator = function (
-      message = "Processing... Please wait."
+      message = "Processing... Please wait.",
+      subheader = ""
     ) {
-      window.lcrToolsShouldStopProcessing = false; // Reset flag when showing loader
       document.addEventListener(
         "keydown",
         window.lcrToolsEscapeKeyListenerInstance,
@@ -21,6 +21,12 @@ if (typeof LOADER_ID_SHARED === "undefined") {
           .querySelector("p");
         if (existingTextElement) {
           existingTextElement.textContent = message;
+          const existingSubheaderElement = document
+            .getElementById(LOADER_ID_SHARED)
+            .querySelector("span");
+          if (existingSubheaderElement) {
+            existingSubheaderElement.textContent = subheader;
+          }
         }
         return;
       }
@@ -57,8 +63,15 @@ if (typeof LOADER_ID_SHARED === "undefined") {
       loadingText.textContent = message;
       loadingText.style.margin = "0";
 
+      const subheaderText = document.createElement("span");
+      subheaderText.textContent = subheader;
+      subheaderText.style.marginTop = "5px";
+      subheaderText.style.fontSize = "14px";
+      subheaderText.style.color = "rgba(255, 255, 255, 0.8)";
+
       overlay.appendChild(spinner);
       overlay.appendChild(loadingText);
+      overlay.appendChild(subheaderText);
       document.body.appendChild(overlay);
 
       if (!document.getElementById("lcr-tools-spin-animation-style-shared")) {
@@ -86,7 +99,6 @@ if (typeof LOADER_ID_SHARED === "undefined") {
       if (overlay) {
         overlay.parentNode.removeChild(overlay);
       }
-      // Do not reset lcrToolsShouldStopProcessing here, let the main script handle it.
     };
   }
 
@@ -97,14 +109,55 @@ if (typeof LOADER_ID_SHARED === "undefined") {
   if (typeof window.lcrToolsEscapeKeyListenerInstance === "undefined") {
     window.lcrToolsEscapeKeyListenerInstance = (event) => {
       if (event.key === "Escape") {
-        // Check if logAction is available in the current scope (it might not be if this is the only script)
-        if (typeof logAction === "function") {
-          logAction("USER_ABORT_EscapeKeyPressed_LOADING_INDICATOR");
-        } else {
-          console.log(
-            "LCR Tools: Escape key pressed (loader context), attempting to abort."
+        // Attempt to log the abort on the active logger if available
+        try {
+          if (
+            window.loggingUtils &&
+            typeof window.loggingUtils.getCurrentLogger === "function"
+          ) {
+            const activeLogger = window.loggingUtils.getCurrentLogger();
+            if (
+              activeLogger &&
+              typeof activeLogger.logUserAction === "function"
+            ) {
+              activeLogger.logUserAction(
+                "KEYPRESS",
+                "Escape",
+                "User requested abort via Escape key",
+                { context: "loading_indicator" }
+              );
+            } else if (
+              activeLogger &&
+              typeof activeLogger.logAction === "function"
+            ) {
+              activeLogger.logAction(
+                "USER_ABORT_EscapeKeyPressed_LOADING_INDICATOR",
+                { context: "loading_indicator" }
+              );
+            } else {
+              console.log(
+                "LCR Tools: Escape key pressed, but active logger has no logging methods."
+              );
+            }
+            // Also request abort via the active logger so processors that consult the logger see it.
+            if (
+              activeLogger &&
+              typeof activeLogger.requestAbort === "function"
+            ) {
+              activeLogger.requestAbort(true);
+            }
+          } else {
+            console.log(
+              "LCR Tools: Escape key pressed (loader context), no active logger available."
+            );
+          }
+        } catch (e) {
+          console.warn(
+            "LCR Tools: Error while attempting to log Escape key press",
+            e
           );
         }
+
         window.lcrToolsShouldStopProcessing = true;
         const loaderElement = document.getElementById(LOADER_ID_SHARED);
         if (loaderElement) {
