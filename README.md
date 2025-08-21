@@ -8,21 +8,30 @@ This extension aims to streamline common tasks and add helpful utilities for lea
 
 - **Context-Aware Actions:** The extension icon displays a menu with actions relevant to the current LCR page.
 - **Optimized Profile Editing:** Quickly enter edit mode on member profiles with an option to remove performance-impacting elements. This fixes the issue of trying to update the information of a member who has served a mission and not being able to since the screen freezes.
-- **Photo Management Utilities:**
-  - Export a list of names for individuals who do not have a photo in LCR.
-- **Attendance Input:**
+- **Photo Management Utilities:** Export a list of names for individuals who do not have a photo in LCR.
+- **Multiple Callings Finder:** Quickly identify which members have more than one calling in your unit.
+- **Advanced Attendance Processing:**
   - Injects a UI onto the LCR attendance page for selecting a date and uploading a CSV of attendees.
   - Validates the CSV for correct formatting (Date, First Name, Last Name columns, all dates same Sunday, no duplicate names).
   - Downloads a sample CSV template.
   - Processes the uploaded CSV to mark attendance on the LCR page, handling LCR's member pagination and date column visibility.
-  - Provides fuzzy name matching.
-  - Generates a summary CSV detailing which names were successfully marked, already present, or not found.
+  - Provides fuzzy name matching for finding members.
+  - **Guest Attendance Management:** For names not found in the ward directory:
+    - Interactive search to find members in the complete ward directory with real-time filtering
+    - Members already marked present are grayed out and unselectable
+    - Guest classification system (Men, Women, Young Men, Young Women, Children)
+    - Additional manual guest count inputs for each category
+    - Automatic navigation to visitors tab and updating of guest attendance counts
+    - Integrated logging of all guest attendance actions
+  - Generates a summary CSV detailing which names were successfully marked, already present, not found, or processed as guests.
   - Generates a detailed action log CSV for debugging and transparency.
   - Allows users to abort long processes by pressing the Escape key.
 - **Report Data Export:**
   - Download data from various LCR reports directly into a CSV file.
   - Handles LCR's report pagination to export all data.
+  - Auto-scrolls each page to ensure all dynamically loaded content is captured.
   - Correctly interprets and exports boolean values (e.g., checkmarks) from tables.
+- **Comprehensive Logging:** Detailed logging for actions that modify data, with downloadable CSV logs for audit trails and troubleshooting.
 - **Loading Indicators:** Visual feedback for long-running operations.
 - **And more planned!**
 
@@ -30,9 +39,7 @@ This extension aims to streamline common tasks and add helpful utilities for lea
 
 #### Option 1: From the Chrome Web Store (Recommended for most users)
 
-_Unfortunately, this option is not yet available. When it is, it will be linked here!_
-
-1. Go to the LCR Tools page on the Chrome Web Store.
+1. Go to the LCR Tools page on the Chrome Web Store by clicking [here](https://chromewebstore.google.com/detail/lcr-tools/camjilfjkjmgcpmnheoeoomfndedpmbn).
 
 2. Click "Add to Chrome".
 
@@ -82,12 +89,22 @@ lcr-extension/
 ├── js/
 │   ├── actions/
 │   │   ├── attendance/
+│   │   ├── callings/
 │   │   ├── membership/
 │   │   ├── member_profile/
 │   │   ├── photos/
 │   │   └── reports/
 │   ├── utils/
-│   │   └── loading_indicator.js
+│   │   ├── loading_indicator.js
+│   │   ├── csv_utils.js
+│   │   ├── ui_utils.js
+│   │   ├── scraping_utils.js
+│   │   ├── file_utils.js
+│   │   ├── date_utils.js
+│   │   ├── logging_utils.js
+│   │   ├── dom_utils.js
+│   │   ├── string_utils.js
+│   │   └── pagination_utils.js
 │   ├── options_page.js
 │   └── popup.js
 ├── options_page_partials/
@@ -107,16 +124,32 @@ A brief overview of the project's organization:
 - `popup.html` / `js/popup.js`: Defines the UI and logic for the extension's popup menu.
 - `css/`: Stylesheets for the popup and any injected UI.
 - `images/`: Icons for the extension.
-- `js/utils/`: Contains utility scripts, like `loadingIndicator.js`.
+- `js/utils/`: Contains utility scripts, including `loadingIndicator.js` and shared utilities for CSV operations, UI creation, web scraping, file operations, and date handling.
 - `js/actions/`: Contains the content scripts that perform specific actions on LCR pages. Subfolders relate to specific action groups which are organized by LCR page.
 - `options_page_partials`: Contains `.inc` files, which are basically HTML partial pages to be imported in the parent page of `options_page.html`. These are for page navigation actions instead of the more common script action (see `js/popup.js` for more information), though no options page partials are currently in use.
 - `\*.html` (root): Any separate HTML pages used by the extension (e.g., for complex options).
 
 ### Adding New Actions
 
-1. Add a new script in `js/actions/`.
-2. Update `getActionsForUrl()` in `js/popup.js` to register the new action for the appropriate LCR page.
-3. (Optional) Add UI partials in `options_page_partials/` for options page features.
+1. Add a new folder and script files in `js/actions/`.
+2. Update `getActionsForUrl()` in `js/popup.js` to register the new action for the appropriate LCR page, including any required utility files.
+3. Use the shared utilities in `js/utils/` for common operations like CSV handling, UI creation, web scraping, file operations, and date manipulation.
+4. (Optional) Add UI partials in `options_page_partials/` for options page features.
+
+### Utility Files
+
+The extension includes several utility files to reduce code duplication:
+
+- `csv_utils.js`: CSV parsing, formatting, and download operations
+- `ui_utils.js`: Modal creation, status messaging, and UI components
+- `scraping_utils.js`: Auto-scrolling, pagination, and data extraction utilities
+- `file_utils.js`: File download operations and filename generation
+- `date_utils.js`: Date parsing, formatting, and validation utilities
+- `logging_utils.js`: Comprehensive logging for data modification actions with audit trail capabilities
+- `dom_utils.js`: DOM manipulation, element visibility checking, and table processing utilities
+- `string_utils.js`: String manipulation, fuzzy matching, and name parsing utilities
+- `pagination_utils.js`: Navigation and detection utilities for LCR's pagination system
+- `loading_indicator.js`: Loading overlay and progress indicators
 
 ### Permissions
 
@@ -136,7 +169,7 @@ This extension is brand new and, admittably, was vibe coded since the author did
 
 This is an open-source project, and contributions are welcome! Whether it's reporting a bug, suggesting a new feature, or writing code, your help is appreciated.
 
-- **Reporting Bugs:** Please open an issue on the GitHub Issues page, providing as much detail as possible, including steps to reproduce, screenshots, and your browser/OS versions.
+- **Reporting Bugs:** Please open an issue on the GitHub Issues page, providing as much detail as possible, including steps to reproduce, screenshots, and your browser/OS versions. Alternatively, email me at seth@brockefni.com.
 
 - **Suggesting Features:** Feel free to open an issue to suggest new features or improvements.
 
