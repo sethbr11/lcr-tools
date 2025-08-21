@@ -7,19 +7,27 @@
     <link rel="stylesheet" href="css/style.css" />
   </head>
   <body>
-    <div class="container">
-      <div class="header">
+    <div class="popup-container">
+      <div class="popup-header">
         <img
           src="images/lcr_tools_logo.png"
           alt="LCR Tools Icon"
-          class="logo"
+          class="popup-logo"
         />
-        <h2>LCR Tools</h2>
+        <div class="popup-title">
+          <h1>LCR Tools</h1>
+          <p class="popup-subtitle">Leader & Clerk Resources Enhanced</p>
+        </div>
       </div>
-      <div id="menu-items" class="menu-items-container">
-        <p class="loading-message">Loading actions...</p>
+      <div class="popup-content">
+        <div id="menu-items" class="action-list">
+          <div class="loading-state">
+            <div class="loading-spinner"></div>
+            <p>Loading available actions...</p>
+          </div>
+        </div>
+        <div id="status-message" class="status-banner"></div>
       </div>
-      <div id="status-message" class="status-message"></div>
     </div>
     <script src="js/popup.js"></script>
   </body>

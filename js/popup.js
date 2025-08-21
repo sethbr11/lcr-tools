@@ -5,13 +5,17 @@ document.addEventListener("DOMContentLoaded", () => {
   // Function to display status messages in the popup
   function showStatus(message, isError = false) {
     statusMessage.textContent = message;
-    statusMessage.className = isError
-      ? "status-message error"
-      : "status-message success";
+    statusMessage.className = `status-banner ${
+      isError ? "error" : "success"
+    } show`;
+
     setTimeout(() => {
-      statusMessage.textContent = "";
-      statusMessage.className = "status-message";
-    }, 3000); // Clear message after 3 seconds
+      statusMessage.classList.remove("show");
+      setTimeout(() => {
+        statusMessage.textContent = "";
+        statusMessage.className = "status-banner";
+      }, 300);
+    }, 3000);
   }
 
   // Get the current tab to determine the URL
@@ -19,7 +23,7 @@ document.addEventListener("DOMContentLoaded", () => {
     if (chrome.runtime.lastError) {
       console.error("Error querying tabs:", chrome.runtime.lastError.message);
       menuItemsContainer.innerHTML =
-        '<p class="error-message">Error loading actions. Please try again.</p>';
+        '<p class="error-message">Error loading actions.<br>Please try again.</p>';
       showStatus("Error loading tab information.", true);
       return;
     }
@@ -34,13 +38,12 @@ document.addEventListener("DOMContentLoaded", () => {
     const currentTab = tabs[0];
     const currentUrl = currentTab.url;
 
-    // Clear loading message
-    menuItemsContainer.innerHTML = "";
-
     // Define actions based on URL patterns
     const actions = getActionsForUrl(currentUrl);
 
+    // Clear loading message and populate actions
     if (actions.length > 0) {
+      menuItemsContainer.innerHTML = "";
       actions.forEach((action) => {
         const menuItem = document.createElement("button");
         menuItem.className = "menu-item";
@@ -55,7 +58,7 @@ document.addEventListener("DOMContentLoaded", () => {
             chrome.scripting.executeScript(
               {
                 target: { tabId: currentTab.id },
-                files: filesToInject, // Pass the array of script paths directly
+                files: filesToInject,
               },
               (injectionResults) => {
                 if (chrome.runtime.lastError) {
@@ -72,7 +75,7 @@ document.addEventListener("DOMContentLoaded", () => {
                   injectionResults.length > 0 &&
                   injectionResults[0].result === "success"
                 ) {
-                  showStatus(`Action "${action.title}" executed successfully.`);
+                  showStatus(`"${action.title}" executed successfully.`);
                 } else {
                   // Check for specific error messages passed from content script
                   if (
@@ -86,29 +89,24 @@ document.addEventListener("DOMContentLoaded", () => {
                       true
                     );
                   } else {
-                    // It's possible injectionResults is empty or undefined if the script doesn't return a value or an error occurs before return.
-                    // Or if multiple files are injected, injectionResults will be an array of results.
-                    // We're primarily interested in the result of the *last* injected script (the main action script).
                     const lastResult =
                       injectionResults && injectionResults.length > 0
                         ? injectionResults[injectionResults.length - 1].result
                         : null;
                     if (lastResult === "success") {
-                      showStatus(
-                        `Action "${action.title}" executed successfully.`
-                      );
+                      showStatus(`"${action.title}" executed successfully.`);
                     } else if (lastResult && lastResult.error) {
                       showStatus(`Error: ${lastResult.error}`, true);
                     } else {
                       showStatus(
-                        `Action "${action.title}" completed. Check page for results.`
+                        `"${action.title}" completed. Check page for results.`
                       );
                     }
                   }
                 }
               }
             );
-            window.close(); // Close popup after action
+            window.close();
           } else if (action.type === "page") {
             window.location.href = action.pageUrl[0];
           }
@@ -117,7 +115,7 @@ document.addEventListener("DOMContentLoaded", () => {
       });
     } else {
       menuItemsContainer.innerHTML =
-        '<p class="no-actions-message">No specific actions available for this LCR page.</p>';
+        '<p class="no-actions-message">No specific actions available for this LCR page.<br><br>Navigate to an LCR report or member page to see available tools.</p>';
     }
   });
 });
