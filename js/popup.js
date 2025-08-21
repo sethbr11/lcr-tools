@@ -150,42 +150,70 @@ function lcrUrlMatch(url, patterns) {
  */
 function getActionsForUrl(url) {
   const actions = [];
-  const loadInd = "js/utils/loading_indicator.js";
 
-  // Download report data action, available on most pages
+  // Input utilities
+  const u = (n) => `js/utils/${n}.js`,
+    loadInd = u("loading_indicator"),
+    csvUtils = u("csv_utils"),
+    uiUtils = u("ui_utils"),
+    scrapingUtils = u("scraping_utils"),
+    fileUtils = u("file_utils"),
+    dateUtils = u("date_utils"),
+    loggingUtils = u("logging_utils"),
+    domUtils = u("dom_utils"),
+    stringUtils = u("string_utils"),
+    paginationUtils = u("pagination_utils");
+
+  /********* DOWNLOAD REPORT DATA ACTION ***********/
+  /*********** Available on most pages *************/
   const excludedPathsForDownload = [
     "records/member-list",
     "records/member-profile",
     "manage-photos",
+    "orgs/callings-by-organization",
+    "report/self-reliance",
+    "report/members-moved-in",
   ];
+  // Exclude only if the URL ends with "ministering" (not "ministering-assignments")
+  const isExactMinistering =
+    url.includes("lcr.churchofjesuschrist.org/ministering") &&
+    !url.includes("lcr.churchofjesuschrist.org/ministering-assignments");
+
   if (
     url.includes("lcr.churchofjesuschrist.org/") &&
-    !lcrUrlMatch(url, excludedPathsForDownload)
+    !lcrUrlMatch(url, excludedPathsForDownload) &&
+    !isExactMinistering
   ) {
     actions.push({
       title: "Download Report Data (CSV)",
       type: "script",
-      scriptFile: [loadInd, "js/actions/reports/downloadReportData.js"],
+      scriptFile: [
+        loadInd,
+        csvUtils,
+        fileUtils,
+        scrapingUtils,
+        paginationUtils,
+        "js/actions/reports/downloadReportData.js",
+      ],
     });
   }
 
-  // Actions for "Member Directory" page
+  /***** ACTIONS FOR "MEMBER DIRECTORY" PAGE *******/
   if (lcrUrlMatch(url, "records/member-list")) {
     actions.push({
       title: "Export Member List",
       type: "script",
-      scriptFile: [loadInd, "js/actions/membership/exportMemberList.js"],
+      scriptFile: [
+        loadInd,
+        csvUtils,
+        scrapingUtils,
+        domUtils,
+        "js/actions/membership/exportMemberList.js",
+      ],
     });
-    /** Example code for loading a page action instead of a script. Not in use
-    actions.push({
-      title: "Advanced Member Tools",
-      type: "page",
-      pageUrl: ["options_page.html?section=membership"],
-    });
-    */
   }
 
-  // Actions for Member Profile pages
+  /******* ACTIONS FOR MEMBER PROFILE PAGES ********/
   if (lcrUrlMatch(url, "records/member-profile")) {
     actions.push({
       title: "Edit Member Profile",
@@ -194,30 +222,72 @@ function getActionsForUrl(url) {
     });
   }
 
-  // Actions for "Manage Photos" page
+  /******* ACTIONS FOR "MANAGE PHOTOS" PAGE ********/
   if (lcrUrlMatch(url, "manage-photos")) {
     actions.push({
       title: "Download List of Members with No Photo",
       type: "script",
-      scriptFile: [loadInd, "js/actions/photos/noPhotoList.js"],
+      scriptFile: [
+        csvUtils,
+        loadInd,
+        scrapingUtils,
+        "js/actions/photos/noPhotoList.js",
+      ],
     });
   }
 
-  // Actions for "Class & Quorum Attendance" page
+  /** ACTIONS FOR "CLASS & QUORUM ATTENDANCE" PAGE */
   if (lcrUrlMatch(url, "report/class-and-quorum-attendance")) {
     actions.push({
       title: "Input Class/Quorum Attendance",
       type: "script",
       scriptFile: [
-        "js/utils/loading_indicator.js", // 1. Defines show/hideLoadingIndicator
-        "js/actions/attendance/process_attendance.js", // 2. Defines LCR_TOOLS_PROCESS_ATTENDANCE
-        "js/actions/attendance/setup_attendance_ui.js", // 3. Creates UI and calls the processing function
+        loadInd,
+        csvUtils,
+        uiUtils,
+        fileUtils,
+        dateUtils,
+        loggingUtils,
+        stringUtils,
+        scrapingUtils,
+        paginationUtils,
+        "js/actions/attendance/process_attendance.js",
+        "js/actions/attendance/guest_attendance_handler.js",
+        "js/actions/attendance/attendance_results_ui.js",
+        "js/actions/attendance/setup_attendance_ui.js",
+      ],
+    });
+  }
+
+  /** ACTION FOR FINDING MEMBERS WITH MORE THAN **/
+  /***************** ONE CALLING *****************/
+  const membersMoreThanOneCallingPages = [
+    "orgs/callings-by-organization",
+    "orgs/members-with-callings",
+  ];
+  if (lcrUrlMatch(url, membersMoreThanOneCallingPages)) {
+    actions.push({
+      title: "Find Members with More Than One Calling",
+      type: "script",
+      scriptFile: [
+        loadInd,
+        uiUtils,
+        csvUtils,
+        "js/actions/callings/find_multiple_callings.js",
+        "js/actions/callings/setup_multiple_callings_ui.js",
       ],
     });
   }
 
   // Add more URL-specific actions here
   // e.g., if (url.includes(LCR + 'finance')) { ... }
-
   return actions;
 }
+
+/** Example code for loading a page action instead of a script. Not in use
+actions.push({
+  title: "Advanced Member Tools",
+  type: "page",
+  pageUrl: ["options_page.html?section=membership"],
+});
+*/
