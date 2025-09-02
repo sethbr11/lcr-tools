@@ -1,0 +1,257 @@
+/* Reset and base styles */
+* {
+  box-sizing: border-box;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+    "Helvetica Neue", Arial, sans-serif;
+  margin: 0;
+  padding: 0;
+  width: 360px;
+  background: #ffffff; /* Changed from gradient to solid white */
+  color: #212529;
+  line-height: 1.5;
+}
+
+/* Popup container */
+.popup-container {
+  display: flex;
+  flex-direction: column;
+  min-height: 180px; /* Small minimum height for better visual separation */
+  max-height: 600px; /* Maximum height constraint */
+  background: #ffffff;
+  border-radius: 0; /* Remove border radius since we're filling the window */
+  margin: 0; /* Remove margin to fill the popup window */
+  box-shadow: none; /* Remove shadow since there's no background to cast onto */
+  overflow: hidden;
+}
+
+/* Header section */
+.popup-header {
+  display: flex;
+  align-items: center;
+  padding: 20px;
+  background: linear-gradient(135deg, #00509e 0%, #0066cc 100%);
+  color: white;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  flex-shrink: 0; /* Prevent header from shrinking */
+}
+
+.popup-logo {
+  width: 40px;
+  height: 40px;
+  margin-right: 15px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.1);
+  padding: 8px;
+}
+
+.popup-title h1 {
+  margin: 0;
+  font-size: 1.4em;
+  font-weight: 600;
+  color: #ffffff;
+}
+
+.popup-subtitle {
+  margin: 2px 0 0 0;
+  font-size: 0.8em;
+  color: rgba(255, 255, 255, 0.85);
+  font-weight: 400;
+}
+
+/* Content section */
+.popup-content {
+  display: flex;
+  flex-direction: column;
+  padding: 16px 20px 20px;
+  background: #ffffff;
+  overflow: hidden; /* Prevent content overflow */
+  flex-shrink: 0; /* Prevent content area from shrinking */
+}
+
+/* Action list */
+.action-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-height: 400px; /* Maximum height for scrollable area */
+  overflow-y: auto; /* Enable vertical scrolling */
+  overflow-x: hidden; /* Hide horizontal scrollbar */
+  padding-right: 4px; /* Space for scrollbar */
+}
+
+/* Custom scrollbar styling */
+.action-list::-webkit-scrollbar {
+  width: 6px;
+}
+
+.action-list::-webkit-scrollbar-track {
+  background: #f1f3f4;
+  border-radius: 3px;
+}
+
+.action-list::-webkit-scrollbar-thumb {
+  background: #c1c8cd;
+  border-radius: 3px;
+}
+
+.action-list::-webkit-scrollbar-thumb:hover {
+  background: #a8b1b8;
+}
+
+/* Loading state */
+.loading-state {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  padding: 40px 20px;
+  color: #6c757d;
+}
+
+.loading-spinner {
+  width: 20px;
+  height: 20px;
+  border: 2px solid #e9ecef;
+  border-top: 2px solid #007bff;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin-bottom: 12px;
+}
+
+@keyframes spin {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+.loading-state p {
+  margin: 0;
+  font-size: 0.9em;
+}
+
+/* Menu items (action buttons) */
+.menu-item {
+  background: #ffffff;
+  color: #495057;
+  border: 1px solid #dee2e6;
+  padding: 14px 16px;
+  text-align: left;
+  font-size: 0.95em;
+  font-weight: 500;
+  cursor: pointer;
+  border-radius: 6px;
+  transition: all 0.2s ease;
+  position: relative;
+  overflow: hidden;
+  flex-shrink: 0; /* Prevent buttons from shrinking */
+}
+
+.menu-item:hover {
+  background: #f8f9fa;
+  border-color: #007bff;
+  color: #007bff;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(0, 123, 255, 0.15);
+}
+
+.menu-item:active {
+  transform: translateY(0);
+  box-shadow: 0 1px 3px rgba(0, 123, 255, 0.2);
+}
+
+.menu-item::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 3px;
+  height: 100%;
+  background: #007bff;
+  transform: scaleY(0);
+  transition: transform 0.2s ease;
+}
+
+.menu-item:hover::before {
+  transform: scaleY(1);
+}
+
+/* Message states */
+.no-actions-message,
+.error-message {
+  text-align: center;
+  padding: 40px 20px;
+  color: #6c757d;
+  font-style: italic;
+  font-size: 0.9em;
+  line-height: 1.6;
+}
+
+.error-message {
+  color: #dc3545;
+  font-style: normal;
+  font-weight: 500;
+}
+
+/* Status banner */
+.status-banner {
+  margin-top: 16px;
+  padding: 12px 16px;
+  border-radius: 6px;
+  font-size: 0.9em;
+  font-weight: 500;
+  text-align: center;
+  transition: all 0.3s ease;
+  transform: translateY(10px);
+  opacity: 0;
+  flex-shrink: 0; /* Prevent status banner from shrinking */
+  display: none; /* Hide completely when not in use */
+}
+
+.status-banner.show {
+  transform: translateY(0);
+  opacity: 1;
+  display: block; /* Show when active */
+}
+
+.status-banner.success {
+  background: linear-gradient(135deg, #d4edda 0%, #c3e6cb 100%);
+  color: #155724;
+  border: 1px solid #c3e6cb;
+}
+
+.status-banner.error {
+  background: linear-gradient(135deg, #f8d7da 0%, #f5c6cb 100%);
+  color: #721c24;
+  border: 1px solid #f5c6cb;
+}
+
+/* Responsive adjustments */
+@media (max-width: 400px) {
+  body {
+    width: 320px;
+  }
+
+  .popup-container {
+    margin: 0; /* Ensure no margin on smaller screens */
+    min-height: 160px; /* Slightly smaller minimum height on smaller screens */
+    max-height: 500px; /* Smaller max height on smaller screens */
+  }
+
+  .popup-header {
+    padding: 16px;
+  }
+
+  .popup-content {
+    padding: 12px 16px 16px;
+  }
+
+  .action-list {
+    max-height: 300px; /* Smaller max height for action list */
+  }
+}
