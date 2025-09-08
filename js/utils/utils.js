@@ -18,14 +18,13 @@
    * Checks if a specified utils file is loaded and displays an error if not
    * @param {string|string[]} windowVars - The name(s) of the window variable(s) to check
    */
-  const ensureLoaded = (windowVars) => {
-    const vars = Array.isArray(windowVars) ? windowVars : [windowVars];
-    vars.forEach((windowVar) => {
+  const ensureLoaded = (...windowVars) => {
+    windowVars.forEach((windowVar) => {
       if (!window[windowVar]) {
-        console.error(`${windowVar}.js must be loaded before this file.`);
-        alert(
-          `${windowVar}.js is not loaded. Please ensure it is included in the correct order.`
-        );
+        const errorMessage = `${windowVar}.js must be loaded before this file.`;
+        console.error(errorMessage);
+        alert(errorMessage);
+        throw new Error(errorMessage); // Stop execution
       }
     });
   };

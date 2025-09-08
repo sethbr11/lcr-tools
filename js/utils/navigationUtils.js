@@ -329,43 +329,7 @@
     const infiniteScrollEl = document.querySelector(
       SELECTORS.infiniteScrollElement
     );
-    if (infiniteScrollEl) {
-      // const countSpan = document.querySelector(SELECTORS.countSpan);
-      // const filteredSpan = document.querySelector(SELECTORS.filteredSpan);
-      // let shownCount = null;
-      // let totalCount = null;
-
-      // if (countSpan) {
-      //   const countText = countSpan.textContent.trim();
-      //   const countMatch = countText.match(/Count:\s*(\d+)/);
-      //   if (countMatch) shownCount = parseInt(countMatch[1], 10);
-      // }
-
-      // if (filteredSpan) {
-      //   const filteredText = filteredSpan.textContent.trim();
-      //   const filteredMatch = filteredText.match(/filtered from (\d+) total/);
-      //   if (filteredMatch) totalCount = parseInt(filteredMatch[1], 10);
-      // }
-
-      // // If shown count is less than total and infinite-scroll is present, flag for scrolling
-      // if (
-      //   shownCount !== null &&
-      //   totalCount !== null &&
-      //   shownCount < totalCount
-      // ) {
-      needs.push("scroll");
-      //}
-    }
-
-    // Fallback: Check for "hide-while-loading" class and height difference (only if no infinite-scroll or as additional check)
-    // const hideWhileLoading = document.querySelector(".hide-while-loading");
-    // if (
-    //   hideWhileLoading &&
-    //   document.body.scrollHeight > window.innerHeight &&
-    //   !needs.includes("scroll")
-    // ) {
-    //   needs.push("scroll");
-    // }
+    if (infiniteScrollEl) needs.push("scroll");
 
     return needs;
   }
@@ -457,6 +421,52 @@
     return collectedData;
   }
 
+  /**
+   * Navigates to a specific tab if not already active.
+   * @param {Object} options - Options for tab navigation.
+   * @param {string} options.tabSelector - Selector for the tab's <li> element.
+   * @param {string} options.linkSelector - Selector for the tab's <a> element.
+   * @param {string} options.tabName - Name of the tab (for logging).
+   * @param {number} [options.delay=1500] - Delay after clicking the tab (ms).
+   * @returns {Promise<boolean>} - True if navigation succeeded, false otherwise.
+   */
+  async function navigateToTab({
+    tabSelector,
+    linkSelector,
+    tabName,
+    delay = 1500,
+  }) {
+    const tabElement = document.querySelector(tabSelector);
+    if (tabElement && !tabElement.classList.contains("active")) {
+      const tabLink = tabElement.querySelector(linkSelector);
+      if (tabLink) {
+        console.log(
+          `LCR Tools: '${tabName}' tab is not active. Clicking '${tabName}' tab.`
+        );
+        tabLink.click();
+        await new Promise((resolve) => setTimeout(resolve, delay));
+        return true;
+      } else {
+        console.error(
+          `LCR Tools: '${tabName}' tab link not found, though li element was present.`
+        );
+        alert(`LCR Tools: Could not find the '${tabName}' tab link to click.`);
+        return false;
+      }
+    } else if (tabElement && tabElement.classList.contains("active")) {
+      console.log(
+        `LCR Tools: '${tabName}' tab is already active. Skipping click.`
+      );
+      return true;
+    } else {
+      console.error(`LCR Tools: '${tabName}' tab li element not found.`);
+      alert(
+        `LCR Tools: Could not find the '${tabName}' tab. Ensure you are on the correct page.`
+      );
+      return false;
+    }
+  }
+
   // Expose navigationUtils globally
   window.navigationUtils = {
     navigateToFirstPage,
@@ -467,5 +477,6 @@
     setSelectValue,
     getNeeds,
     collectDataWithNavigation,
+    navigateToTab,
   };
 })();

@@ -8,17 +8,20 @@
  */
 
 (async function () {
-  utils.ensureLoaded("fileUtils", "navigationUtils", "tableUtils", "uiUtils");
+  utils.ensureLoaded("downloadUtils", "navigationUtils", "tableUtils");
   uiUtils.resetAborted();
 
+  // Collect navigation needs and tables on the page
   const navNeeds = navigationUtils.getNeeds();
   const pageTables = tableUtils.getPageTables();
 
+  // FUTURE: Allow user to select which tables they want to download?
   const selectedTables =
     pageTables.count > 1
       ? tableUtils.requestTables(pageTables)
       : pageTables.tables;
 
+  // Perform process for downloading the page report(s)
   await downloadUtils.downloadReportData({
     selectedTables,
     navNeeds,

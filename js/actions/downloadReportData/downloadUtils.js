@@ -7,6 +7,7 @@
  */
 (() => {
   utils.returnIfLoaded("downloadUtils");
+  utils.ensureLoaded("fileUtils", "navigationUtils", "tableUtils", "uiUtils");
 
   /**
    * Processes tables and downloads CSV/ZIP files

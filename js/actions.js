@@ -16,12 +16,10 @@ window.getActionsForUrl = function (url) {
     navUtils = u("navigationUtils"),
     tableUtils = u("tableUtils"),
     uiUtils = u("uiUtils");
-
-  // If using script files, we need general utilities
-  let scriptFiles = [utils];
+  modalUtils = u("modalUtils");
 
   // Vendor files
-  const jszip = "/js/vendor/jszip.min.js";
+  const jszip = "js/vendor/jszip.min.js";
 
   /********* DOWNLOAD REPORT DATA ACTION ***********/
   /*********** Available on most pages *************/
@@ -42,8 +40,12 @@ window.getActionsForUrl = function (url) {
     !lcrUrlMatch(url, excludedPathsForDownload) &&
     !isExactMinistering
   ) {
-    scriptFiles.push(jszip, fileUtils, navUtils, tableUtils, uiUtils);
-    const actionFiles = [
+    const downloadReportFiles = [
+      jszip,
+      fileUtils,
+      navUtils,
+      tableUtils,
+      uiUtils,
       "js/actions/downloadReportData/downloadUtils.js",
       "js/actions/downloadReportData/main.js",
     ];
@@ -51,34 +53,39 @@ window.getActionsForUrl = function (url) {
     actions.push({
       title: "Download Report Data (CSV)",
       type: "script",
-      scriptFile: [...scriptFiles, ...actionFiles],
+      scriptFile: [utils, ...downloadReportFiles],
     });
   }
 
   /******* ACTIONS FOR MEMBER PROFILE PAGES ********/
   if (lcrUrlMatch(url, "records/member-profile")) {
+    const memberProfileFiles = [
+      uiUtils,
+      "js/actions/editMemberProfile/editMemberProfileUtils.js",
+      "js/actions/editMemberProfile/main.js",
+    ];
+
     actions.push({
       title: "Edit Member Profile",
       type: "script",
-      scriptFile: ["js/actions/member_profile/editProfile.js"],
+      scriptFile: [utils, ...memberProfileFiles],
     });
   }
 
   /******* ACTIONS FOR "MANAGE PHOTOS" PAGE ********/
   if (lcrUrlMatch(url, "manage-photos")) {
+    const managePhotosFiles = [
+      fileUtils,
+      navUtils,
+      uiUtils,
+      "js/actions/noPhotoList/noPhotoUtils.js",
+      "js/actions/noPhotoList/main.js",
+    ];
+
     actions.push({
       title: "Download List of Members with No Photo",
       type: "script",
-      scriptFile: [],
-    });
-  }
-
-  /** ACTIONS FOR "CLASS & QUORUM ATTENDANCE" PAGE */
-  if (lcrUrlMatch(url, "report/class-and-quorum-attendance")) {
-    actions.push({
-      title: "Input Class/Quorum Attendance",
-      type: "script",
-      scriptFile: [],
+      scriptFile: [utils, ...managePhotosFiles],
     });
   }
 
@@ -88,21 +95,22 @@ window.getActionsForUrl = function (url) {
     "orgs/callings-by-organization",
     "orgs/members-with-callings",
     "mlt/report/member-callings",
-    "mlt/report/member-callings?tab=with-callings",
   ];
   if (lcrUrlMatch(url, membersMoreThanOneCallingPages)) {
-    // Check if we need modern table utils for mlt/report pages
-    scriptFiles.push(uiUtils);
-
-    scriptFiles.push(
-      "js/actions/callings/find_multiple_callings.js",
-      "js/actions/callings/setup_multiple_callings_ui.js"
-    );
+    const multipleCallingsFiles = [
+      uiUtils,
+      tableUtils,
+      fileUtils,
+      modalUtils,
+      "js/actions/findMultipleCallings/templates.js",
+      "js/actions/findMultipleCallings/findMultipleCallingsUtils.js",
+      "js/actions/findMultipleCallings/main.js",
+    ];
 
     actions.push({
       title: "Find Members with More Than One Calling",
       type: "script",
-      scriptFile: [],
+      scriptFile: [utils, ...multipleCallingsFiles],
     });
   }
 
