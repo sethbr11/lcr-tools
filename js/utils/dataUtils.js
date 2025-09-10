@@ -6,6 +6,35 @@
   utils.returnIfLoaded("dataUtils");
 
   /**
+   * Helper function: Calculates Levenshtein distance between two strings
+   * @param {string} a - First string
+   * @param {string} b - Second string
+   * @returns {number} - Edit distance
+   */
+  function levenshteinDistance(a, b) {
+    if (a.length === 0) return b.length;
+    if (b.length === 0) return a.length;
+
+    const matrix = [];
+    for (let i = 0; i <= b.length; i++) matrix[i] = [i];
+    for (let j = 0; j <= a.length; j++) matrix[0][j] = j;
+
+    for (let i = 1; i <= b.length; i++) {
+      for (let j = 1; j <= a.length; j++) {
+        if (b.charAt(i - 1) === a.charAt(j - 1)) {
+          matrix[i][j] = matrix[i - 1][j - 1];
+        } else {
+          matrix[i][j] = Math.min(
+            matrix[i - 1][j - 1] + 1,
+            Math.min(matrix[i][j - 1] + 1, matrix[i - 1][j] + 1)
+          );
+        }
+      }
+    }
+    return matrix[b.length][a.length];
+  }
+
+  /**
    * Formats a date object based on the specified format.
    * @param {Date} date - The date to format.
    * @param {string} [format="MM/DD/YYYY"] - The desired format ('MM/DD/YYYY' or 'YYYY-MM-DD').
@@ -180,7 +209,7 @@
     // Strategy 4: Levenshtein distance with same first letter
     if (
       firstNameToMatch.charAt(0) === firstName.charAt(0) &&
-      this.levenshteinDistance(firstNameToMatch, firstName) === 1
+      levenshteinDistance(firstNameToMatch, firstName) === 1
     ) {
       return { isMatch: true, method: "Levenshtein = 1 (Same First Letter)" };
     }
