@@ -56,10 +56,36 @@
     }
   };
 
+  /**
+   * Simple template replacement function
+   * @param {string} template - The template string
+   * @param {Object} replacements - Object with key-value pairs for replacement
+   * @returns {string} - Template with replacements applied
+   */
+  function replaceTemplate(template, replacements) {
+    let result = template;
+    Object.keys(replacements).forEach((key) => {
+      const regex = new RegExp(`{{${key}}}`, "g");
+      result = result.replace(regex, replacements[key]);
+    });
+    return result;
+  }
+
+  /**
+   * Sleep utility for introducing delays
+   * @param {number} ms - Milliseconds to sleep
+   * @returns {Promise} - Promise that resolves after the specified time
+   */
+  function sleep(ms = 1000) {
+    return new Promise((resolve) => setTimeout(resolve, ms));
+  }
+
   window.utils = {
     returnIfLoaded,
     ensureLoaded,
     checkIfLoaded,
     safeCall,
+    replaceTemplate,
+    sleep,
   };
 })();

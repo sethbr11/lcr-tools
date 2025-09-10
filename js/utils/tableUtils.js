@@ -561,9 +561,62 @@
     return { csvContent, filename };
   };
 
+  /**
+   * Parses header date format used in LCR tables (e.g., "15 Jan")
+   * @param {string} dateStr - Date string to parse
+   * @returns {Date|null} - Parsed date or null if invalid
+   */
+  function parseHeaderDate(dateStr) {
+    try {
+      const parts = dateStr.split(" ");
+      if (parts.length !== 2) return null;
+
+      const day = parseInt(parts[0]);
+      const monthStr = parts[1];
+      const monthNames = [
+        "Jan",
+        "Feb",
+        "Mar",
+        "Apr",
+        "May",
+        "Jun",
+        "Jul",
+        "Aug",
+        "Sep",
+        "Oct",
+        "Nov",
+        "Dec",
+      ];
+
+      const monthIndex = monthNames.findIndex(
+        (m) => m.toLowerCase() === monthStr.toLowerCase()
+      );
+
+      if (day && monthIndex !== -1) {
+        const currentYear = new Date().getFullYear();
+        let yearToUse = currentYear;
+        const currentMonth = new Date().getMonth();
+
+        // Handle year boundaries
+        if (monthIndex === 11 && currentMonth === 0) {
+          yearToUse = currentYear - 1;
+        } else if (monthIndex === 0 && currentMonth === 11) {
+          yearToUse = currentYear + 1;
+        }
+
+        return new Date(yearToUse, monthIndex, day);
+      }
+      return null;
+    } catch (e) {
+      console.error("Error parsing header date:", dateStr, e);
+      return null;
+    }
+  }
+
   window.tableUtils = {
     getPageTables,
     requestTables,
     tableToCSV,
+    parseHeaderDate,
   };
 })();

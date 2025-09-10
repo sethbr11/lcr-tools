@@ -4,6 +4,10 @@
  * with support for CSV export of logs. Helps track and audit extension usage.
  */
 
+if (typeof window.currentLogger === "undefined") {
+  window.currentLogger = null;
+}
+
 /**
  * Creates a new action logger for tracking modifications
  * @param {string} actionName - Name of the action being performed
@@ -34,7 +38,7 @@ function createActionLogger(actionName, options = {}) {
   log.push(initialEntry);
   console.log(`LCR Tools Action Logger: [${actionName}] Started`);
 
-  return {
+  const logger = {
     /**
      * Logs an action with details
      * @param {string} action - Action description
@@ -243,6 +247,12 @@ function createActionLogger(actionName, options = {}) {
       return log;
     },
   };
+  window.currentLogger = logger;
+  return logger;
+}
+
+function getCurrentLogger() {
+  return window.currentLogger;
 }
 
 /**
@@ -282,4 +292,5 @@ function createSimpleLogger(prefix) {
 window.loggingUtils = {
   createActionLogger,
   createSimpleLogger,
+  getCurrentLogger,
 };

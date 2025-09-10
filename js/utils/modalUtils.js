@@ -397,8 +397,9 @@
    * @param {string} elementId - The ID of the element to show status in
    * @param {string} message - The message to show
    * @param {boolean} isError - Whether this is an error message
+   * @param {boolean} [autoHide=true] - Whether the message should auto-hide after 3 seconds
    */
-  function showStatus(elementId, message, isError = false) {
+  function showStatus(elementId, message, isError = false, autoHide = true) {
     const statusElement = document.getElementById(elementId);
     if (statusElement) {
       statusElement.style.display = "block";
@@ -409,10 +410,12 @@
         : "1px solid #c3e6cb";
       statusElement.textContent = message;
 
-      // Auto-hide after 3 seconds
-      setTimeout(() => {
-        statusElement.style.display = "none";
-      }, 3000);
+      // Auto-hide after 3 seconds if enabled
+      if (autoHide) {
+        setTimeout(() => {
+          statusElement.style.display = "none";
+        }, 3000);
+      }
     }
   }
 

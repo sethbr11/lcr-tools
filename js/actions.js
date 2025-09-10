@@ -15,8 +15,9 @@ window.getActionsForUrl = function (url) {
     logUtils = u("loggingUtils"),
     navUtils = u("navigationUtils"),
     tableUtils = u("tableUtils"),
-    uiUtils = u("uiUtils");
-  modalUtils = u("modalUtils");
+    uiUtils = u("uiUtils"),
+    modalUtils = u("modalUtils"),
+    dataUtils = u("dataUtils");
 
   // Vendor files
   const jszip = "js/vendor/jszip.min.js";
@@ -111,6 +112,27 @@ window.getActionsForUrl = function (url) {
       title: "Find Members with More Than One Calling",
       type: "script",
       scriptFile: [utils, ...multipleCallingsFiles],
+    });
+  }
+
+  /** ACTIONS FOR "CLASS & QUORUM ATTENDANCE" PAGE */
+  if (lcrUrlMatch(url, "report/class-and-quorum-attendance")) {
+    const attendanceFiles = [
+      fileUtils,
+      dataUtils,
+      uiUtils,
+      modalUtils,
+      logUtils,
+      tableUtils,
+      navUtils,
+      "js/actions/processAttendance/templates.js",
+      "js/actions/processAttendance/attendanceUtils.js",
+      "js/actions/processAttendance/main.js",
+    ];
+    actions.push({
+      title: "Input Class/Quorum Attendance",
+      type: "script",
+      scriptFile: [utils, ...attendanceFiles],
     });
   }
 

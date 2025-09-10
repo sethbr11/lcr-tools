@@ -13,21 +13,6 @@
   );
 
   /**
-   * Simple template replacement function
-   * @param {string} template - The template string
-   * @param {Object} replacements - Object with key-value pairs for replacement
-   * @returns {string} - Template with replacements applied
-   */
-  function replaceTemplate(template, replacements) {
-    let result = template;
-    Object.keys(replacements).forEach((key) => {
-      const regex = new RegExp(`{{${key}}}`, "g");
-      result = result.replace(regex, replacements[key]);
-    });
-    return result;
-  }
-
-  /**
    * Navigates to the "With Callings" tab on the Member Callings page.
    */
   async function navigateToWithCallingsTab() {
@@ -146,7 +131,7 @@
       membersWithMultipleCallings.length === 0
     ) {
       const scopeText = isWardCallingsPage ? "ward " : "";
-      const content = replaceTemplate(templates.noIssues, { scopeText });
+      const content = utils.replaceTemplate(templates.noIssues, { scopeText });
 
       modalUtils.createStandardModal({
         id: UI_OVERLAY_ID,
@@ -162,14 +147,14 @@
       .map((member, index) => {
         const callingsList = member.callings
           .map((calling) =>
-            replaceTemplate(templates.callingItem, {
+            utils.replaceTemplate(templates.callingItem, {
               calling: calling.calling,
               organization: calling.organization || "N/A",
             })
           )
           .join("");
 
-        return replaceTemplate(templates.memberItem, {
+        return utils.replaceTemplate(templates.memberItem, {
           index,
           memberNameEscaped: member.name.replace(/"/g, "&quot;"),
           memberName: member.name,
@@ -179,7 +164,7 @@
       .join("");
 
     // Generate the main content
-    const content = replaceTemplate(templates.multipleCallings, {
+    const content = utils.replaceTemplate(templates.multipleCallings, {
       memberCount: membersWithMultipleCallings.length,
       membersList,
     });
