@@ -1,6 +1,6 @@
 # Privacy Policy for LCR Tools
 
-**Last Updated:** July 8, 2025
+**Last Updated:** Sept 11, 2025
 
 This privacy policy explains how the "LCR Tools" Chrome Extension ("the extension") handles your data. Your privacy is very important to us. The core principle of this extension is that **your data is your data**.
 
@@ -29,4 +29,4 @@ We may update this privacy policy from time to time. We will notify you of any c
 
 ## Contact Us
 
-If you have any questions about this privacy policy, please open an issue on our GitHub repository.
+If you have any questions about this privacy policy, please email seth@brockefni.com.
