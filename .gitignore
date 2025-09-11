@@ -1,0 +1,54 @@
+# Node.js
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+yarn.lock
+
+# Build output
+dist/
+build/
+out/
+
+# Packaged Chrome Extension files
+*.crx
+*.zip
+
+# Operating System generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# IDE / Editor specific files
+.idea/
+.vscode/
+*.suo
+*.user
+*.sln.docstates
+nbproject/
+*.sublime-project
+*.sublime-workspace
+
+# Log files
+*.log
+logs/
+
+# Environment variables file (if any)
+.env
+.env.*
+!/.env.example
+
+# Temporary files
+*.tmp
+*.temp
+*.swp
+*~
+*.bak
+
+# Coverage output
+coverage/
+.nyc_output/
