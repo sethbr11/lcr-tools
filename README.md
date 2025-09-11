@@ -152,10 +152,6 @@ This extension is brand new and, admittably, was vibe coded since the author did
 - **Data Handling**: All processing is done locally in your browser. No data is sent to external servers.
 - **Permissions**: The extension only runs on LCR pages and does not access other sites.
 
-## License
-
-MIT License. See [LICENSE](LICENSE) for details.
-
 ## Disclaimer
 
 LCR Tools is an independent project and is not an official tool of or endorsed by The Church of Jesus Christ of Latter-day Saints. It is provided "as-is" without any warranty. Use at your own risk. Always ensure you are complying with Church policies and data privacy guidelines when using this tool.
