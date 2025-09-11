@@ -115,7 +115,7 @@ document.addEventListener("DOMContentLoaded", () => {
       });
     } else {
       menuItemsContainer.innerHTML =
-        '<p class="no-actions-message">No specific actions available for this LCR page.<br><br>Navigate to an LCR report or member page to see available tools.</p>';
+        '<p class="no-actions-message">No specific actions available for this LCR page.</p>';
     }
   });
 });
