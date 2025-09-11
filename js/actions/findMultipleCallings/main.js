@@ -1,5 +1,10 @@
 /**
  * ACTION: FIND MEMBERS WITH MORE THAN ONE CALLING
+ * A comprehensive action that analyzes member calling assignments across
+ * different LCR pages to identify members who hold multiple callings.
+ *
+ * See findMultipleCallingsUtils.js for in-depth implementation—this file acts as a
+ * high-level overview of everything that is happening.
  */
 
 (async function () {
