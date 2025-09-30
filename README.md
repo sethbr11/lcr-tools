@@ -8,21 +8,23 @@ This extension aims to streamline common tasks and add helpful utilities for lea
 
 - **Context-Aware Actions:** The extension icon displays a menu with actions relevant to the current LCR page.
 - **Optimized Profile Editing:** Quickly enter edit mode on member profiles with an option to remove performance-impacting elements. This fixes the issue of trying to update the information of a member who has served a mission and not being able to since the screen freezes.
-- **Photo Management Utilities:** Export a list of names for individuals who do not have a photo in LCR.
+- **Photo Management Utilities:**
+  - Download a CSV of individuals who do not have a photo in LCR.
+  - Member Flashcards: Learn names and faces with an interactive, keyboard-friendly flashcard interface (shuffle/unshuffle, flip with SPACE, navigate with arrows).
 - **Multiple Callings Finder:** Quickly identify which members have more than one calling in your unit.
+- **Table Filters (WIP):** Experimentally filter and refine report tables with a modal UI.
 - **Advanced Attendance Processing:**
   - Injects a UI onto the LCR attendance page for selecting a date and uploading a CSV of attendees.
   - Validates the CSV for correct formatting (Date, First Name, Last Name columns, all dates same Sunday, no duplicate names).
   - Downloads a sample CSV template.
   - Processes the uploaded CSV to mark attendance on the LCR page, handling LCR's member pagination and date column visibility.
   - Provides fuzzy name matching for finding members.
-  - **Guest Attendance Management:** For names not found in the ward directory:
-    - Interactive search to find members in the complete ward directory with real-time filtering
-    - Members already marked present are grayed out and unselectable
-    - Guest classification system (Men, Women, Young Men, Young Women, Children)
-    - Additional manual guest count inputs for each category
-    - Automatic navigation to visitors tab and updating of guest attendance counts
-    - Integrated logging of all guest attendance actions
+  - Guest Attendance Management for unmatched names:
+    - Interactive search to find members in the complete ward directory with real-time filtering.
+    - Members already marked present are grayed out and unselectable.
+    - Guest classification system (Men, Women, Young Men, Young Women, Children) with manual count inputs.
+    - Automatic navigation to the Visitors tab and updating of guest attendance counts.
+    - Integrated logging and downloadable logs.
   - Generates a summary CSV detailing which names were successfully marked, already present, not found, or processed as guests.
   - Generates a detailed action log CSV for debugging and transparency.
   - Allows users to abort long processes by pressing the Escape key.
@@ -34,7 +36,6 @@ This extension aims to streamline common tasks and add helpful utilities for lea
   - Correctly interprets and exports boolean values (e.g., checkmarks) from tables.
 - **Comprehensive Logging:** Detailed logging for actions that modify data, with downloadable CSV logs for audit trails and troubleshooting.
 - **Loading Indicators:** Visual feedback for long-running operations.
-- **And more planned!**
 
 ## Installation
 
@@ -97,8 +98,10 @@ lcr-extension/
 │   │   ├── downloadReportData/
 │   │   ├── editMemberProfile/
 │   │   ├── findMultipleCallings/
+│   │   ├── memberFlashcards/
 │   │   ├── noPhotoList/
-│   │   └── processAttendance/
+│   │   ├── processAttendance/
+│   │   └── tableFilters/
 │   ├── utils/
 │   │   ├── dataUtils.js
 │   │   ├── fileUtils.js
@@ -124,28 +127,28 @@ A brief overview of the project's organization:
 
 - `manifest.json`: The core configuration file for the extension.
 - `popup.html` / `js/popup.js`: Defines the UI and logic for the extension's popup menu.
-- `actions.js`: Logic for `popup.js` to determine which actions to display.
+- `actions.js`: Central registry that determines which actions appear for the current page (getActionsForUrl).
 - `css/`: Stylesheets for the popup and any injected UI.
 - `images/`: Icons for the extension.
-- `js/actions/`: Contains the content scripts that perform specific actions on LCR pages. Subfolders relate to specific action groups which are organized by LCR page.
-- `js/utils/`: Contains utility scripts, including `modalUtils.js` and shared utilities for CSV operations, UI creation, web scraping, file operations, and date handling.
-- `js/vendor/`: Contains javascript utilities from vendors (like jszip for ZIP file creation)
+- `js/actions/`: Content scripts grouped by LCR page or task (e.g., attendance, photos, flashcards).
+- `js/utils/`: Shared utilities for CSV operations, UI creation, logging, navigation, and data handling.
+- `js/vendor/`: Third-party libraries (e.g., jszip for ZIP creation).
 
 ### Adding New Actions
 
 1. Add a new folder and script files in `js/actions/`.
-2. Update `getActionsForUrl()` in `js/popup.js` to register the new action for the appropriate LCR page, including any required utility files.
-3. Use the shared utilities in `js/utils/` for common operations like CSV handling, UI creation, web scraping, file operations, and date manipulation.
-4. (Optional) Add UI partials in `options_page_partials/` for options page features.
+2. Register the action in `js/actions.js` inside `getActionsForUrl()` for the appropriate LCR page, including any required utility and vendor files.
+3. Use the shared utilities in `js/utils/` for common operations like CSV handling, UI creation, file operations, and date manipulation.
+4. (Optional) Add UI templates in your action folder if needed.
 
 ### Permissions
 
 - `"scripting"`: For script injection.
-- `"host_permissions"`: Restricted to `https://lcr.churchofjesuschrist.org/*`.
+- `"host_permissions"`: Restricted to `https://lcr.churchofjesuschrist.org/*`, `https://lcrf.churchofjesuschrist.org/`, and `https://lcrffe.churchofjesuschrist.org/`.
 
 ## Troubleshooting
 
-This extension is brand new and, admittably, was vibe coded since the author didn't want to spend weeks trying to get the basic functionality he needed yesterday. Please reach out to the author with any concerns and we will work to get it resolved. If you are an experienced developer, feel free to suggest any feature improvements! AI models like ChatGPT (4o-mini, 4.1, 5, etc.), Gemini (2.5 Flash and Pro), and Claude (3.7 and 4) were used extensively.
+This extension is brand new and, admittably, was vibe coded since the author didn't want to spend weeks trying to get an MVP with the basic functionality that he needed yesterday. Please reach out to the author with any concerns and we will work to get it resolved. If you are an experienced developer, feel free to suggest any feature improvements! AI models like ChatGPT (4o-mini, 4.1, 5, etc.), Gemini (2.5 Flash and Pro), and Claude (3.7 and 4) were used extensively, along with tools like GitHub Copilot and Cursor.
 
 ## Security & Privacy
 
