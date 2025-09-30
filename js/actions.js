@@ -7,6 +7,7 @@ window.getActionsForUrl = function (url) {
   // Error handling: ensure url is defined and a string
   if (!url || typeof url !== "string") return [];
   const actions = [];
+  const isFinance = true;
 
   // Input utilities
   const u = (n) => `js/utils/${n}.js`,
@@ -22,8 +23,7 @@ window.getActionsForUrl = function (url) {
   // Vendor files
   const jszip = "js/vendor/jszip.min.js";
 
-  /********* DOWNLOAD REPORT DATA ACTION ***********/
-  /*********** Available on most pages *************/
+  /******* Actions Available on most pages *********/
   const excludedPathsForDownload = [
     "records/member-profile",
     "manage-photos",
@@ -37,16 +37,19 @@ window.getActionsForUrl = function (url) {
     !url.includes("lcr.churchofjesuschrist.org/ministering-assignments");
 
   if (
-    url.includes("lcr.churchofjesuschrist.org/") &&
+    (url.includes("lcr.churchofjesuschrist.org/") || lcrUrlMatch(url, "")) &&
+    !url.match(/^https:\/\/lcr\.churchofjesuschrist\.org\/(\?.*)?$/) && // Exclude base page with or without query parameters
     !lcrUrlMatch(url, excludedPathsForDownload) &&
     !isExactMinistering
   ) {
+    // DOWNLOAD REPORT DATA ACTION
     const downloadReportFiles = [
       jszip,
       fileUtils,
       navUtils,
       tableUtils,
       uiUtils,
+      modalUtils,
       "js/actions/downloadReportData/downloadUtils.js",
       "js/actions/downloadReportData/main.js",
     ];
@@ -55,6 +58,24 @@ window.getActionsForUrl = function (url) {
       title: "Download Report Data (CSV)",
       type: "script",
       scriptFile: [utils, ...downloadReportFiles],
+    });
+
+    // TABLE FILTER ACTION
+    const tableFilterFiles = [
+      navUtils,
+      dataUtils,
+      tableUtils,
+      uiUtils,
+      modalUtils,
+      "js/actions/tableFilters/templates.js",
+      "js/actions/tableFilters/filterUtils.js",
+      "js/actions/tableFilters/main.js",
+    ];
+
+    actions.push({
+      title: "Filter Table Data (WIP)",
+      type: "script",
+      scriptFile: [utils, ...tableFilterFiles],
     });
   }
 
@@ -87,6 +108,21 @@ window.getActionsForUrl = function (url) {
       title: "Download List of Members with No Photo",
       type: "script",
       scriptFile: [utils, ...managePhotosFiles],
+    });
+
+    const memberFlashcardsFiles = [
+      navUtils,
+      uiUtils,
+      modalUtils,
+      "js/actions/memberFlashcards/templates.js",
+      "js/actions/memberFlashcards/memberFlashcardsUtils.js",
+      "js/actions/memberFlashcards/main.js",
+    ];
+
+    actions.push({
+      title: "Member Flashcards",
+      type: "script",
+      scriptFile: [utils, ...memberFlashcardsFiles],
     });
   }
 
@@ -153,19 +189,25 @@ actions.push({
  * Helper function that checks if the given URL matches the specified pattern(s), assuming the URL starts with "lcr.churchofjesuschrist.org/".
  * @param {string} url - The URL to check.
  * @param {string|Array<string>} patterns - A single URL pattern or an array of URL patterns to match against (without the base LCR URL).
+ * @param {boolean} finance - If the URL is a finance url (true) or a normal LCR url (false)
  * @returns {boolean} - True if the URL matches any of the patterns, false otherwise.
  */
-function lcrUrlMatch(url, patterns) {
-  const LCR = "lcr.churchofjesuschrist.org/";
+function lcrUrlMatch(url, patterns, finance = false) {
+  const LCR = finance
+    ? ["lcrf.churchofjesuschrist.org/", "lcrffe.churchofjesuschrist.org/"]
+    : ["lcr.churchofjesuschrist.org/"];
+
+  const matchesPattern = (base, pattern) => {
+    const fullPattern = pattern.startsWith(base) ? pattern : base + pattern;
+    return url.includes(fullPattern);
+  };
 
   if (typeof patterns === "string") {
-    const fullPattern = patterns.startsWith(LCR) ? patterns : LCR + patterns;
-    return url.includes(fullPattern);
+    return LCR.some((base) => matchesPattern(base, patterns));
   } else if (Array.isArray(patterns)) {
-    return patterns.some((pattern) => {
-      const fullPattern = pattern.startsWith(LCR) ? pattern : LCR + pattern;
-      return url.includes(fullPattern);
-    });
+    return patterns.some((pattern) =>
+      LCR.some((base) => matchesPattern(base, pattern))
+    );
   }
   return false;
 }

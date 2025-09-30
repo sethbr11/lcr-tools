@@ -15,11 +15,17 @@
   const navNeeds = navigationUtils.getNeeds();
   const pageTables = tableUtils.getPageTables();
 
-  // FUTURE: Allow user to select which tables they want to download?
-  const selectedTables =
-    pageTables.count > 1
-      ? tableUtils.requestTables(pageTables)
-      : pageTables.tables;
+  // Allow user to select which tables they want to download
+  let selectedTables;
+  if (pageTables.count > 1) {
+    selectedTables = await tableUtils.requestTables(pageTables, true); // Allow multiple selection
+    if (!selectedTables) {
+      console.log("LCR Tools: Download cancelled by user.");
+      return;
+    }
+  } else {
+    selectedTables = pageTables.tables;
+  }
 
   // Perform process for downloading the page report(s)
   await downloadUtils.downloadReportData({

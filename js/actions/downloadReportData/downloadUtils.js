@@ -27,7 +27,7 @@
       await navigationUtils.collectDataWithNavigation({
         needs: navNeeds,
         onPageData: async () => {
-          let params = ["", "", table.type, ""];
+          let params = [table.id, table.label, table.type, ""];
           if (selectedTables.length > 1) {
             const sanitizedLabel = table.label
               .replace(/\s+/g, "_")

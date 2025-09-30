@@ -1,10 +1,14 @@
 {
   "manifest_version": 3,
   "name": "LCR Tools",
-  "version": "1.2.0",
+  "version": "1.2.1",
   "description": "An extension to help make LCR easier to use.",
   "permissions": ["scripting"],
-  "host_permissions": ["https://lcr.churchofjesuschrist.org/*"],
+  "host_permissions": [
+    "https://lcr.churchofjesuschrist.org/*",
+    "https://lcrf.churchofjesuschrist.org/*",
+    "https://lcrffe.churchofjesuschrist.org/*"
+  ],
   "action": {
     "default_popup": "popup.html",
     "default_icon": {
@@ -27,7 +31,11 @@
         "js/**/*.js",
         "js/vendor/jszip.min.js"
       ],
-      "matches": ["https://lcr.churchofjesuschrist.org/*"]
+      "matches": [
+        "https://lcr.churchofjesuschrist.org/*",
+        "https://lcrf.churchofjesuschrist.org/*",
+        "https://lcrffe.churchofjesuschrist.org/*"
+      ]
     }
   ]
 }

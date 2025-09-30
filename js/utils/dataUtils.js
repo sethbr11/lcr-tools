@@ -59,6 +59,97 @@
   }
 
   /**
+   * Parses a date string into a Date object, handling various LCR date formats
+   * @param {string} dateStr - The date string to parse
+   * @returns {Date|null} - Parsed date or null if unparseable
+   */
+  function parseLCRDate(dateStr) {
+    if (!dateStr || typeof dateStr !== "string") return null;
+
+    const trimmed = dateStr.trim();
+    if (!trimmed) return null;
+
+    // Try parsing as ISO date first (YYYY-MM-DD)
+    let date = new Date(trimmed);
+    if (!isNaN(date.getTime())) return date;
+
+    // Try common LCR date formats
+    const formats = [
+      // MM/DD/YYYY or M/D/YYYY
+      /^(\d{1,2})\/(\d{1,2})\/(\d{4})$/,
+      // MM-DD-YYYY or M-D-YYYY
+      /^(\d{1,2})-(\d{1,2})-(\d{4})$/,
+      // DD MMM YYYY (e.g., "15 Jan 2024")
+      /^(\d{1,2})\s+(\w{3})\s+(\d{4})$/,
+      // MMM DD, YYYY (e.g., "Jan 15, 2024")
+      /^(\w{3})\s+(\d{1,2}),?\s+(\d{4})$/,
+      // DD MMM (e.g., "15 Jan") - assume current year
+      /^(\d{1,2})\s+(\w{3})$/,
+      // MMM DD (e.g., "Jan 15") - assume current year
+      /^(\w{3})\s+(\d{1,2})$/,
+    ];
+
+    for (const format of formats) {
+      const match = trimmed.match(format);
+      if (match) {
+        let year, month, day;
+
+        if (format.source.includes("\\w{3}")) {
+          // Month name format
+          const monthNames = [
+            "Jan",
+            "Feb",
+            "Mar",
+            "Apr",
+            "May",
+            "Jun",
+            "Jul",
+            "Aug",
+            "Sep",
+            "Oct",
+            "Nov",
+            "Dec",
+          ];
+          const monthIndex = monthNames.indexOf(match[2] || match[1]);
+
+          if (monthIndex !== -1) {
+            if (format.source.includes("\\d{4}")) {
+              // Full year format
+              year = parseInt(match[3]);
+              day = parseInt(match[1]);
+              month = monthIndex;
+            } else {
+              // No year format - assume current year
+              year = new Date().getFullYear();
+              day = parseInt(match[1] || match[2]);
+              month = monthIndex;
+            }
+          }
+        } else {
+          // Numeric format
+          if (format.source.includes("\\d{4}")) {
+            year = parseInt(match[3]);
+            month = parseInt(match[1]) - 1; // JavaScript months are 0-based
+            day = parseInt(match[2]);
+          } else {
+            // No year format - assume current year
+            year = new Date().getFullYear();
+            month = parseInt(match[1]) - 1;
+            day = parseInt(match[2]);
+          }
+        }
+
+        if (year && month !== undefined && day) {
+          date = new Date(year, month, day);
+          if (!isNaN(date.getTime())) return date;
+        }
+      }
+    }
+
+    return null;
+  }
+
+  /**
    * Parses a date string and validates it.
    * @param {string} dateStr - The date string to parse.
    * @param {Array} [errors] - The errors array to push validation errors.
@@ -76,30 +167,11 @@
       throw new Error(errorMsg);
     }
 
-    let parsedDate;
-    const currentYear = new Date().getFullYear();
+    // Use the comprehensive parseLCRDate function for parsing
+    const parsedDate = parseLCRDate(dateStr);
 
-    // Check for different formats and parse
-    if (/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) {
-      parsedDate = new Date(dateStr + "T00:00:00"); // ISO Format
-    } else if (/^\d{1,2}\/\d{1,2}\/\d{4}$/.test(dateStr)) {
-      parsedDate = new Date(dateStr); // US Format
-    } else if (/^\d{1,2} [a-zA-Z]{3}$/.test(dateStr)) {
-      // Handle "DD MMM" format, e.g., "17 Aug"
-      parsedDate = new Date(`${dateStr} ${currentYear}`);
-    } else {
-      // Invalid format
+    if (!parsedDate) {
       const errorMsg = `${rowInfo}Error parsing date '${dateStr}'. Use format like MM/DD/YYYY or YYYY-MM-DD.`;
-      if (errors) {
-        errors.push(errorMsg);
-        return null;
-      }
-      throw new Error(errorMsg);
-    }
-
-    // Ensure the parsed date is valid
-    if (isNaN(parsedDate.getTime())) {
-      const errorMsg = `${rowInfo}Invalid date value '${dateStr}'.`;
       if (errors) {
         errors.push(errorMsg);
         return null;
@@ -217,10 +289,67 @@
     return { isMatch: false, method: "No Match" };
   }
 
+  /**
+   * Checks if a string value looks like a date
+   * @param {string} value - The value to check
+   * @returns {boolean} - True if the value appears to be a date
+   */
+  function isDateValue(value) {
+    // Common date patterns in LCR
+    const datePatterns = [
+      /^\d{1,2}\/\d{1,2}\/\d{4}$/, // MM/DD/YYYY or M/D/YYYY
+      /^\d{1,2}-\d{1,2}-\d{4}$/, // MM-DD-YYYY or M-D-YYYY
+      /^\d{4}-\d{1,2}-\d{1,2}$/, // YYYY-MM-DD
+      /^\d{1,2}\/\d{1,2}\/\d{2}$/, // MM/DD/YY or M/D/YY
+      /^\d{1,2}\s+\w{3}\s+\d{4}$/, // DD MMM YYYY (e.g., "15 Jan 2024")
+      /^\w{3}\s+\d{1,2},?\s+\d{4}$/, // MMM DD, YYYY (e.g., "Jan 15, 2024")
+      /^\d{1,2}\s+\w{3}$/, // DD MMM (e.g., "15 Jan")
+      /^\w{3}\s+\d{1,2}$/, // MMM DD (e.g., "Jan 15")
+    ];
+
+    return datePatterns.some((pattern) => pattern.test(value.trim()));
+  }
+
+  /**
+   * Checks if a column contains date-like data by analyzing sample values
+   * @param {HTMLTableElement} table - The table element
+   * @param {number} columnIndex - The column index
+   * @returns {boolean} - True if the column appears to contain dates
+   */
+  function isDateColumn(table, columnIndex) {
+    const rows = Array.from(table.querySelectorAll("tbody tr")).filter(
+      (row) => row.offsetParent !== null
+    );
+
+    // Sample up to 10 rows to determine if this is a date column
+    const sampleSize = Math.min(10, rows.length);
+    let dateCount = 0;
+
+    for (let i = 0; i < sampleSize; i++) {
+      const cells = Array.from(rows[i].querySelectorAll("td"));
+      if (cells[columnIndex]) {
+        const cellValue = (
+          cells[columnIndex].innerText ||
+          cells[columnIndex].textContent ||
+          ""
+        ).trim();
+        if (cellValue && isDateValue(cellValue)) {
+          dateCount++;
+        }
+      }
+    }
+
+    // If more than 50% of sampled values look like dates, consider it a date column
+    return dateCount > sampleSize * 0.5;
+  }
+
   window.dataUtils = {
     formatDate,
     parseDate,
     parseFullName,
     fuzzyNameMatch,
+    isDateValue,
+    isDateColumn,
+    parseLCRDate,
   };
 })();
