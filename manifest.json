@@ -1,6 +1,6 @@
 {
   "manifest_version": 3,
-  "name": "LCR Tools",
+  "name": "LCR Tools (Local Copy)",
   "version": "1.2.1",
   "description": "An extension to help make LCR easier to use.",
   "permissions": ["scripting"],

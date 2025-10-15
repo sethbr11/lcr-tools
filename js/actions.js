@@ -37,7 +37,8 @@ window.getActionsForUrl = function (url) {
     !url.includes("lcr.churchofjesuschrist.org/ministering-assignments");
 
   if (
-    (url.includes("lcr.churchofjesuschrist.org/") || lcrUrlMatch(url, "")) &&
+    (url.includes("lcr.churchofjesuschrist.org/") ||
+      lcrUrlMatch(url, "", isFinance)) && // Include all finance pages
     !url.match(/^https:\/\/lcr\.churchofjesuschrist\.org\/(\?.*)?$/) && // Exclude base page with or without query parameters
     !lcrUrlMatch(url, excludedPathsForDownload) &&
     !isExactMinistering
