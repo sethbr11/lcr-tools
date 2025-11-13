@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Action Directory - LCR Tools</title>
+    <link rel="stylesheet" href="css/style.css" />
+    <link rel="stylesheet" href="css/directory.css" />
+  </head>
+  <body>
+    <div class="popup-container slide-in-right">
+      <div class="popup-header">
+        <button id="back-button" class="back-button" title="Back to main menu">
+          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="19" y1="12" x2="5" y2="12"></line>
+            <polyline points="12 19 5 12 12 5"></polyline>
+          </svg>
+        </button>
+        <img
+          src="images/lcr_tools_logo.png"
+          alt="LCR Tools Icon"
+          class="popup-logo"
+        />
+        <div class="popup-title">
+          <h1>Action Directory</h1>
+          <p class="popup-subtitle">Browse all available actions</p>
+        </div>
+      </div>
+      <div class="popup-content">
+        <div class="directory-controls">
+          <div class="search-container">
+            <svg class="search-icon" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="11" cy="11" r="8"></circle>
+              <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+            </svg>
+            <input
+              type="text"
+              id="search-input"
+              class="search-input"
+              placeholder="Search actions..."
+            />
+          </div>
+          <select id="category-filter" class="category-filter">
+            <option value="all">All Categories</option>
+            <option value="Data Export">Data Export</option>
+            <option value="Data Management">Data Management</option>
+            <option value="Member Records">Member Records</option>
+            <option value="Photo Management">Photo Management</option>
+            <option value="Callings">Callings</option>
+            <option value="Attendance">Attendance</option>
+          </select>
+        </div>
+        <div id="directory-list" class="directory-list">
+          <div class="loading-state">
+            <div class="loading-spinner"></div>
+            <p>Loading action directory...</p>
+          </div>
+        </div>
+      </div>
+    </div>
+    <script src="js/actions.js"></script>
+    <script src="js/directory.js"></script>
+  </body>
+</html>

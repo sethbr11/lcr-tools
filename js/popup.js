@@ -118,4 +118,16 @@ document.addEventListener("DOMContentLoaded", () => {
         '<p class="no-actions-message">No specific actions available for this LCR page.</p>';
     }
   });
+
+  // Directory button click handler
+  const directoryButton = document.getElementById("directory-button");
+  if (directoryButton) {
+    directoryButton.addEventListener("click", () => {
+      const container = document.querySelector(".popup-container");
+      container.classList.add("slide-out-left");
+      setTimeout(() => {
+        window.location.href = "directory.html";
+      }, 300);
+    });
+  }
 });
