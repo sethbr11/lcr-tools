@@ -517,18 +517,42 @@
       if (i === 1) {
         // Parse and validate the date from the first row
         try {
-          firstRowDateObj = dataUtils.parseDate(dateStr, i + 1);
-          firstRowDateStr = dateStr;
+          // Use parseLCRDate for flexible parsing (handles timestamps, various formats)
+          firstRowDateObj = dataUtils.parseLCRDate(dateStr);
+          if (!firstRowDateObj) {
+            errors.push(
+              `Row ${i + 1}: Could not parse date '${dateStr}'. Supported formats include: MM/DD/YYYY, YYYY-MM-DD, MM/DD/YYYY HH:MM AM, etc.`
+            );
+          } else {
+            // Normalize to YYYY-MM-DD for comparison (strips time portion)
+            firstRowDateStr = dataUtils.formatDate(firstRowDateObj, "YYYY-MM-DD");
+
+            // Check if the date is a Sunday
+            if (firstRowDateObj.getDay() !== 0) {
+              errors.push(
+                `Row ${i + 1}: Date '${dateStr}' (parsed as ${firstRowDateObj.toDateString()}) is not a Sunday. Attendance must be for a Sunday.`
+              );
+            }
+          }
         } catch (e) {
           errors.push(e.message);
         }
-      } else if (cleanedValues[dateHeaderIndex] !== firstRowDateStr) {
-        // Ensure all rows have the same date as the first row
-        errors.push(
-          `Row ${i + 1}: Date '${
-            cleanedValues[dateHeaderIndex]
-          }' differs from the first row's date ('${firstRowDateStr}'). All dates in the CSV must be the same.`
-        );
+      } else {
+        // Parse subsequent row dates and compare normalized values
+        const currentRowDateObj = dataUtils.parseLCRDate(dateStr);
+        if (!currentRowDateObj) {
+          errors.push(
+            `Row ${i + 1}: Could not parse date '${dateStr}'.`
+          );
+        } else {
+          // Normalize to YYYY-MM-DD for comparison (strips time portion)
+          const currentRowDateStr = dataUtils.formatDate(currentRowDateObj, "YYYY-MM-DD");
+          if (currentRowDateStr !== firstRowDateStr) {
+            errors.push(
+              `Row ${i + 1}: Date '${dateStr}' (${currentRowDateStr}) differs from the first row's date (${firstRowDateStr}). All dates in the CSV must be for the same Sunday.`
+            );
+          }
+        }
       }
 
       // Validate the presence of first and last names
@@ -571,16 +595,8 @@
         : a.firstName.toLowerCase().localeCompare(b.firstName.toLowerCase());
     });
 
-    // Format the target date as YYYY-MM-DD
-    const targetDateString = firstRowDateObj
-      ? `${firstRowDateObj.getFullYear()}-${(firstRowDateObj.getMonth() + 1)
-          .toString()
-          .padStart(2, "0")}-${firstRowDateObj
-          .getDate()
-          .toString()
-          .padStart(2, "0")}`
-      : null;
-    return { names, targetDate: targetDateString, errors: [], duplicateCount };
+    // Use the already-normalized date string (YYYY-MM-DD format)
+    return { names, targetDate: firstRowDateStr, errors: [], duplicateCount };
   }
 
   // SECTION: Event Handlers (sample download, CSV upload, processing)
@@ -912,7 +928,8 @@
 
       for (let i = 0; i < visitorHeaders.length; i++) {
         const headerText = visitorHeaders[i].textContent.trim();
-        const parsedDate = dataUtils.parseDate(headerText, [], -1);
+        // Use tableUtils.parseHeaderDate to handle "15 Jan" format (same as Members tab)
+        const parsedDate = tableUtils.parseHeaderDate(headerText);
         if (
           parsedDate &&
           dataUtils.formatDate(parsedDate, "YYYY-MM-DD") === this.targetDate
