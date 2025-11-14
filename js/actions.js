@@ -12,8 +12,9 @@ const u = (n) => `js/utils/${n}.js`,
 // Vendor files
 const jszip = "js/vendor/jszip.min.js";
 
-// Base page URL
+// Regex matched: basePage and confidential pages
 const basePage = /^https:\/\/lcr\.churchofjesuschrist\.org\/(\?.*)?$/;
+const CA_PATH_REGEX = /\/ca(?=\/|\?|$)/;
 
 /**
  * Action metadata - single source of truth for all actions
@@ -49,7 +50,7 @@ window.ACTION_METADATA = [
         "manage-photos",
         "report/self-reliance",
         "records/merge-duplicate",
-        "ca/",
+        CA_PATH_REGEX,
         basePage,
       ],
       excludeExactMinistering: true, // Special case
@@ -92,7 +93,7 @@ window.ACTION_METADATA = [
         "manage-photos",
         "report/self-reliance",
         "records/merge-duplicate",
-        "ca/",
+        CA_PATH_REGEX,
         basePage,
       ],
       excludeExactMinistering: true,

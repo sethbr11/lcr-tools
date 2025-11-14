@@ -762,11 +762,12 @@
 
       const tableOptions = pageTables.tables
         .map((table, index) =>
-          tableOption
-            .replace("{{index}}", index)
-            .replace("{{label}}", table.label || `Table ${index + 1}`)
-            .replace("{{type}}", table.type)
-            .replace("{{id}}", table.id)
+          utils.replaceTemplate(tableOption, {
+            index,
+            label: table.label || `Table ${index + 1}`,
+            type: table.type,
+            id: table.id,
+          })
         )
         .join("");
 
