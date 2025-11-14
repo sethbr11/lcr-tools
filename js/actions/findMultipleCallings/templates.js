@@ -58,9 +58,9 @@
       <p style="margin: 0; font-size: 0.9em; color: #856404; line-height: 1.4;">
         This analysis is limited to ward-level callings visible on this page. 
         To include stake callings and other assignments, run this tool from the 
-        <a href="https://lcr.churchofjesuschrist.org/orgs/members-with-callings?lang=eng" target="_blank" style="color: #00509e; text-decoration: underline;">Members with Callings</a> page instead.
+        <a href="https://lcr.churchofjesuschrist.org/mlt/report/member-callings" target="_blank" style="color: #00509e; text-decoration: underline;">Members with Callings</a> page instead.
       </p>
-    `
+    `,
   };
 
   window.findMultipleCallingsTemplates = templates;
