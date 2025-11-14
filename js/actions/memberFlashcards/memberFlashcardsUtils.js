@@ -37,7 +37,6 @@
       return true;
     }
 
-    console.log("LCR Tools: Navigating to manage photos page...");
     window.location.href = "https://lcr.churchofjesuschrist.org/manage-photos";
 
     // Wait for page to load
@@ -87,7 +86,6 @@
    * @returns {Promise<void>}
    */
   async function waitForFiltersToApply() {
-    console.log("LCR Tools: Waiting for filters to apply...");
     // Wait for the page to update after filter changes
     await new Promise((resolve) => setTimeout(resolve, 2000));
 
@@ -103,7 +101,6 @@
       );
 
       if (!hasLoading) {
-        console.log("LCR Tools: Filters applied and content loaded");
         break;
       }
 
@@ -214,9 +211,6 @@
         index === self.findIndex((m) => m.photoUrl === member.photoUrl)
     );
 
-    console.log(
-      `LCR Tools: Collected ${uniqueMembers.length} members with photos`
-    );
     return uniqueMembers;
   }
 
@@ -278,10 +272,6 @@
 
     // Show the first flashcard
     showFlashcard(0);
-
-    console.log(
-      `LCR Tools: Created flashcard interface with ${members.length} members`
-    );
   }
 
   /**
@@ -508,10 +498,6 @@
    * @returns {Promise<Array>} - Array of member data objects
    */
   async function collectMemberDataFromDirectory() {
-    console.log(
-      "LCR Tools: Collecting member data from member directory page..."
-    );
-
     const processedHrefs = new Set(); // Track which links we've already clicked
     const membersByPhotoUrl = new Map(); // Store members by photoUrl to prevent duplicates
     let totalProcessed = 0;
@@ -524,26 +510,15 @@
       ? parseInt(countElement.textContent.match(/\d+/)?.[0] || "0")
       : null;
 
-    console.log(`LCR Tools: Total member count from page: ${totalCount}`);
-
     // Use navigationUtils to handle scrolling and data collection
     await navigationUtils.collectDataWithNavigation({
       needs: ["scroll"],
       onPageData: async () => {
-        // CRITICAL FIX: Only select member links from the MAIN NAME COLUMN (td.n.fn)
-        // This excludes household member links which appear in a different column
-        // and would cause the same person to be processed multiple times
+        // Tighten selector to main name column
         const allMemberLinks = Array.from(
           document.querySelectorAll(
             'td.n.fn member-card[ng-show*="individuals"] a[href*="/records/member-profile/"]'
           )
-        );
-
-        console.log(
-          `LCR Tools: [Batch] Found ${allMemberLinks.length} total member links in DOM`
-        );
-        console.log(
-          `LCR Tools: [Batch] Already processed: ${processedHrefs.size} unique hrefs`
         );
 
         // Filter to only NEW links we haven't processed yet
@@ -551,19 +526,13 @@
           (link) => !processedHrefs.has(link.href)
         );
 
-        console.log(
-          `LCR Tools: [Batch] NEW links to process: ${newLinks.length}`
-        );
-
         if (newLinks.length === 0) {
-          console.log("LCR Tools: No new members to process in this batch");
           return [];
         }
 
         // Process only the NEW member links
         for (let i = 0; i < newLinks.length; i++) {
           if (uiUtils.isAborted()) {
-            console.log("LCR Tools: Collection aborted by user");
             break;
           }
 
@@ -574,16 +543,11 @@
             // Mark this link as processed immediately to avoid re-processing
             processedHrefs.add(href);
 
-            // Update loading indicator every 5 members for better feedback
-            if (totalProcessed % 5 === 0) {
-              const progressText = totalCount
-                ? `Collecting member photos (${totalProcessed} / ${totalCount} processed)...`
-                : `Collecting member photos (${totalProcessed} processed)...`;
-              uiUtils.showLoadingIndicator(
-                progressText,
-                "Press ESC to cancel."
-              );
-            }
+            uiUtils.showLoadingIndicator(
+              `Collecting member photos (processing ${
+                i + 1
+              } / ${totalCount})...`
+            );
 
             // Scroll link into view to ensure it's visible
             link.scrollIntoView({ behavior: "instant", block: "center" });
@@ -592,38 +556,19 @@
             // Click the link to show popover
             link.click();
 
-            // Wait for popover (will wait up to 1200ms for both name AND image)
+            // Wait for popover (will wait up to configured timeout for both name AND image)
             const popover = await waitForPopover();
 
             if (popover) {
-              // Extract full name from popover title (more reliable)
+              // Extract full name from popover title and image
               const nameDiv = popover.querySelector(
                 ".popover-title .ng-binding"
               );
               const fullName = nameDiv ? nameDiv.textContent.trim() : "";
-
-              console.log(
-                `LCR Tools: [${totalProcessed + 1}] Popover loaded for: ${fullName || "UNKNOWN NAME"}`
-              );
-
               const img = popover.querySelector(".member-card-image img");
 
-              if (!img) {
-                console.log(
-                  `LCR Tools: [${totalProcessed + 1}] SKIP - No img element found for: ${fullName}`
-                );
-              } else if (!img.src) {
-                console.log(
-                  `LCR Tools: [${totalProcessed + 1}] SKIP - img.src is empty for: ${fullName}`
-                );
-              } else if (!fullName) {
-                console.log(
-                  `LCR Tools: [${totalProcessed + 1}] SKIP - No name found (img src: ${img.src})`
-                );
-              } else {
+              if (img && img.src && fullName) {
                 const photoUrl = img.src;
-
-                console.log(`LCR Tools: [${totalProcessed + 1}] Photo URL: ${photoUrl}`);
 
                 // Skip placeholder/default images
                 if (
@@ -634,22 +579,16 @@
                   !photoUrl.endsWith(".gif") &&
                   !photoUrl.includes("data:image/svg")
                 ) {
-                  if (membersByPhotoUrl.has(photoUrl)) {
-                    console.log(
-                      `LCR Tools: [${totalProcessed + 1}] SKIP - Already have photo for: ${fullName}`
-                    );
-                  } else {
+                  if (!membersByPhotoUrl.has(photoUrl)) {
                     // Parse name - try comma format first, then space-separated
                     let firstName = "";
                     let lastName = "";
                     const commaIndex = fullName.indexOf(",");
 
                     if (commaIndex !== -1) {
-                      // Format: "Last, First Middle"
                       lastName = fullName.substring(0, commaIndex).trim();
                       firstName = fullName.substring(commaIndex + 1).trim();
                     } else {
-                      // Format: "First Middle Last"
                       const parts = fullName.split(" ").filter((p) => p);
                       if (parts.length > 1) {
                         lastName = parts.pop();
@@ -669,31 +608,15 @@
                       };
 
                       membersByPhotoUrl.set(photoUrl, memberData);
-                      console.log(
-                        `LCR Tools: [${totalProcessed + 1}] ✓ ADDED to flashcards: ${fullName}`
-                      );
                     }
                   }
-                } else {
-                  console.log(
-                    `LCR Tools: [${totalProcessed + 1}] SKIP - Placeholder image for: ${fullName}`
-                  );
                 }
               }
-
-              // Close the popover by clicking elsewhere
-              document.body.click();
-              await utils.sleep(150);
-            } else {
-              console.log(
-                `LCR Tools: [${totalProcessed + 1}] WARNING - Popover timeout (1200ms) for href: ${href}`
-              );
-              // Popover didn't load in time, close any open popover
-              document.body.click();
-              await utils.sleep(150);
             }
 
-            totalProcessed++;
+            // Close the popover by clicking elsewhere
+            document.body.click();
+            await utils.sleep(150);
           } catch (error) {
             console.warn(`LCR Tools: Error processing member ${href}:`, error);
             // Try to close any open popover
@@ -701,10 +624,6 @@
             await utils.sleep(50);
           }
         }
-
-        console.log(
-          `LCR Tools: [Batch Complete] Total processed so far: ${totalProcessed}, Unique members with photos: ${membersByPhotoUrl.size}`
-        );
 
         // Return empty array since we're accumulating in membersByPhotoUrl Map
         return [];
@@ -714,18 +633,6 @@
     // Convert Map values to array
     const uniqueMembers = Array.from(membersByPhotoUrl.values());
 
-    console.log(
-      `LCR Tools: ===== FINAL RESULTS =====`
-    );
-    console.log(
-      `LCR Tools: Total links processed: ${processedHrefs.size}`
-    );
-    console.log(
-      `LCR Tools: Members with photos collected: ${uniqueMembers.length}`
-    );
-    console.log(
-      `LCR Tools: Expected total from page: ${totalCount}`
-    );
     return uniqueMembers;
   }
 
@@ -737,19 +644,14 @@
     const currentUrl = window.location.href;
 
     if (currentUrl.includes("records/member-list")) {
-      console.log("LCR Tools: Detected member directory page");
       return await collectMemberDataFromDirectory();
     } else if (currentUrl.includes("manage-photos")) {
-      console.log("LCR Tools: Detected manage photos page");
       // Navigate to manage tab and set filters
       await navigateToManageTab();
       await setSubjectTypeToIndividual();
       await setPhotoFilterToMembersWithPhoto();
       return await collectMemberData();
     } else {
-      console.warn(
-        "LCR Tools: Unknown page type. Attempting member directory collection..."
-      );
       return await collectMemberDataFromDirectory();
     }
   }

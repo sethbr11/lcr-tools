@@ -521,16 +521,23 @@
           firstRowDateObj = dataUtils.parseLCRDate(dateStr);
           if (!firstRowDateObj) {
             errors.push(
-              `Row ${i + 1}: Could not parse date '${dateStr}'. Supported formats include: MM/DD/YYYY, YYYY-MM-DD, MM/DD/YYYY HH:MM AM, etc.`
+              `Row ${
+                i + 1
+              }: Could not parse date '${dateStr}'. Supported formats include: MM/DD/YYYY, YYYY-MM-DD, MM/DD/YYYY HH:MM AM, etc.`
             );
           } else {
             // Normalize to YYYY-MM-DD for comparison (strips time portion)
-            firstRowDateStr = dataUtils.formatDate(firstRowDateObj, "YYYY-MM-DD");
+            firstRowDateStr = dataUtils.formatDate(
+              firstRowDateObj,
+              "YYYY-MM-DD"
+            );
 
             // Check if the date is a Sunday
             if (firstRowDateObj.getDay() !== 0) {
               errors.push(
-                `Row ${i + 1}: Date '${dateStr}' (parsed as ${firstRowDateObj.toDateString()}) is not a Sunday. Attendance must be for a Sunday.`
+                `Row ${
+                  i + 1
+                }: Date '${dateStr}' (parsed as ${firstRowDateObj.toDateString()}) is not a Sunday. Attendance must be for a Sunday.`
               );
             }
           }
@@ -541,15 +548,18 @@
         // Parse subsequent row dates and compare normalized values
         const currentRowDateObj = dataUtils.parseLCRDate(dateStr);
         if (!currentRowDateObj) {
-          errors.push(
-            `Row ${i + 1}: Could not parse date '${dateStr}'.`
-          );
+          errors.push(`Row ${i + 1}: Could not parse date '${dateStr}'.`);
         } else {
           // Normalize to YYYY-MM-DD for comparison (strips time portion)
-          const currentRowDateStr = dataUtils.formatDate(currentRowDateObj, "YYYY-MM-DD");
+          const currentRowDateStr = dataUtils.formatDate(
+            currentRowDateObj,
+            "YYYY-MM-DD"
+          );
           if (currentRowDateStr !== firstRowDateStr) {
             errors.push(
-              `Row ${i + 1}: Date '${dateStr}' (${currentRowDateStr}) differs from the first row's date (${firstRowDateStr}). All dates in the CSV must be for the same Sunday.`
+              `Row ${
+                i + 1
+              }: Date '${dateStr}' (${currentRowDateStr}) differs from the first row's date (${firstRowDateStr}). All dates in the CSV must be for the same Sunday.`
             );
           }
         }
@@ -1100,7 +1110,6 @@
       if (uiUtils.isAborted()) throw new Error("Process aborted by user.");
 
       // --- Navigate to First Page of Members ---
-      console.log("LCR Tools: Navigating to first page of members...");
       await navigationUtils.navigateToFirstPage(2000);
 
       let memberPageNum = 1;
@@ -1246,9 +1255,6 @@
         if (uiUtils.isAborted()) break;
 
         if (navigationUtils.isLastPage()) {
-          console.log(
-            `LCR Tools: Reached last page of members at page ${memberPageNum}`
-          );
           logger.logAction("Reached last page of members", {
             pageNum: memberPageNum,
           });
@@ -1262,9 +1268,6 @@
         );
 
         if (!nextPageSuccess) {
-          console.log(
-            "LCR Tools: Could not navigate to next member page, stopping."
-          );
           logger.logAction("Navigation to next page failed", {
             pageNum: memberPageNum,
           });
@@ -1565,9 +1568,7 @@
           parentOptions.wardMembers,
           parentOptions.presentMembers
         );
-        console.log(
-          `Using ${parentOptions.wardMembers.length} ward members collected during processing`
-        );
+        // Ward members data provided
       } else {
         // Fallback to prevent crash; keeps UI functional
         handler.wardMembers = parentOptions.wardMembers;
@@ -1583,9 +1584,7 @@
       );
 
       try {
-        console.log("Fallback: Starting to load ward members...");
         await handler.loadWardMembers();
-        console.log(`Loaded ${handler.wardMembers.length} total ward members`);
         uiUtils.hideLoadingIndicator();
 
         if (handler.wardMembers.length === 0) {
