@@ -12,8 +12,9 @@
    * @param {string|Blob} content - Content to download
    * @param {string} filename - Name of the file
    * @param {string} contentType - MIME type of the content
+   * @param {boolean} showNotification - Whether to show a success toast (default: true)
    */
-  function downloadFile(content, filename, contentType) {
+  function downloadFile(content, filename, contentType, showNotification = true) {
     // Create a Blob object with the CSV content and specify the MIME type
     const blob =
       content instanceof Blob
@@ -36,23 +37,33 @@
     // Revoke the temporary URL to free up resources
     URL.revokeObjectURL(url);
     console.log(`LCR Tools: File download initiated as ${filename}.`);
+
+    // Show success toast notification if uiUtils is available and not disabled
+    if (showNotification && utils.checkIfLoaded("uiUtils")) {
+      uiUtils.showToast(`Downloaded: ${filename}`, {
+        type: "success",
+        duration: 3000,
+      });
+    }
   }
 
   /**
    * Downloads CSV content as a file
    * @param {string} csvContent - The CSV content to download
    * @param {string} filename - The filename for the download
+   * @param {boolean} showNotification - Whether to show a success toast (default: true)
    */
-  function downloadCsv(csvContent, filename) {
-    downloadFile(csvContent, filename, "text/csv;charset=utf-8;");
+  function downloadCsv(csvContent, filename, showNotification = true) {
+    downloadFile(csvContent, filename, "text/csv;charset=utf-8;", showNotification);
   }
 
   /**
    * Downloads multiple CSV files as a zip file
    * @param {Array<{filename: string, csvContent: string}>} files - Array of file objects
    * @param {string} zipName - Name of the ZIP file
+   * @param {boolean} showNotification - Whether to show a success toast (default: true)
    */
-  async function downloadCsvZip(files, zipName = "lcr_reports.zip") {
+  async function downloadCsvZip(files, zipName = "lcr_reports.zip", showNotification = true) {
     if (!Array.isArray(files) || files.length === 0) {
       alert("No files to zip.");
       return;
@@ -79,7 +90,7 @@
       zip.file(name, file.csvContent);
     }
     const blob = await zip.generateAsync({ type: "blob" });
-    downloadFile(blob, zipName, "application/zip");
+    downloadFile(blob, zipName, "application/zip", showNotification);
   }
 
   /**

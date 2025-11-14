@@ -274,6 +274,157 @@
     return true;
   }
 
+  /**
+   * Shows a toast notification message
+   * @param {string} message - The message to display
+   * @param {Object} options - Configuration options
+   * @param {string} options.type - Type of toast: 'success', 'error', 'info', 'warning' (default: 'success')
+   * @param {number} options.duration - How long to show the toast in ms (default: 3000)
+   * @param {string} options.position - Position: 'top-right', 'top-left', 'bottom-right', 'bottom-left' (default: 'top-left')
+   */
+  function showToast(
+    message,
+    { type = "success", duration = 3000, position = "top-left" } = {}
+  ) {
+    // Ensure toast container exists
+    let container = document.getElementById("lcr-tools-toast-container");
+    if (!container) {
+      container = document.createElement("div");
+      container.id = "lcr-tools-toast-container";
+      container.style.cssText = `
+        position: fixed;
+        z-index: 100000;
+        pointer-events: none;
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+      `;
+
+      // Set position based on parameter
+      const positions = {
+        "top-right": "top: 20px; right: 20px;",
+        "top-left": "top: 20px; left: 20px;",
+        "bottom-right": "bottom: 20px; right: 20px;",
+        "bottom-left": "bottom: 20px; left: 20px;",
+      };
+      container.style.cssText += positions[position] || positions["top-left"];
+
+      document.body.appendChild(container);
+
+      // Add toast styles if not already present
+      if (!document.getElementById("lcr-tools-toast-styles")) {
+        const style = document.createElement("style");
+        style.id = "lcr-tools-toast-styles";
+        style.textContent = `
+          @keyframes lcrToastSlideIn {
+            from {
+              opacity: 0;
+              transform: translateX(-100%);
+            }
+            to {
+              opacity: 1;
+              transform: translateX(0);
+            }
+          }
+          @keyframes lcrToastSlideOut {
+            from {
+              opacity: 1;
+              transform: translateX(0);
+            }
+            to {
+              opacity: 0;
+              transform: translateX(-100%);
+            }
+          }
+          .lcr-tools-toast {
+            pointer-events: auto;
+            animation: lcrToastSlideIn 0.3s ease-out;
+            min-width: 250px;
+            max-width: 400px;
+          }
+          .lcr-tools-toast.lcr-tools-toast-exiting {
+            animation: lcrToastSlideOut 0.3s ease-in;
+          }
+        `;
+        document.head.appendChild(style);
+      }
+    }
+
+    // Create toast element
+    const toast = document.createElement("div");
+    toast.className = "lcr-tools-toast";
+
+    // Define colors and icons for different types
+    const typeConfig = {
+      success: {
+        bg: "#10b981",
+        icon: "✓",
+      },
+      error: {
+        bg: "#ef4444",
+        icon: "✕",
+      },
+      warning: {
+        bg: "#f59e0b",
+        icon: "⚠",
+      },
+      info: {
+        bg: "#3b82f6",
+        icon: "ℹ",
+      },
+    };
+
+    const config = typeConfig[type] || typeConfig.success;
+
+    toast.style.cssText = `
+      background: ${config.bg};
+      color: white;
+      padding: 12px 16px;
+      border-radius: 8px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      font-size: 14px;
+      line-height: 1.4;
+    `;
+
+    // Add icon
+    const iconSpan = document.createElement("span");
+    iconSpan.textContent = config.icon;
+    iconSpan.style.cssText = `
+      font-size: 18px;
+      font-weight: bold;
+      flex-shrink: 0;
+    `;
+
+    // Add message
+    const messageSpan = document.createElement("span");
+    messageSpan.textContent = message;
+    messageSpan.style.flex = "1";
+
+    toast.appendChild(iconSpan);
+    toast.appendChild(messageSpan);
+
+    // Add to container
+    container.appendChild(toast);
+
+    // Auto-remove after duration
+    setTimeout(() => {
+      toast.classList.add("lcr-tools-toast-exiting");
+      setTimeout(() => {
+        if (toast.parentNode) {
+          toast.parentNode.removeChild(toast);
+        }
+        // Remove container if empty
+        if (container.children.length === 0) {
+          container.remove();
+        }
+      }, 300); // Match animation duration
+    }, duration);
+  }
+
   window.uiUtils = {
     showLoadingIndicator,
     hideLoadingIndicator,
@@ -282,5 +433,6 @@
     removeElement,
     clickButton,
     changeDropdown,
+    showToast,
   };
 })();
