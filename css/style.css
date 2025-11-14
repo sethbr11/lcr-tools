@@ -36,6 +36,7 @@ body {
   color: white;
   border-bottom: 1px solid rgba(255, 255, 255, 0.1);
   flex-shrink: 0; /* Prevent header from shrinking */
+  position: relative; /* Ensure items can push the directory button right */
 }
 
 .popup-logo {
@@ -59,6 +60,41 @@ body {
   font-size: 0.8em;
   color: rgba(255, 255, 255, 0.85);
   font-weight: 400;
+}
+
+/* New header directory button */
+.directory-button {
+  margin-left: auto;
+  background: #ffffff;
+  border: 1px solid rgba(255, 255, 255, 0.4);
+  width: 40px;
+  height: 40px;
+  padding: 0;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  color: #00509e;
+  transition: all 0.2s ease;
+  box-shadow: 0 2px 4px rgba(0, 80, 158, 0.15);
+}
+
+.directory-button svg {
+  display: block;
+  color: #00509e;
+}
+
+.directory-button:hover {
+  background: #f0f6ff;
+  border-color: #ffffff;
+  box-shadow: 0 4px 10px rgba(0, 80, 158, 0.25);
+  transform: translateY(-2px);
+}
+
+.directory-button:active {
+  transform: translateY(0);
+  box-shadow: 0 2px 6px rgba(0, 80, 158, 0.3);
 }
 
 /* Content section */
@@ -231,48 +267,9 @@ body {
   border: 1px solid #f5c6cb;
 }
 
-/* Directory floating action button */
-.directory-fab {
-  position: fixed;
-  bottom: 16px;
-  right: 16px;
-  width: 56px;
-  height: 56px;
-  border-radius: 50%;
-  background: linear-gradient(135deg, #007bff 0%, #0056b3 100%);
-  border: none;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: all 0.3s ease;
-  z-index: 1000;
-}
-
-.directory-fab svg {
-  color: white;
-  width: 24px;
-  height: 24px;
-}
-
-.directory-fab:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 6px 16px rgba(0, 123, 255, 0.4);
-  background: linear-gradient(135deg, #0056b3 0%, #004085 100%);
-}
-
-.directory-fab:active {
-  transform: translateY(0);
-  box-shadow: 0 2px 8px rgba(0, 123, 255, 0.3);
-}
-
 /* Page transitions */
 .popup-container.slide-out-left {
   animation: slideOutLeft 0.3s ease-in-out forwards;
-}
-
-.popup-container.slide-in-left {
-  animation: slideInLeft 0.3s ease-in-out forwards;
 }
 
 .popup-container.slide-out-right {
@@ -291,17 +288,6 @@ body {
   to {
     transform: translateX(-100%);
     opacity: 0;
-  }
-}
-
-@keyframes slideInLeft {
-  from {
-    transform: translateX(-100%);
-    opacity: 0;
-  }
-  to {
-    transform: translateX(0);
-    opacity: 1;
   }
 }
 
@@ -349,17 +335,5 @@ body {
 
   .action-list {
     max-height: 300px; /* Smaller max height for action list */
-  }
-
-  .directory-fab {
-    width: 36px;
-    height: 36px;
-    bottom: 12px;
-    right: 12px;
-  }
-
-  .directory-fab svg {
-    width: 20px;
-    height: 20px;
   }
 }

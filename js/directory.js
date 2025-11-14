@@ -17,21 +17,18 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   // Get action metadata from actions.js (single source of truth)
-  const actionDirectory = window.ACTION_METADATA.map(action => ({
+  const actionDirectory = window.ACTION_METADATA.map((action) => ({
     title: action.title,
     category: action.category,
     description: action.description,
     availableOn: action.directoryPages,
-    excludedPages: action.directoryExcluded
+    excludedPages: action.directoryExcluded,
   }));
 
   // Create action card element
   function createActionCard(action) {
     const card = document.createElement("div");
     card.className = "action-card";
-    card.dataset.category = action.category;
-    card.dataset.title = action.title.toLowerCase();
-    card.dataset.description = action.description.toLowerCase();
 
     const title = document.createElement("h3");
     title.className = "action-card-title";
@@ -55,7 +52,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const pageLinks = document.createElement("div");
     pageLinks.className = "page-links";
 
-    action.availableOn.forEach(page => {
+    action.availableOn.forEach((page) => {
       if (page.url) {
         // Create clickable link if URL is provided
         const link = document.createElement("a");
@@ -93,7 +90,9 @@ document.addEventListener("DOMContentLoaded", () => {
       excludedSection.style.marginTop = "8px";
       excludedSection.style.fontSize = "0.8em";
       excludedSection.style.color = "#868e96";
-      excludedSection.innerHTML = `<em>Not available on: ${action.excludedPages.join(", ")}</em>`;
+      excludedSection.innerHTML = `<em>Not available on: ${action.excludedPages.join(
+        ", "
+      )}</em>`;
       card.appendChild(excludedSection);
     }
 
@@ -106,7 +105,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const selectedCategory = categoryFilter.value;
 
     // Filter actions
-    let filteredActions = actionDirectory.filter(action => {
+    let filteredActions = actionDirectory.filter((action) => {
       // Category filter
       if (selectedCategory !== "all" && action.category !== selectedCategory) {
         return false;
@@ -115,7 +114,9 @@ document.addEventListener("DOMContentLoaded", () => {
       // Search filter
       if (searchQuery) {
         const matchesTitle = action.title.toLowerCase().includes(searchQuery);
-        const matchesDescription = action.description.toLowerCase().includes(searchQuery);
+        const matchesDescription = action.description
+          .toLowerCase()
+          .includes(searchQuery);
         return matchesTitle || matchesDescription;
       }
 
@@ -151,7 +152,7 @@ document.addEventListener("DOMContentLoaded", () => {
     }, {});
 
     // Render actions by category
-    Object.keys(categorizedActions).forEach(category => {
+    Object.keys(categorizedActions).forEach((category) => {
       // Add section header
       const sectionHeader = document.createElement("div");
       sectionHeader.className = "section-header";
@@ -159,7 +160,7 @@ document.addEventListener("DOMContentLoaded", () => {
       directoryList.appendChild(sectionHeader);
 
       // Add action cards for this category
-      categorizedActions[category].forEach(action => {
+      categorizedActions[category].forEach((action) => {
         const card = createActionCard(action);
         directoryList.appendChild(card);
       });

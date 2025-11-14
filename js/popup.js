@@ -119,15 +119,19 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   });
 
-  // Directory button click handler
+  // Simplified directory button setup
   const directoryButton = document.getElementById("directory-button");
   if (directoryButton) {
     directoryButton.addEventListener("click", () => {
       const container = document.querySelector(".popup-container");
-      container.classList.add("slide-out-left");
-      setTimeout(() => {
+      if (container) {
+        container.classList.add("slide-out-left");
+        setTimeout(() => {
+          window.location.href = "directory.html";
+        }, 300);
+      } else {
         window.location.href = "directory.html";
-      }, 300);
+      }
     });
   }
 });

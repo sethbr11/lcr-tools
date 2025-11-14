@@ -14,12 +14,6 @@ body .popup-container {
   flex-direction: column;
 }
 
-/* Keep header fixed */
-body .popup-header {
-  flex-shrink: 0;
-  flex-grow: 0;
-}
-
 /* Override popup-content for directory page */
 body .popup-content {
   flex: 1;
@@ -260,14 +254,12 @@ body .popup-content {
 }
 
 /* Empty state */
-.no-actions-directory,
 .no-results-message {
   text-align: center;
   padding: 60px 20px;
   color: #6c757d;
 }
 
-.no-actions-directory svg,
 .no-results-message svg {
   width: 48px;
   height: 48px;
@@ -275,21 +267,19 @@ body .popup-content {
   margin-bottom: 16px;
 }
 
-.no-actions-directory h3,
 .no-results-message h3 {
   margin: 0 0 8px 0;
   font-size: 1.1em;
   color: #495057;
 }
 
-.no-actions-directory p,
 .no-results-message p {
   margin: 0;
   font-size: 0.9em;
   line-height: 1.5;
 }
 
-/* Hidden state */
-.hidden {
-  display: none !important;
+/* Hide directory button on the directory page if injected */
+body #directory-button {
+  display: none;
 }
