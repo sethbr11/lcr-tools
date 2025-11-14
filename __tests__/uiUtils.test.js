@@ -262,4 +262,141 @@ describe("UI Utilities", () => {
       expect(() => window.uiUtils.removeElement("#non-existent")).not.toThrow();
     });
   });
+
+  describe("showToast", () => {
+    let originalQuerySelector;
+    let originalQuerySelectorAll;
+
+    beforeEach(() => {
+      jest.useFakeTimers();
+      // Restore real DOM methods for toast tests
+      originalQuerySelector = document.querySelector;
+      originalQuerySelectorAll = document.querySelectorAll;
+      document.querySelector = Document.prototype.querySelector;
+      document.querySelectorAll = Document.prototype.querySelectorAll;
+    });
+
+    afterEach(() => {
+      jest.useRealTimers();
+      // Restore mocks
+      document.querySelector = originalQuerySelector;
+      document.querySelectorAll = originalQuerySelectorAll;
+    });
+
+    it("should create toast notification with default options", () => {
+      window.uiUtils.showToast("Test message");
+
+      const container = document.getElementById("lcr-tools-toast-container");
+      expect(container).toBeTruthy();
+      expect(container.textContent).toContain("Test message");
+    });
+
+    it("should create toast with success type by default", () => {
+      window.uiUtils.showToast("Success message");
+
+      const toast = document.querySelector(".lcr-tools-toast");
+      expect(toast).toBeTruthy();
+      // Browser converts hex to rgb
+      expect(toast.style.background).toMatch(/rgb\(16,\s*185,\s*129\)|#10b981/);
+      expect(toast.textContent).toContain("✓");
+    });
+
+    it("should create toast with error type", () => {
+      window.uiUtils.showToast("Error message", { type: "error" });
+
+      const toast = document.querySelector(".lcr-tools-toast");
+      expect(toast).toBeTruthy();
+      // Browser converts hex to rgb
+      expect(toast.style.background).toMatch(/rgb\(239,\s*68,\s*68\)|#ef4444/);
+      expect(toast.textContent).toContain("✕");
+    });
+
+    it("should create toast with warning type", () => {
+      window.uiUtils.showToast("Warning message", { type: "warning" });
+
+      const toast = document.querySelector(".lcr-tools-toast");
+      expect(toast).toBeTruthy();
+      // Browser converts hex to rgb
+      expect(toast.style.background).toMatch(/rgb\(245,\s*158,\s*11\)|#f59e0b/);
+      expect(toast.textContent).toContain("⚠");
+    });
+
+    it("should create toast with info type", () => {
+      window.uiUtils.showToast("Info message", { type: "info" });
+
+      const toast = document.querySelector(".lcr-tools-toast");
+      expect(toast).toBeTruthy();
+      // Browser converts hex to rgb
+      expect(toast.style.background).toMatch(/rgb\(59,\s*130,\s*246\)|#3b82f6/);
+      expect(toast.textContent).toContain("ℹ");
+    });
+
+    it("should auto-remove toast after duration", () => {
+      window.uiUtils.showToast("Temporary message", { duration: 2000 });
+
+      let toast = document.querySelector(".lcr-tools-toast");
+      expect(toast).toBeTruthy();
+
+      // Fast-forward time
+      jest.advanceTimersByTime(2000);
+
+      // Toast should have exiting class added
+      toast = document.querySelector(".lcr-tools-toast");
+      expect(toast.classList.contains("lcr-tools-toast-exiting")).toBe(true);
+
+      // Fast-forward animation duration
+      jest.advanceTimersByTime(300);
+
+      // Toast should be removed
+      toast = document.querySelector(".lcr-tools-toast");
+      expect(toast).toBeNull();
+    });
+
+    it("should support multiple toasts", () => {
+      window.uiUtils.showToast("First toast");
+      window.uiUtils.showToast("Second toast");
+
+      const toasts = document.querySelectorAll(".lcr-tools-toast");
+      expect(toasts.length).toBe(2);
+      expect(toasts[0].textContent).toContain("First toast");
+      expect(toasts[1].textContent).toContain("Second toast");
+    });
+
+    it("should add toast styles only once", () => {
+      window.uiUtils.showToast("First");
+      window.uiUtils.showToast("Second");
+
+      const styles = document.querySelectorAll("#lcr-tools-toast-styles");
+      expect(styles.length).toBe(1);
+    });
+
+    it("should remove container when last toast is removed", () => {
+      window.uiUtils.showToast("Only toast", { duration: 1000 });
+
+      let container = document.getElementById("lcr-tools-toast-container");
+      expect(container).toBeTruthy();
+
+      // Fast-forward through duration and animation
+      jest.advanceTimersByTime(1300);
+
+      container = document.getElementById("lcr-tools-toast-container");
+      expect(container).toBeNull();
+    });
+
+    it("should position toast at top-left by default", () => {
+      window.uiUtils.showToast("Test");
+
+      const container = document.getElementById("lcr-tools-toast-container");
+      expect(container.style.cssText).toContain("top: 20px");
+      expect(container.style.cssText).toContain("left: 20px");
+    });
+
+    it("should support different positions", () => {
+      window.uiUtils.showToast("Test", { position: "bottom-left" });
+
+      const container = document.getElementById("lcr-tools-toast-container");
+      expect(container.style.cssText).toContain("bottom: 20px");
+      expect(container.style.cssText).toContain("left: 20px");
+    });
+  });
 });

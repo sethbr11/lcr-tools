@@ -286,9 +286,51 @@
     </style>
   `;
 
+  /**
+   * Modal content wrapper for the flashcards modal
+   */
+  const flashcardModalContentTemplate = `
+    <div id="lcr-tools-flashcard-container">
+      <!-- Flashcard content will be inserted here -->
+    </div>
+    <div id="lcr-tools-flashcard-controls">
+      ${flashcardControlsTemplate}
+    </div>
+  `;
+
+  // Directory warning modal HTML
+  const directoryWarningTemplate = `
+    <div style="padding: 20px; line-height: 1.6;">
+      <p style="margin-bottom: 15px;">
+        <strong>Note:</strong> Running flashcards on the Member Directory page is slower
+        because it needs to click each member's name to access their photo.
+      </p>
+      <p style="margin-bottom: 15px;">
+        <strong>Faster Option:</strong> The <strong>Manage Photos</strong> page is significantly faster
+        for creating flashcards.
+      </p>
+      <p style="margin-bottom: 20px;">
+        Would you like to continue here, or go to the Manage Photos page instead?
+      </p>
+      <div style="display: flex; gap: 10px; justify-content: center;">
+        <button id="lcr-tools-go-to-photos" style="padding: 10px 20px; background: #3b82f6; color: white; border: none; border-radius: 5px; cursor: pointer; font-size: 14px;">
+          Go to Manage Photos (Faster)
+        </button>
+        <button id="lcr-tools-continue-here" style="padding: 10px 20px; background: #6b7280; color: white; border: none; border-radius: 5px; cursor: pointer; font-size: 14px;">
+          Continue Here
+        </button>
+        <button id="lcr-tools-cancel" style="padding: 10px 20px; background: #ef4444; color: white; border: none; border-radius: 5px; cursor: pointer; font-size: 14px;">
+          Cancel
+        </button>
+      </div>
+    </div>
+  `;
+
   window.memberFlashcardsTemplates = {
     flashcardTemplate,
     flashcardControlsTemplate,
     flashcardStylesTemplate,
+    flashcardModalContentTemplate,
+    directoryWarningTemplate,
   };
 })();

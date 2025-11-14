@@ -171,12 +171,16 @@ window.ACTION_METADATA = [
       "js/actions/memberFlashcards/main.js",
     ],
     urlPatterns: {
-      include: ["manage-photos"],
+      include: ["manage-photos", "records/member-list"],
     },
     directoryPages: [
       {
         name: "Manage Photos page",
         url: "https://lcr.churchofjesuschrist.org/manage-photos",
+      },
+      {
+        name: "Member Directory",
+        url: "https://lcr.churchofjesuschrist.org/records/member-list",
       },
     ],
   },

@@ -17,6 +17,7 @@ describe("File Utilities", () => {
     window.utils = {
       returnIfLoaded: jest.fn(() => false),
       ensureLoaded: jest.fn(), // Mock to do nothing - don't throw errors
+      checkIfLoaded: jest.fn(() => false), // Mock to return false - no uiUtils in tests
     };
 
     // Create a mock link element
