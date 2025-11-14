@@ -49,7 +49,7 @@ window.ACTION_METADATA = [
         "manage-photos",
         "report/self-reliance",
         "records/merge-duplicate",
-        "ca",
+        "ca/",
         basePage,
       ],
       excludeExactMinistering: true, // Special case
@@ -92,7 +92,7 @@ window.ACTION_METADATA = [
         "manage-photos",
         "report/self-reliance",
         "records/merge-duplicate",
-        "ca",
+        "ca/",
         basePage,
       ],
       excludeExactMinistering: true,
