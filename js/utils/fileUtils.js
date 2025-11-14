@@ -117,13 +117,36 @@
         : "";
     }
 
-    // Check for page title (updated selector to handle h1 or h2 structures)
-    const pageTitle = document.querySelector(
-      "h1.pageTitle #pageTitleText, h2.pageTitle .ng-binding"
-    );
+    // Check for custom report title first
+    const isCustomReport = window.location.pathname.includes('custom-reports-details');
     let base = "";
-    if (pageTitle && pageTitle.textContent.trim()) {
-      base = pageTitle.textContent.trim().replace(/\s+/g, "_").toLowerCase();
+
+    if (isCustomReport) {
+      // Custom reports have a unique structure with the title
+      // Try multiple selectors to find the report title
+      let customReportTitle =
+        document.querySelector('svg[aria-label*="Edit Report enter a report title"]')?.closest('div')?.previousElementSibling ||
+        document.querySelector('.sc-8dc704eb-74') ||
+        document.querySelector('.sc-8dc704eb-70 span');
+
+      if (customReportTitle && customReportTitle.textContent.trim()) {
+        base = customReportTitle.textContent.trim().replace(/\s+/g, "_").toLowerCase();
+      }
+
+      // For custom reports, ignore the suffix to avoid duplication
+      if (base) {
+        suffix = "";
+      }
+    }
+
+    // Check for page title (updated selector to handle h1 or h2 structures)
+    if (!base) {
+      const pageTitle = document.querySelector(
+        "h1.pageTitle #pageTitleText, h2.pageTitle .ng-binding"
+      );
+      if (pageTitle && pageTitle.textContent.trim()) {
+        base = pageTitle.textContent.trim().replace(/\s+/g, "_").toLowerCase();
+      }
     }
 
     // If no page title, fall back to URL segment
