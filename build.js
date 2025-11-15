@@ -66,15 +66,20 @@ async function main() {
   fs.mkdirSync("dist", { recursive: true });
 
   // Files and directories to include
+  // Dynamically include all top-level HTML files (e.g., popup.html, directory.html, etc.)
+  const rootHtmlFiles = fs
+    .readdirSync(__dirname)
+    .filter((f) => f.toLowerCase().endsWith(".html"));
+
   const includePaths = [
     "manifest.json",
-    "popup.html",
     "js",
     "css",
     "images",
     "LICENSE",
     "README.md",
     "PRIVACY_POLICY.md",
+    ...rootHtmlFiles,
   ];
 
   // Copy files
