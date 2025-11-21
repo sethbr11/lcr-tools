@@ -99,7 +99,7 @@ it("slow test", async () => {
 
 ## 📂 File Locations
 
-- Tests: `__tests__/*.test.js`
+- Tests: `tests/*.test.js`
 - Coverage: `coverage/index.html`
 - Config: `jest.config.js`
 - CI/CD: `.github/workflows/tests.yml`

@@ -92,7 +92,7 @@ npm test -- "utils"
 npm test -- -t "should parse dates"
 
 # Run tests for specific directory
-npm test -- __tests__/actions/
+npm test -- tests/actions/
 ```
 
 ### Test Output
@@ -140,7 +140,7 @@ npm run test:coverage
 
 ### Test File Structure
 
-Create test files in `__tests__/` directory:
+Create test files in `tests/` directory:
 
 ```javascript
 /**

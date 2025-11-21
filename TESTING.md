@@ -14,7 +14,7 @@ This document outlines the testing strategy for the LCR Tools Chrome extension, 
 **Test Files:**
 
 ```
-__tests__/
+tests/
 ├── popup.test.js               # Popup UI and script injection
 ├── actions.test.js             # URL pattern matching and action logic
 └── utils.test.js               # Core utility functions
