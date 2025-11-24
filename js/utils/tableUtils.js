@@ -269,9 +269,7 @@
         headerText.toLowerCase() !== "actions" &&
         headerText.toLowerCase() !== "edit"
     );
-    const headers = filtered.map(({ headerText }) =>
-      formatCsvValue(headerText)
-    );
+    const headers = filtered.map(({ headerText }) => headerText);
     const indices = filtered.map(({ index }) => index);
     return { headers, indices };
   }

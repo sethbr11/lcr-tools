@@ -425,6 +425,135 @@
     }, duration);
   }
 
+  /**
+   * Shows a custom confirmation modal
+   * @param {string} message - The message to display
+   * @param {Object} options - Configuration options
+   * @param {string} options.confirmText - Text for confirm button (default: 'Confirm')
+   * @param {string} options.cancelText - Text for cancel button (default: 'Cancel')
+   * @param {string} options.confirmColor - Color for confirm button (default: '#3b82f6')
+   * @returns {Promise<boolean>} - Resolves to true if confirmed, false if cancelled
+   */
+  function showConfirmationModal(
+    message,
+    { confirmText = "Confirm", cancelText = "Cancel", confirmColor = "#3b82f6" } = {}
+  ) {
+    return new Promise((resolve) => {
+      const overlay = document.createElement("div");
+      overlay.id = "lcr-tools-confirm-modal";
+      overlay.style.cssText = `
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background-color: rgba(0, 0, 0, 0.5);
+        z-index: 20000;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      `;
+
+      const modal = document.createElement("div");
+      modal.style.cssText = `
+        background: white;
+        padding: 24px;
+        border-radius: 12px;
+        box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+        max-width: 400px;
+        width: 90%;
+        text-align: center;
+        animation: lcrModalSlideIn 0.3s ease-out;
+      `;
+
+      // Add animation style if needed
+      if (!document.getElementById("lcr-tools-modal-style")) {
+        const style = document.createElement("style");
+        style.id = "lcr-tools-modal-style";
+        style.textContent = `
+          @keyframes lcrModalSlideIn {
+            from { opacity: 0; transform: translateY(-20px); }
+            to { opacity: 1; transform: translateY(0); }
+          }
+        `;
+        document.head.appendChild(style);
+      }
+
+      const text = document.createElement("p");
+      text.textContent = message;
+      text.style.cssText = `
+        margin: 0 0 24px 0;
+        font-size: 16px;
+        color: #333;
+        line-height: 1.5;
+      `;
+
+      const btnContainer = document.createElement("div");
+      btnContainer.style.cssText = `
+        display: flex;
+        justify-content: center;
+        gap: 12px;
+      `;
+
+      const cancelBtn = document.createElement("button");
+      cancelBtn.id = "lcr-cancel-btn-id";
+      cancelBtn.className = "lcr-cancel-btn";
+      cancelBtn.textContent = cancelText;
+      cancelBtn.style.cssText = `
+        padding: 8px 16px;
+        border: 1px solid #d1d5db;
+        background: white;
+        color: #374151;
+        border-radius: 6px;
+        cursor: pointer;
+        font-size: 14px;
+        transition: background 0.2s;
+      `;
+      cancelBtn.onmouseover = () => (cancelBtn.style.background = "#f3f4f6");
+      cancelBtn.onmouseout = () => (cancelBtn.style.background = "white");
+
+      const confirmBtn = document.createElement("button");
+      confirmBtn.id = "lcr-confirm-btn-id";
+      confirmBtn.className = "lcr-confirm-btn";
+      confirmBtn.textContent = confirmText;
+      confirmBtn.style.cssText = `
+        padding: 8px 16px;
+        border: none;
+        background: ${confirmColor};
+        color: white;
+        border-radius: 6px;
+        cursor: pointer;
+        font-size: 14px;
+        font-weight: 500;
+        transition: opacity 0.2s;
+      `;
+      confirmBtn.onmouseover = () => (confirmBtn.style.opacity = "0.9");
+      confirmBtn.onmouseout = () => (confirmBtn.style.opacity = "1");
+
+      const cleanup = () => {
+        if (overlay.parentNode) overlay.parentNode.removeChild(overlay);
+      };
+
+      cancelBtn.onclick = () => {
+        cleanup();
+        resolve(false);
+      };
+
+      confirmBtn.onclick = () => {
+        cleanup();
+        resolve(true);
+      };
+
+      modal.appendChild(text);
+      btnContainer.appendChild(cancelBtn);
+      btnContainer.appendChild(confirmBtn);
+      modal.appendChild(btnContainer);
+      overlay.appendChild(modal);
+      document.body.appendChild(overlay);
+    });
+  }
+
   window.uiUtils = {
     showLoadingIndicator,
     hideLoadingIndicator,
@@ -434,5 +563,6 @@
     clickButton,
     changeDropdown,
     showToast,
+    showConfirmationModal,
   };
 })();

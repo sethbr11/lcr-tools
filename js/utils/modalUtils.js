@@ -590,7 +590,7 @@
       statusElement.style.border = isError
         ? "1px solid #f5c6cb"
         : "1px solid #c3e6cb";
-      statusElement.textContent = message;
+      statusElement.innerHTML = message;
 
       // Auto-hide after 3 seconds if enabled
       if (autoHide) {
