@@ -46,6 +46,13 @@ async function main() {
     newVersion = versionAnswer;
   }
 
+  // Update source manifest if version changed
+  if (newVersion !== manifest.version) {
+    console.log(`📝 Updating source manifest version to ${newVersion}...`);
+    manifest.version = newVersion;
+    fs.writeFileSync(manifestPath, JSON.stringify(manifest, null, 2));
+  }
+
   // Clean up name (remove "(Local Copy)" or similar)
   const cleanName = manifest.name.replace(/\s*\(Local Copy\)\s*/gi, "").trim();
 
@@ -66,20 +73,15 @@ async function main() {
   fs.mkdirSync("dist", { recursive: true });
 
   // Files and directories to include
-  // Dynamically include all top-level HTML files (e.g., popup.html, directory.html, etc.)
-  const rootHtmlFiles = fs
-    .readdirSync(__dirname)
-    .filter((f) => f.toLowerCase().endsWith(".html"));
-
   const includePaths = [
     "manifest.json",
     "js",
     "css",
     "images",
+    "html",
     "LICENSE",
     "README.md",
     "PRIVACY_POLICY.md",
-    ...rootHtmlFiles,
   ];
 
   // Copy files

@@ -1,16 +1,19 @@
 {
   "manifest_version": 3,
   "name": "LCR Tools (Local Copy)",
-  "version": "1.2.1",
+  "version": "1.3.0",
   "description": "An extension to help make LCR easier to use.",
-  "permissions": ["scripting"],
+  "permissions": [
+    "scripting",
+    "storage"
+  ],
   "host_permissions": [
     "https://lcr.churchofjesuschrist.org/*",
     "https://lcrf.churchofjesuschrist.org/*",
     "https://lcrffe.churchofjesuschrist.org/*"
   ],
   "action": {
-    "default_popup": "popup.html",
+    "default_popup": "html/popup.html",
     "default_icon": {
       "16": "images/lcr_tools_logo.png",
       "48": "images/lcr_tools_logo.png",
@@ -27,9 +30,16 @@
     {
       "resources": [
         "css/style.css",
+        "css/vendor/leaflet.css",
+        "html/trip_planning.html",
+        "css/trip_planning.css",
+        "js/actions/tripPlanning/trip_planning.js",
         "images/*.png",
         "js/**/*.js",
-        "js/vendor/jszip.min.js"
+        "js/vendor/jszip.min.js",
+        "js/vendor/papaparse.min.js",
+        "js/vendor/jspdf.umd.min.js",
+        "js/vendor/html2canvas.min.js"
       ],
       "matches": [
         "https://lcr.churchofjesuschrist.org/*",

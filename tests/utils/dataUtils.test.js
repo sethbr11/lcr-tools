@@ -19,7 +19,7 @@ describe("Data Utilities", () => {
 
     // Load the real dataUtils
     jest.resetModules();
-    require("../js/utils/dataUtils.js");
+    require("../../js/utils/dataUtils.js");
   });
 
   describe("formatDate", () => {

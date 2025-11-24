@@ -11,7 +11,7 @@ describe("Actions (Real File)", () => {
 
     // Load the real actions.js
     jest.resetModules();
-    require("../js/actions.js");
+    require("../../js/actions.js");
   });
 
   describe("URL Pattern Matching - LCR URLs", () => {

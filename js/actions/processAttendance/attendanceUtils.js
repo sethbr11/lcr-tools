@@ -481,24 +481,18 @@
       errors.push("CSV missing 'Last Name' header column.");
     if (errors.length > 0) return { names: [], targetDate: null, errors };
 
-    const names = [];
-    const nameSet = new Set();
-    let firstRowDateObj = null;
-    let firstRowDateStr = "";
+    const parsedRows = [];
+    const dateCounts = {};
     let totalRows = 0;
 
-    // Process each data row
+    // First pass: Parse all rows and collect dates
     for (let i = 1; i < lines.length; i++) {
       totalRows++;
-      // Split the row into values, handling quoted fields
       const values = lines[i].match(/(".*?"|[^",]+)(?=\s*,|\s*$)/g) || [];
-
-      // Clean up the values by trimming and unescaping quotes
       const cleanedValues = values.map((v) =>
         v.trim().replace(/^"|"$/g, "").replace(/""/g, '"')
       );
 
-      // Check if the row has enough columns
       if (
         cleanedValues.length <
         Math.max(dateHeaderIndex, firstNameHeaderIndex, lastNameHeaderIndex) + 1
@@ -509,93 +503,121 @@
         continue;
       }
 
-      // Extract the date, first name, and last name from the row
       const dateStr = cleanedValues[dateHeaderIndex];
       const firstName = cleanedValues[firstNameHeaderIndex];
       const lastName = cleanedValues[lastNameHeaderIndex];
 
-      if (i === 1) {
-        // Parse and validate the date from the first row
-        try {
-          // Use parseLCRDate for flexible parsing (handles timestamps, various formats)
-          firstRowDateObj = dataUtils.parseLCRDate(dateStr);
-          if (!firstRowDateObj) {
-            errors.push(
-              `Row ${
-                i + 1
-              }: Could not parse date '${dateStr}'. Supported formats include: MM/DD/YYYY, YYYY-MM-DD, MM/DD/YYYY HH:MM AM, etc.`
-            );
-          } else {
-            // Normalize to YYYY-MM-DD for comparison (strips time portion)
-            firstRowDateStr = dataUtils.formatDate(
-              firstRowDateObj,
-              "YYYY-MM-DD"
-            );
+      let dateObj = null;
+      let normalizedDateStr = null;
 
-            // Check if the date is a Sunday
-            if (firstRowDateObj.getDay() !== 0) {
-              errors.push(
-                `Row ${
-                  i + 1
-                }: Date '${dateStr}' (parsed as ${firstRowDateObj.toDateString()}) is not a Sunday. Attendance must be for a Sunday.`
-              );
-            }
+      if (dateStr) {
+        try {
+          dateObj = dataUtils.parseLCRDate(dateStr);
+          if (dateObj) {
+            normalizedDateStr = dataUtils.formatDate(dateObj, "YYYY-MM-DD");
+            dateCounts[normalizedDateStr] =
+              (dateCounts[normalizedDateStr] || 0) + 1;
           }
         } catch (e) {
-          errors.push(e.message);
-        }
-      } else {
-        // Parse subsequent row dates and compare normalized values
-        const currentRowDateObj = dataUtils.parseLCRDate(dateStr);
-        if (!currentRowDateObj) {
-          errors.push(`Row ${i + 1}: Could not parse date '${dateStr}'.`);
-        } else {
-          // Normalize to YYYY-MM-DD for comparison (strips time portion)
-          const currentRowDateStr = dataUtils.formatDate(
-            currentRowDateObj,
-            "YYYY-MM-DD"
-          );
-          if (currentRowDateStr !== firstRowDateStr) {
-            errors.push(
-              `Row ${
-                i + 1
-              }: Date '${dateStr}' (${currentRowDateStr}) differs from the first row's date (${firstRowDateStr}). All dates in the CSV must be for the same Sunday.`
-            );
-          }
+          // Ignore parsing errors for now, will catch in second pass
         }
       }
 
-      // Validate the presence of first and last names
+      parsedRows.push({
+        rowNum: i + 1,
+        dateStr,
+        firstName,
+        lastName,
+        dateObj,
+        normalizedDateStr,
+      });
+    }
+
+    // Determine consensus date
+    let targetDate = null;
+    let maxCount = 0;
+    const distinctDates = Object.keys(dateCounts);
+
+    if (distinctDates.length > 0) {
+      for (const date of distinctDates) {
+        if (dateCounts[date] > maxCount) {
+          maxCount = dateCounts[date];
+          targetDate = date;
+        }
+      }
+    }
+
+    // If we have multiple dates with the same max count (and it's not just 1 row), it's ambiguous
+    // But for now, let's just stick with the first one found as the "winner" if there's a tie,
+    // or maybe error if it's truly split.
+    // Let's enforce that the consensus date must be a Sunday.
+    if (targetDate) {
+      const [y, m, d] = targetDate.split("-").map(Number);
+      const checkDate = new Date(y, m - 1, d);
+      if (checkDate.getDay() !== 0) {
+        // If the most common date isn't a Sunday, that's a problem.
+        // But we'll let the row-by-row validation handle the error message.
+      }
+    }
+
+    const names = [];
+    const nameSet = new Set();
+
+    // Second pass: Validate rows against consensus date
+    for (const row of parsedRows) {
+      const {
+        rowNum,
+        dateStr,
+        firstName,
+        lastName,
+        dateObj,
+        normalizedDateStr,
+      } = row;
+
+      // Date validation
+      if (!dateObj) {
+        errors.push(
+          `Row ${rowNum}: Could not parse date '${dateStr}'. Supported formats include: MM/DD/YYYY, YYYY-MM-DD, etc.`
+        );
+      } else {
+        if (dateObj.getDay() !== 0) {
+          errors.push(
+            `Row ${rowNum}: Date '${dateStr}' is not a Sunday. Attendance must be for a Sunday.`
+          );
+        } else if (targetDate && normalizedDateStr !== targetDate) {
+          errors.push(
+            `Row ${rowNum}: Date '${dateStr}' (${normalizedDateStr}) differs from the most common date (${targetDate}). All dates in the CSV must be for the same Sunday.`
+          );
+        }
+      }
+
+      // Name validation
       if (!firstName) {
         errors.push(
-          `Row ${i + 1} (Last Name: ${
-            lastName || "N/A"
-          }): First Name is missing.`
+          `Row ${rowNum} (Last Name: ${lastName || "N/A"}): First Name is missing.`
         );
       }
       if (!lastName) {
         errors.push(
-          `Row ${i + 1} (First Name: ${
+          `Row ${rowNum} (First Name: ${
             firstName || "N/A"
           }): Last Name is missing.`
         );
       }
-      if (!firstName || !lastName) continue;
 
-      // Create a unique key for the full name and track duplicates
-      const fullNameKey = `${lastName.toLowerCase()}, ${firstName.toLowerCase()}`;
-      if (!nameSet.has(fullNameKey)) {
-        nameSet.add(fullNameKey);
-        names.push({ firstName, lastName });
+      if (firstName && lastName) {
+        const fullNameKey = `${lastName.toLowerCase()}, ${firstName.toLowerCase()}`;
+        if (!nameSet.has(fullNameKey)) {
+          nameSet.add(fullNameKey);
+          names.push({ firstName, lastName });
+        }
       }
     }
 
-    // Count duplicate names
     const duplicateCount = totalRows - names.length;
 
     if (errors.length > 0) return { names: [], targetDate: null, errors };
 
-    // Sort the names alphabetically by last name, then by first name
     names.sort((a, b) => {
       const comp = a.lastName
         .toLowerCase()
@@ -605,8 +627,7 @@
         : a.firstName.toLowerCase().localeCompare(b.firstName.toLowerCase());
     });
 
-    // Use the already-normalized date string (YYYY-MM-DD format)
-    return { names, targetDate: firstRowDateStr, errors: [], duplicateCount };
+    return { names, targetDate, errors: [], duplicateCount };
   }
 
   // SECTION: Event Handlers (sample download, CSV upload, processing)
@@ -1830,5 +1851,5 @@
   function startAttendanceProcessing() {
     showSetupUI();
   }
-  window.attendanceUtils = { startAttendanceProcessing };
+  window.attendanceUtils = { startAttendanceProcessing, parseAttendanceCsv };
 })();

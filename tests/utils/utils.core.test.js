@@ -10,7 +10,7 @@ describe("Core Utilities", () => {
 
     // Load the real utils.js - no mocking needed since it's the base utility
     jest.resetModules();
-    require("../js/utils/utils.js");
+    require("../../js/utils/utils.js");
   });
 
   describe("returnIfLoaded", () => {

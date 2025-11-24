@@ -254,6 +254,28 @@ window.ACTION_METADATA = [
       },
     ],
   },
+  {
+    id: "tripPlanning",
+    title: "Trip Planning",
+    category: "Mapping",
+    description: "Optimize routes and plan trips to visit members.",
+    type: "script",
+    scriptFile: [
+      utils,
+      uiUtils,
+      tableUtils,
+      "js/actions/tripPlanning/main.js",
+    ],
+    urlPatterns: {
+      include: ["mlt/report/members-moved-in"],
+    },
+    directoryPages: [
+      {
+        name: "Members Moved In Report",
+        url: "https://lcr.churchofjesuschrist.org/mlt/report/members-moved-in",
+      },
+    ],
+  },
 ];
 
 /**

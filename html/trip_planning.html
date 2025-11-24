@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Trip Planner</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <link rel="stylesheet" href="../css/trip_planning.css" />
+    <link rel="stylesheet" href="../css/vendor/leaflet.css" />
+  </head>
+  <body>
+    <div class="container">
+      <header>
+        <div class="header-left">
+          <h1>📍 Trip Planner</h1>
+        </div>
+        <div class="header-right">
+          <div class="stat-card">
+            <div class="stat-label">Total Records</div>
+            <div class="stat-value" id="statTotal">0</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label">Geocoded</div>
+            <div class="stat-value" id="statGeocoded">0/0</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label">Clusters Found</div>
+            <div class="stat-value" id="statClusters">0</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label">Total Distance</div>
+            <div class="stat-value" id="statDistance">-</div>
+          </div>
+        </div>
+      </header>
+
+      <div class="controls-top accordion">
+        <div class="accordion-item active" id="step1">
+          <div class="accordion-header">
+            <h3>1. Geocoding</h3>
+            <span class="accordion-icon">▼</span>
+          </div>
+          <div class="accordion-content">
+            <div class="control-section-inner">
+              <div class="control-row">
+                <select id="geocodeProvider">
+                  <option value="nominatim">Nominatim (Free, 1/sec)</option>
+                  <option value="locationiq">LocationIQ (API Key)</option>
+                  <option value="mapbox">Mapbox (API Key)</option>
+                </select>
+              </div>
+              <div
+                class="control-row"
+                id="apiKeyRow"
+                style="margin-top: 10px; display: none"
+              >
+                <input type="text" id="apiKey" placeholder="API Key (if needed)" />
+              </div>
+              <button id="geocodeBtn">🌐 Start Geocoding</button>
+              <div
+                id="geocodeProgressContainer"
+                style="display: none; margin-top: 12px; width: 100%"
+              >
+                <div
+                  style="
+                    display: flex;
+                    justify-content: space-between;
+                    font-size: 12px;
+                    color: #4a5568;
+                    margin-bottom: 4px;
+                  "
+                >
+                  <span id="geocodeProgressLabel">Geocoding Progress</span>
+                  <span id="geocodeProgressPercent">0%</span>
+                </div>
+                <div class="progress-bar" style="height: 10px">
+                  <div
+                    class="progress-fill"
+                    id="geocodeProgressFill"
+                    style="width: 0%"
+                  ></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="accordion-item" id="step2">
+          <div class="accordion-header">
+            <h3>2. Clustering</h3>
+            <span class="accordion-icon">▶</span>
+          </div>
+          <div class="accordion-content">
+            <div class="control-section-inner">
+              <div class="radio-group">
+                <label>
+                  <input
+                    type="radio"
+                    name="clusterStrategy"
+                    value="byCount"
+                    checked
+                  />
+                  By Number of Groups
+                </label>
+                <label>
+                  <input type="radio" name="clusterStrategy" value="bySize" />
+                  By Group Size
+                </label>
+              </div>
+              <div id="byCountControls" class="method-controls">
+                <div class="control-row">
+                  <label>Number of Groups:</label>
+                  <input
+                    type="number"
+                    id="clusterCount"
+                    value="1"
+                    min="1"
+                    max="20"
+                    step="1"
+                  />
+                </div>
+              </div>
+              <div
+                id="bySizeControls"
+                class="method-controls"
+                style="display: none"
+              >
+                <div class="control-row">
+                  <label>Min members:</label>
+                  <input
+                    type="number"
+                    id="minClusterSize"
+                    value="5"
+                    min="1"
+                    step="1"
+                  />
+                  <label>Max members:</label>
+                  <input
+                    type="number"
+                    id="maxClusterSize"
+                    value="10"
+                    min="2"
+                    step="1"
+                  />
+                </div>
+              </div>
+              <div class="control-row" style="margin-top: 12px">
+                <button id="clusterBtn" disabled>🔍 Cluster Addresses</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="accordion-item" id="step3">
+          <div class="accordion-header">
+            <h3>3. Routing</h3>
+            <span class="accordion-icon">▶</span>
+          </div>
+          <div class="accordion-content">
+            <div class="control-section-inner">
+              <div class="control-row">
+                <label>Distance Metric:</label>
+                <div class="radio-group">
+                  <label>
+                    <input
+                      type="radio"
+                      name="distanceMetric"
+                      value="straight"
+                      checked
+                    />
+                    Straight Line
+                  </label>
+                  <label>
+                    <input
+                      type="radio"
+                      name="distanceMetric"
+                      value="mapbox"
+                      id="metricMapbox"
+                      disabled
+                      title="Select Mapbox as geocoding provider to enable Road Network routing."
+                    />
+                    Road Network (Mapbox)
+                  </label>
+                </div>
+              </div>
+              <div class="control-row" style="margin-top: 10px">
+                <label for="startingAddressInput"
+                  >Starting Address (optional):</label
+                >
+                <input
+                  type="text"
+                  id="startingAddressInput"
+                  placeholder="e.g., 123 Main St"
+                />
+              </div>
+              <div class="control-row" style="margin-top: 12px">
+                <button id="optimizeBtn" disabled class="secondary" title="Please cluster addresses first">
+                  🚗 Optimize Routes
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="main-content">
+        <div class="map-container">
+          <div id="map"></div>
+        </div>
+        <div class="controls-container">
+          <div id="statsContainer" class="stats"></div>
+          <div
+            id="clusterListContainer"
+            style="display: none"
+            class="cluster-list"
+          >
+            <h3>Cluster Details</h3>
+            <div id="clusterList"></div>
+          </div>
+          <div
+            id="failureFixerContainer"
+            style="display: none"
+            class="failure-fixer"
+          >
+            <h3>🩹 Fix Failed Addresses</h3>
+            <div id="failureList"></div>
+          </div>
+          <div class="export-section">
+            <h3>Export Results</h3>
+            <div class="button-group">
+              <button id="exportCsvBtn" disabled class="tertiary">
+                📄 Download CSV
+              </button>
+              <!-- This will be added back later when the maps are fixed -->
+              <!-- <button id="exportPdfBtn" disabled class="tertiary">
+                📑 Download PDF Report
+              </button> -->
+            </div>
+          </div>
+          <div id="logContainer" class="log-container collapsed">
+            <div class="log-header" id="logHeader">
+              <h3>Execution Log</h3>
+              <span class="log-toggle-icon">▶</span>
+            </div>
+            <div id="log" class="log-content">
+              <pre id="status">Ready.</pre>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <!-- Scripts -->
+    <script src="../js/vendor/leaflet.js"></script>
+    <script src="../js/vendor/turf.min.js"></script>
+    <script src="../js/vendor/papaparse.min.js"></script>
+    <script src="../js/vendor/jspdf.umd.min.js"></script>
+    <script src="../js/vendor/html2canvas.min.js"></script>
+    <script src="../js/actions/tripPlanning/tripUtils.js"></script>
+    <script src="../js/actions/tripPlanning/tripMap.js"></script>
+    <script src="../js/actions/tripPlanning/tripGeocoding.js"></script>
+    <script src="../js/actions/tripPlanning/tripClustering.js"></script>
+    <script src="../js/actions/tripPlanning/tripRouting.js"></script>
+    <script src="../js/actions/tripPlanning/tripExport.js"></script>
+    <script src="../js/actions/tripPlanning/tripPlanningHtmlEntry.js"></script>
+  </body>
+</html>

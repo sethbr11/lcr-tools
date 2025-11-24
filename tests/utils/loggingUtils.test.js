@@ -33,7 +33,7 @@ describe("Logging Utilities", () => {
 
     // Load the logging utils - need to clear the require cache
     jest.resetModules();
-    require("../js/utils/loggingUtils.js");
+    require("../../js/utils/loggingUtils.js");
   });
 
   afterEach(() => {

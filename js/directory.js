@@ -1,30 +1,4 @@
-document.addEventListener("DOMContentLoaded", () => {
-  const directoryList = document.getElementById("directory-list");
-  const backButton = document.getElementById("back-button");
-  const searchInput = document.getElementById("search-input");
-  const categoryFilter = document.getElementById("category-filter");
-
-  // Handle back button
-  if (backButton) {
-    backButton.addEventListener("click", () => {
-      const container = document.querySelector(".popup-container");
-      container.classList.remove("slide-in-right");
-      container.classList.add("slide-out-right");
-      setTimeout(() => {
-        window.location.href = "popup.html";
-      }, 300);
-    });
-  }
-
-  // Get action metadata from actions.js (single source of truth)
-  const actionDirectory = window.ACTION_METADATA.map((action) => ({
-    title: action.title,
-    category: action.category,
-    description: action.description,
-    availableOn: action.directoryPages,
-    excludedPages: action.directoryExcluded,
-  }));
-
+(() => {
   // Create action card element
   function createActionCard(action) {
     const card = document.createElement("div");
@@ -99,13 +73,9 @@ document.addEventListener("DOMContentLoaded", () => {
     return card;
   }
 
-  // Filter and render actions
-  function renderActions() {
-    const searchQuery = searchInput.value.toLowerCase().trim();
-    const selectedCategory = categoryFilter.value;
-
-    // Filter actions
-    let filteredActions = actionDirectory.filter((action) => {
+  // Filter actions based on search and category
+  function filterActions(actionDirectory, searchQuery, selectedCategory) {
+    return actionDirectory.filter((action) => {
       // Category filter
       if (selectedCategory !== "all" && action.category !== selectedCategory) {
         return false;
@@ -122,7 +92,21 @@ document.addEventListener("DOMContentLoaded", () => {
 
       return true;
     });
+  }
 
+  // Group actions by category
+  function groupActionsByCategory(actions) {
+    return actions.reduce((acc, action) => {
+      if (!acc[action.category]) {
+        acc[action.category] = [];
+      }
+      acc[action.category].push(action);
+      return acc;
+    }, {});
+  }
+
+  // Render actions to the directory list
+  function renderActionsToDOM(directoryList, filteredActions, createCardFn) {
     // Clear directory list
     directoryList.innerHTML = "";
 
@@ -143,13 +127,7 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     // Group filtered actions by category
-    const categorizedActions = filteredActions.reduce((acc, action) => {
-      if (!acc[action.category]) {
-        acc[action.category] = [];
-      }
-      acc[action.category].push(action);
-      return acc;
-    }, {});
+    const categorizedActions = groupActionsByCategory(filteredActions);
 
     // Render actions by category
     Object.keys(categorizedActions).forEach((category) => {
@@ -161,16 +139,70 @@ document.addEventListener("DOMContentLoaded", () => {
 
       // Add action cards for this category
       categorizedActions[category].forEach((action) => {
-        const card = createActionCard(action);
+        const card = createCardFn(action);
         directoryList.appendChild(card);
       });
     });
   }
 
-  // Add event listeners for search and filter
-  searchInput.addEventListener("input", renderActions);
-  categoryFilter.addEventListener("change", renderActions);
+  // Initialize the directory page
+  function initializeDirectory() {
+    const directoryList = document.getElementById("directory-list");
+    const backButton = document.getElementById("back-button");
+    const searchInput = document.getElementById("search-input");
+    const categoryFilter = document.getElementById("category-filter");
 
-  // Initial render
-  renderActions();
-});
+    // Handle back button
+    if (backButton) {
+      backButton.addEventListener("click", () => {
+        const container = document.querySelector(".popup-container");
+        container.classList.remove("slide-in-right");
+        container.classList.add("slide-out-right");
+        setTimeout(() => {
+          window.location.href = "popup.html";
+        }, 300);
+      });
+    }
+
+    // Get action metadata from actions.js (single source of truth)
+    const actionDirectory = window.ACTION_METADATA.map((action) => ({
+      title: action.title,
+      category: action.category,
+      description: action.description,
+      availableOn: action.directoryPages,
+      excludedPages: action.directoryExcluded,
+    }));
+
+    // Filter and render actions
+    function renderActions() {
+      const searchQuery = searchInput.value.toLowerCase().trim();
+      const selectedCategory = categoryFilter.value;
+
+      const filteredActions = filterActions(
+        actionDirectory,
+        searchQuery,
+        selectedCategory
+      );
+      renderActionsToDOM(directoryList, filteredActions, createActionCard);
+    }
+
+    // Add event listeners for search and filter
+    searchInput.addEventListener("input", renderActions);
+    categoryFilter.addEventListener("change", renderActions);
+
+    // Initial render
+    renderActions();
+  }
+
+  // Expose functions for testing
+  window.directoryUtils = {
+    createActionCard,
+    filterActions,
+    groupActionsByCategory,
+    renderActionsToDOM,
+    initializeDirectory,
+  };
+
+  // Initialize on DOMContentLoaded
+  document.addEventListener("DOMContentLoaded", initializeDirectory);
+})();

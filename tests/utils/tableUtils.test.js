@@ -61,7 +61,7 @@ describe("Table Utilities", () => {
 
     // Load the table utils
     jest.resetModules();
-    require("../js/utils/tableUtils.js");
+    require("../../js/utils/tableUtils.js");
   });
 
   afterEach(() => {

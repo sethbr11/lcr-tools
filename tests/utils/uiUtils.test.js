@@ -22,7 +22,7 @@ describe("UI Utilities", () => {
 
     // Clear require cache and load the UI utils
     jest.resetModules();
-    require("../js/utils/uiUtils.js");
+    require("../../js/utils/uiUtils.js");
   });
 
   describe("showLoadingIndicator", () => {
@@ -397,6 +397,59 @@ describe("UI Utilities", () => {
       const container = document.getElementById("lcr-tools-toast-container");
       expect(container.style.cssText).toContain("bottom: 20px");
       expect(container.style.cssText).toContain("left: 20px");
+    });
+  });
+  
+  describe("showConfirmationModal", () => {
+    it("should create modal with default options", () => {
+      window.uiUtils.showConfirmationModal("Test confirmation");
+
+      const modal = document.getElementById("lcr-tools-confirm-modal");
+      expect(modal).toBeTruthy();
+      expect(modal.textContent).toContain("Test confirmation");
+      expect(modal.textContent).toContain("Confirm");
+      expect(modal.textContent).toContain("Cancel");
+    });
+
+    it("should resolve with true when confirmed", async () => {
+      const promise = window.uiUtils.showConfirmationModal("Confirm me");
+      
+      const confirmBtn = document.getElementById("lcr-confirm-btn-id");
+      confirmBtn.click();
+      
+      const result = await promise;
+      expect(result).toBe(true);
+      
+      // Modal should be removed
+      expect(document.getElementById("lcr-tools-confirm-modal")).toBeNull();
+    });
+
+    it("should resolve with false when cancelled", async () => {
+      const promise = window.uiUtils.showConfirmationModal("Cancel me");
+      
+      const cancelBtn = document.getElementById("lcr-cancel-btn-id");
+      cancelBtn.click();
+      
+      const result = await promise;
+      expect(result).toBe(false);
+      
+      // Modal should be removed
+      expect(document.getElementById("lcr-tools-confirm-modal")).toBeNull();
+    });
+
+    it("should support custom button text and colors", () => {
+      window.uiUtils.showConfirmationModal("Custom options", {
+        confirmText: "Yes, do it",
+        cancelText: "No, stop",
+        confirmColor: "red"
+      });
+
+      const modal = document.getElementById("lcr-tools-confirm-modal");
+      expect(modal.textContent).toContain("Yes, do it");
+      expect(modal.textContent).toContain("No, stop");
+      
+      const confirmBtn = document.getElementById("lcr-confirm-btn-id");
+      expect(confirmBtn.style.background).toBe("red");
     });
   });
 });

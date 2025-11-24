@@ -52,7 +52,7 @@ describe("Popup (Real File)", () => {
 
     // Load actions.js for each test (sets up window.getActionsForUrl)
     // Don't use jest.resetModules() as it breaks JSDOM
-    require("../js/actions.js");
+    require("../../js/actions.js");
   });
 
   afterEach(() => {
@@ -71,7 +71,7 @@ describe("Popup (Real File)", () => {
       }
 
       // Load and trigger popup
-      require("../js/popup.js");
+      require("../../js/popup.js");
 
       // Trigger DOMContentLoaded
       const event = new Event("DOMContentLoaded");
@@ -98,7 +98,7 @@ describe("Popup (Real File)", () => {
       chrome.tabs.query.callsArgWith(1, [mockTab]);
 
       // Load popup.js (getActionsForUrl already loaded from actions.js)
-      require("../js/popup.js");
+      require("../../js/popup.js");
 
       const event = new Event("DOMContentLoaded");
       document.dispatchEvent(event);
@@ -115,7 +115,7 @@ describe("Popup (Real File)", () => {
       mockTab.url = "https://www.google.com";
       chrome.tabs.query.callsArgWith(1, [mockTab]);
 
-      require("../js/popup.js");
+      require("../../js/popup.js");
 
       const event = new Event("DOMContentLoaded");
       document.dispatchEvent(event);
@@ -131,7 +131,7 @@ describe("Popup (Real File)", () => {
       chrome.runtime.lastError = { message: "Tab query failed" };
       chrome.tabs.query.callsArgWith(1, []);
 
-      require("../js/popup.js");
+      require("../../js/popup.js");
 
       const event = new Event("DOMContentLoaded");
       document.dispatchEvent(event);
@@ -147,7 +147,7 @@ describe("Popup (Real File)", () => {
     it("should handle no active tab found", () => {
       chrome.tabs.query.callsArgWith(1, []);
 
-      require("../js/popup.js");
+      require("../../js/popup.js");
 
       const event = new Event("DOMContentLoaded");
       document.dispatchEvent(event);
@@ -170,7 +170,7 @@ describe("Popup (Real File)", () => {
       chrome.tabs.query.callsArgWith(1, [mockTab]);
       chrome.scripting.executeScript.callsArgWith(1, [{ result: "success" }]);
 
-      require("../js/popup.js");
+      require("../../js/popup.js");
 
       const event = new Event("DOMContentLoaded");
       document.dispatchEvent(event);
@@ -190,7 +190,7 @@ describe("Popup (Real File)", () => {
       chrome.runtime.lastError = { message: "Script injection failed" };
       chrome.scripting.executeScript.callsArgWith(1, null);
 
-      require("../js/popup.js");
+      require("../../js/popup.js");
 
       const event = new Event("DOMContentLoaded");
       document.dispatchEvent(event);
@@ -229,7 +229,7 @@ describe("Popup (Real File)", () => {
         mockTab.url = url;
         chrome.tabs.query.callsArgWith(1, [mockTab]);
 
-        require("../js/popup.js");
+        require("../../js/popup.js");
 
         const event = new Event("DOMContentLoaded");
         document.dispatchEvent(event);

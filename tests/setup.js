@@ -45,6 +45,12 @@ global.console = {
   info: jest.fn(),
 };
 
+// Mock window dialog methods (alert, confirm, prompt) to avoid jsdom "not implemented" errors
+global.alert = jest.fn();
+global.confirm = jest.fn(() => true); // Default to true for confirmations
+global.prompt = jest.fn(() => null); // Default to null (cancelled)
+
+
 // Reset all mocks before each test
 beforeEach(() => {
   // Reset Chrome API stubs

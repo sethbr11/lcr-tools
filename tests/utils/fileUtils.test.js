@@ -57,7 +57,7 @@ describe("File Utilities", () => {
 
     // Load the real fileUtils
     jest.resetModules();
-    require("../js/utils/fileUtils.js");
+    require("../../js/utils/fileUtils.js");
   });
 
   describe("downloadFile", () => {
