@@ -419,7 +419,7 @@ describe("Trip Routing Utilities", () => {
 
       // Check button is disabled immediately
       expect(optimizeBtn.disabled).toBe(true);
-      expect(optimizeBtn.textContent).toBe("Optimizing...");
+      expect(optimizeBtn.textContent.trim()).toBe("Optimizing...");
 
       await promise;
     });
