@@ -7,6 +7,7 @@
 This extension aims to streamline common tasks and add helpful utilities for leaders and clerks. Current features include:
 
 - **Context-Aware Actions:** The extension icon displays a menu with actions relevant to the current LCR page.
+- **Action Directory:** A directory of all the possible actions and what page they can be used on is available from the main popup screen.
 - **Optimized Profile Editing:** Quickly enter edit mode on member profiles with an option to remove performance-impacting elements. This fixes the issue of trying to update the information of a member who has served a mission and not being able to since the screen freezes.
 - **Photo Management Utilities:**
   - Download a CSV of individuals who do not have a photo in LCR.
@@ -34,6 +35,11 @@ This extension aims to streamline common tasks and add helpful utilities for lea
   - Handles LCR's report pagination to export all data.
   - Auto-scrolls pages where applicable to ensure all dynamically loaded content is captured.
   - Correctly interprets and exports boolean values (e.g., checkmarks) from tables.
+- **Trip Planning:**
+  - Plan trips to newly moved-in members as you walk through the process of geocoding addresses, creating clusters (groups), and creating the routes.
+  - Kmeans clustering algorithm through [Turf.js](https://turfjs.org/) for finding natural clusters when splitting visits into multiple groups. Clusters can be created by specifying a desired number of clusters, or by constraining clusters to a certain range of waypoints (e.g. 5-10 people per cluster).
+  - Interactive map through [Leaflet.js](https://leafletjs.com/) for visualizing waypoints and optimized routes.
+  - Easy export to CSV. Implementing PDF export soon.
 - **Comprehensive Logging:** Detailed logging for actions that modify data, with downloadable CSV logs for audit trails and troubleshooting.
 - **Loading Indicators:** Visual feedback for long-running operations.
 
@@ -55,7 +61,7 @@ After clicking, you may see one or two pop-up messages:
 1. Download the Source Code:
 
    - Clone this repository: `git clone https://github.com/sethbr11/lcr-tools.git`
-   - Or, download the [ZIP file](https://github.com/sethbr11/lcr-tools/archive/refs/tags/v1.0.0-alpha.zip) from the repository and extract it.
+   - Or, download the ZIP file from the [latest release](https://github.com/sethbr11/lcr-tools/releases/latest) and extract it.
 
 2. Open Chrome Extensions Page:
 
@@ -91,45 +97,76 @@ After clicking, you may see one or two pop-up messages:
 
 ```
 lcr-extension/
+├── babel.config.js
+├── build.js
 ├── css/
+│   ├── ...
+│   └── vendor/
+│       └── leaflet.css
+├── html/
+│   ├── directory.html
+│   ├── popup.html
+│   └── trip_planning.html
 ├── images/
+├── jest.config.js
 ├── js/
-│   ├── actions/
-│   │   ├── downloadReportData/
-│   │   ├── editMemberProfile/
-│   │   ├── findMultipleCallings/
-│   │   ├── memberFlashcards/
-│   │   ├── noPhotoList/
-│   │   ├── processAttendance/
-│   │   └── tableFilters/
-│   ├── utils/
-│   │   ├── dataUtils.js
-│   │   ├── fileUtils.js
-│   │   ├── loggingUtils.js
-│   │   ├── modalUtils.js
-│   │   ├── navigationUtils.js
-│   │   ├── tableUtils.js
-│   │   ├── uiUtils.js
-│   │   └── utils.js
-│   ├── vendor/
-│   │   └── jszip.min.js
-│   ├── actions.js
-│   └── popup.js
-├── .gitignore
+│   ├── actions/
+│   │   ├── downloadReportData/
+│   │   ├── editMemberProfile/
+│   │   ├── findMultipleCallings/
+│   │   ├── memberFlashcards/
+│   │   ├── noPhotoList/
+│   │   ├── processAttendance/
+│   │   ├── tableFilters/
+│   │   └── tripPlanning/
+│   ├── actions.js
+│   ├── directory.js
+│   ├── popup.js
+│   ├── utils/
+│   │   ├── dataUtils.js
+│   │   ├── fileUtils.js
+│   │   ├── loggingUtils.js
+│   │   ├── modalUtils.js
+│   │   ├── navigationUtils.js
+│   │   ├── tableUtils.js
+│   │   ├── uiUtils.js
+│   │   └── utils.js
+│   └── vendor/
+│       ├── html2canvas.min.js
+│       ├── jspdf.umd.min.js
+│       ├── jszip.min.js
+│       ├── leaflet.js
+│       ├── papaparse.min.js
+│       └── turf.min.js
 ├── LICENSE
 ├── manifest.json
-├── popup.html
+├── package.json
 ├── PRIVACY_POLICY.md
-└── README.md
+├── README.md
+└── tests/
+    ├── actions/
+    │   ├── ...
+    │   ├── processAttendance/
+    │   └── tripPlanning/
+    ├── QUICK_TEST_REFERENCE.md
+    ├── README.md
+    ├── setup.js
+    ├── TESTING_GUIDE.md
+    ├── TESTING.md
+    ├── ui/
+    └── utils/
 ```
 
 A brief overview of the project's organization:
 
 - `manifest.json`: The core configuration file for the extension.
-- `popup.html` / `js/popup.js`: Defines the UI and logic for the extension's popup menu.
-- `actions.js`: Central registry that determines which actions appear for the current page (getActionsForUrl).
+- `build.js`: Node.js script to quickly build the packaged extension for upload to the Chrome Web Store.
+- `html/`: All defined standalone HTML files for the extension.
+- `html/popup.html` / `js/popup.js`: Defines the UI and logic for the extension's main popup menu.
+- `js/actions.js`: Central registry that determines which actions appear for the current page (getActionsForUrl).
 - `css/`: Stylesheets for the popup and any injected UI.
 - `images/`: Icons for the extension.
+- `tests/`: JavaScript tests run with Jest.
 - `js/actions/`: Content scripts grouped by LCR page or task (e.g., attendance, photos, flashcards).
 - `js/utils/`: Shared utilities for CSV operations, UI creation, logging, navigation, and data handling.
 - `js/vendor/`: Third-party libraries (e.g., jszip for ZIP creation).
@@ -144,11 +181,12 @@ A brief overview of the project's organization:
 ### Permissions
 
 - `"scripting"`: For script injection.
-- `"host_permissions"`: Restricted to `https://lcr.churchofjesuschrist.org/*`, `https://lcrf.churchofjesuschrist.org/`, and `https://lcrffe.churchofjesuschrist.org/`.
+- `"storage"`: For use of local storage (so far, only implemented in the trip planning action).
+- `"host_permissions"`: Restricted to `https://lcr.churchofjesuschrist.org/*`, `https://lcrf.churchofjesuschrist.org/*`, and `https://lcrffe.churchofjesuschrist.org/*`.
 
 ## Troubleshooting
 
-This extension is brand new and, admittably, was vibe coded since the author didn't want to spend weeks trying to get an MVP with the basic functionality that he needed yesterday. Please reach out to the author with any concerns and we will work to get it resolved. If you are an experienced developer, feel free to suggest any feature improvements! AI models like ChatGPT (4o-mini, 4.1, 5, etc.), Gemini (2.5 Flash and Pro), and Claude (3.7 and 4) were used extensively, along with tools like GitHub Copilot and Cursor.
+This extension is brand new and, admittably, was vibe coded since the author didn't want to spend weeks trying to get an MVP with the basic functionality that he needed yesterday. Please reach out to the author with any concerns and we will work to get it resolved. If you are an experienced developer, feel free to suggest any feature improvements! AI models like ChatGPT (4o-mini, 4.1, 5, etc.), Gemini (2.5 Flash and Pro, 3 Pro), and Claude (3.7 and 4) were used extensively, along with tools like GitHub Copilot, Cursor, Claude Code, Gemini CLI, and Google's Antigravity.
 
 ## Security & Privacy
 
