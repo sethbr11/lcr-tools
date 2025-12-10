@@ -1,5 +1,61 @@
 (() => {
+  const CUSTOM_FIELDS = [
+    "Latitude",
+    "Longitude",
+    "Cluster",
+    "RouteOrder",
+    "FailureReason",
+  ];
+
+  function resolveBaseHeaders() {
+    if (Array.isArray(originalHeaders) && originalHeaders.length) {
+      return [...originalHeaders];
+    }
+
+    const sources = [records, geocoded, clustered];
+    if (optimized.length) {
+      sources.push(optimized.flatMap((r) => r.points || []));
+    }
+
+    for (const source of sources) {
+      if (!source || !source.length) continue;
+      const firstWithColumns = source.find((r) => r && r.columns);
+      if (firstWithColumns && firstWithColumns.columns) {
+        return Object.keys(firstWithColumns.columns);
+      }
+    }
+
+    // Fallback to known essentials
+    return ["Name", "Address"];
+  }
+
+  function buildBaseRow(record, baseHeaders) {
+    const row = {};
+    const columns = record && record.columns ? record.columns : {};
+
+    baseHeaders.forEach((header) => {
+      if (Object.prototype.hasOwnProperty.call(columns, header)) {
+        row[header] = columns[header];
+        return;
+      }
+
+      const lower = header.toLowerCase();
+      if (lower.includes("name") && record && record.name) {
+        row[header] = record.name;
+      } else if (lower.includes("address") && record && record.address) {
+        row[header] = record.address;
+      } else {
+        row[header] = "";
+      }
+    });
+
+    return row;
+  }
+
   function exportCsv() {
+    const baseHeaders = resolveBaseHeaders();
+    const fields = [...baseHeaders, ...CUSTOM_FIELDS];
+
     let successData = [];
     const metric = document.querySelector(
       'input[name="distanceMetric"]:checked'
@@ -11,13 +67,17 @@
       optimized.forEach((route) => {
         const routeDistance = route.distance.toFixed(2);
         route.points.forEach((p, index) => {
+          const baseRow = buildBaseRow(p, baseHeaders);
           successData.push({
-            Name: p.name || "",
-            "Street Address": p.address || "",
-            Latitude: p.lat,
-            Longitude: p.lon,
-            Cluster: parseInt(route.cluster, 10) + 1,
+            ...baseRow,
+            Latitude: p.lat || "",
+            Longitude: p.lon || "",
+            Cluster:
+              route.cluster === undefined || route.cluster === null
+                ? ""
+                : parseInt(route.cluster, 10) + 1,
             RouteOrder: index + 1,
+            FailureReason: "",
           });
         });
       });
@@ -29,35 +89,49 @@
         return (a.name || "").localeCompare(b.name || "");
       });
 
-      successData = clustered.map((r) => ({
-        Name: r.name || "",
-        "Street Address": r.address || "",
-        Latitude: r.lat,
-        Longitude: r.lon,
-        Cluster: r.cluster === -1 ? "Outlier" : r.cluster + 1,
-      }));
+      successData = clustered.map((r) => {
+        const baseRow = buildBaseRow(r, baseHeaders);
+        return {
+          ...baseRow,
+          Latitude: r.lat || "",
+          Longitude: r.lon || "",
+          Cluster: r.cluster === -1 ? "Outlier" : r.cluster + 1,
+          RouteOrder: "",
+          FailureReason: "",
+        };
+      });
     } else if (geocoded.length > 0) {
       tripUtils.log("📦 Preparing geocoded data for export...");
-      successData = geocoded.map((r) => ({
-        Name: r.name || "",
-        "Street Address": r.address || "",
-        Latitude: r.lat,
-        Longitude: r.lon,
-        Cluster: "N/A",
-      }));
+      successData = geocoded.map((r) => {
+        const baseRow = buildBaseRow(r, baseHeaders);
+        return {
+          ...baseRow,
+          Latitude: r.lat || "",
+          Longitude: r.lon || "",
+          Cluster: "N/A",
+          RouteOrder: "",
+          FailureReason: "",
+        };
+      });
     }
 
-    const failureData = failedGeocodes.map((f) => ({
-      Name: f.Name,
-      "Street Address": f.Address || "",
-      Latitude: "",
-      Longitude: "",
-      Cluster: "Failed",
-      FailureReason: f.Reason,
-    }));
+    const failureData = failedGeocodes.map((f) => {
+      const baseRow = buildBaseRow(
+        { name: f.Name, address: f.Address, columns: f.columns },
+        baseHeaders
+      );
+      return {
+        ...baseRow,
+        Latitude: "",
+        Longitude: "",
+        Cluster: "Failed",
+        RouteOrder: "",
+        FailureReason: f.Reason,
+      };
+    });
 
     const combined = successData.concat(failureData);
-    const csv = Papa.unparse(combined);
+    const csv = Papa.unparse({ data: combined, fields });
 
     const blob = new Blob([csv], { type: "text/csv" });
     const url = URL.createObjectURL(blob);
@@ -94,18 +168,20 @@
         scrollX: 0,
         scrollY: 0,
         onclone: (clonedDoc) => {
-          const clonedMapPane = clonedDoc.querySelector('.leaflet-map-pane');
+          const clonedMapPane = clonedDoc.querySelector(".leaflet-map-pane");
           if (!clonedMapPane) return;
-          
+
           // Get the transform value
           const transform = window.getComputedStyle(clonedMapPane).transform;
           let translateX = 0;
           let translateY = 0;
-          
-          if (transform && transform !== 'none') {
+
+          if (transform && transform !== "none") {
             const matrix = transform.match(/matrix.*?\((.+?)\)/);
             if (matrix) {
-              const values = matrix[1].split(',').map(v => parseFloat(v.trim()));
+              const values = matrix[1]
+                .split(",")
+                .map((v) => parseFloat(v.trim()));
               // For matrix, translation is in indices 4 and 5
               // For matrix3d, translation is in indices 12 and 13
               if (values.length === 6) {
@@ -117,20 +193,20 @@
               }
             }
           }
-          
+
           // Remove transform and apply translation to child panes
-          clonedMapPane.style.transform = 'none';
-          clonedMapPane.style.left = '0px';
-          clonedMapPane.style.top = '0px';
-          
-          const allPanes = clonedMapPane.querySelectorAll('.leaflet-pane');
+          clonedMapPane.style.transform = "none";
+          clonedMapPane.style.left = "0px";
+          clonedMapPane.style.top = "0px";
+
+          const allPanes = clonedMapPane.querySelectorAll(".leaflet-pane");
           allPanes.forEach((pane) => {
             const currentLeft = parseFloat(pane.style.left) || 0;
             const currentTop = parseFloat(pane.style.top) || 0;
             pane.style.left = `${currentLeft + translateX}px`;
             pane.style.top = `${currentTop + translateY}px`;
           });
-        }
+        },
       };
     };
 
@@ -167,9 +243,7 @@
         `Total Records: ${records.length}`,
         `Successfully Geocoded: ${geocoded.length}`,
         `Failed Geocoding: ${failedGeocodes.length}`,
-        `Clusters Found: ${
-          optimized.length > 0 ? optimized.length : "N/A"
-        }`,
+        `Clusters Found: ${optimized.length > 0 ? optimized.length : "N/A"}`,
         `Total Route Distance: ${
           optimized.length > 0
             ? optimized
@@ -235,7 +309,10 @@
         const routeLine = L.polyline(
           route.points.map((p) => [p.lat, p.lon]),
           {
-            color: tripMap.CLUSTER_COLORS[route.cluster % tripMap.CLUSTER_COLORS.length],
+            color:
+              tripMap.CLUSTER_COLORS[
+                route.cluster % tripMap.CLUSTER_COLORS.length
+              ],
             weight: 3,
           }
         );

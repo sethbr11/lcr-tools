@@ -4,7 +4,12 @@
   utils.returnIfLoaded("tripPlanning.main");
   utils.ensureLoaded("tableUtils", "uiUtils");
 
-  if (await uiUtils.showConfirmationModal("This will open a new tab to the Trip Planner. Is that ok?", { confirmText: "Open Trip Planner" })) {
+  if (
+    await uiUtils.showConfirmationModal(
+      "This will open a new tab to the Trip Planner. Is that ok?",
+      { confirmText: "Open Trip Planner" }
+    )
+  ) {
     // Get all tables on the page
     const pageTables = tableUtils.getPageTables();
     if (pageTables.count === 0) {
@@ -23,35 +28,72 @@
     } else {
       selectedTable = pageTables.tables[0];
     }
-    
-    const members = getMembersFromTable(selectedTable.element);
-    chrome.storage.local.set({ tripPlanningData: members }, () => {
-      window.open(chrome.runtime.getURL("html/trip_planning.html"), "_blank");
-    });
+
+    const result = getMembersFromTable(selectedTable.element);
+    if (!result) return; // Required columns missing, alert already shown
+    const { rows: members, headers } = result;
+
+    chrome.storage.local.set(
+      {
+        tripPlanningData: members,
+        tripPlanningHeaders: headers,
+      },
+      () => {
+        window.open(chrome.runtime.getURL("html/trip_planning.html"), "_blank");
+      }
+    );
   }
 
   function getMembersFromTable(table) {
     const members = [];
     const { headers, indices } = tableUtils.getRelevantHeaderCells(table);
-    const nameIndex = headers.findIndex(h => h.toLowerCase().includes('name') || h.toLowerCase().includes('member'));
-    const addressIndex = headers.findIndex(h => h.toLowerCase().includes('address') || h.toLowerCase().includes('street') || h.toLowerCase().includes('location'));
+    const nameIndex = headers.findIndex(
+      (h) =>
+        h.toLowerCase().includes("name") || h.toLowerCase().includes("member")
+    );
+    const addressIndex = headers.findIndex(
+      (h) =>
+        h.toLowerCase().includes("address") ||
+        h.toLowerCase().includes("street") ||
+        h.toLowerCase().includes("location")
+    );
 
     if (nameIndex === -1 || addressIndex === -1) {
-      console.error("Could not find 'Name' and 'Address' columns in the table.");
-      return [];
+      alert(
+        "Trip Planner needs visible Name and Address columns. Please show these columns and try again."
+      );
+      console.error(
+        "Trip Planner aborted: required 'Name' and 'Address' columns not visible."
+      );
+      return null;
     }
 
-    const rows = Array.from(table.querySelectorAll("tbody tr"));
+    // Only process rows that are currently visible on the page
+    const rows = Array.from(table.querySelectorAll("tbody tr")).filter(
+      (row) => row.offsetParent !== null
+    );
     rows.forEach((row) => {
       const cells = Array.from(row.querySelectorAll("td"));
-      const name = tableUtils.getCellValue(cells[indices[nameIndex]]);
-      const address = tableUtils.getCellValue(cells[indices[addressIndex]]);
+      const visibleColumns = indices.map((colIndex, i) => {
+        const cell = cells[colIndex];
+        const value = cell ? tableUtils.getCellValue(cell) : "";
+        return { header: headers[i], value };
+      });
+
+      const name = visibleColumns[nameIndex]?.value;
+      const address = visibleColumns[addressIndex]?.value;
 
       if (name && address) {
-        members.push({ name, address });
+        members.push({
+          name,
+          address,
+          columns: Object.fromEntries(
+            visibleColumns.map(({ header, value }) => [header, value])
+          ),
+        });
       }
     });
 
-    return members;
+    return { rows: members, headers };
   }
 })();

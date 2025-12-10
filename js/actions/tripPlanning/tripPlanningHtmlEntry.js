@@ -2,17 +2,34 @@
 // This file now acts as the main controller, relying on modular files for specific logic.
 
 window.addEventListener("DOMContentLoaded", () => {
-  chrome.storage.local.get("tripPlanningData", (data) => {
-    if (data.tripPlanningData) {
-      records = data.tripPlanningData; // Use the injected data as initial records
-      initializePage();
-      document.getElementById("geocodeBtn").disabled = false;
-      tripUtils.log(`Loaded ${records.length} records from LCR page.`);
-      tripUtils.updateStats();
-    } else {
-      document.body.innerHTML = "<h1>No data found. Please start from the LCR page.</h1>";
+  chrome.storage.local.get(
+    ["tripPlanningData", "tripPlanningHeaders"],
+    (data) => {
+      const incoming = data.tripPlanningData;
+      if (incoming) {
+        // Support both legacy array payloads and new structured shape
+        const rows = Array.isArray(incoming)
+          ? incoming
+          : incoming.rows || incoming.records || [];
+
+        const storedHeaders = data.tripPlanningHeaders || incoming.headers;
+        if (Array.isArray(storedHeaders)) {
+          originalHeaders = [...storedHeaders];
+        } else if (rows.length && rows[0].columns) {
+          originalHeaders = Object.keys(rows[0].columns);
+        }
+
+        records = rows; // Use the injected data as initial records
+        initializePage();
+        document.getElementById("geocodeBtn").disabled = false;
+        tripUtils.log(`Loaded ${records.length} records from LCR page.`);
+        tripUtils.updateStats();
+      } else {
+        document.body.innerHTML =
+          "<h1>No data found. Please start from the LCR page.</h1>";
+      }
     }
-  });
+  );
 });
 
 function initializePage() {
@@ -20,7 +37,8 @@ function initializePage() {
 
   // Attach event listeners for dynamically added elements
   document.getElementById("geocodeBtn").onclick = tripGeocoding.geocodeRecords;
-  document.getElementById("clusterBtn").onclick = tripClustering.clusterAddresses;
+  document.getElementById("clusterBtn").onclick =
+    tripClustering.clusterAddresses;
   document.getElementById("optimizeBtn").onclick = tripRouting.optimizeRoutes;
   document.getElementById("exportCsvBtn").onclick = tripExport.exportCsv;
   // document.getElementById("exportPdfBtn").onclick = tripExport.exportPdf;
@@ -78,9 +96,12 @@ function initializePage() {
     if (selectedProvider === "nominatim") {
       apiKeyRow.style.display = "none";
       metricMapboxRadio.disabled = true;
-      metricMapboxRadio.title = "Select Mapbox as geocoding provider to enable Road Network routing.";
+      metricMapboxRadio.title =
+        "Select Mapbox as geocoding provider to enable Road Network routing.";
       if (metricMapboxRadio.checked) {
-        document.querySelector('input[name="distanceMetric"][value="straight"]').checked = true;
+        document.querySelector(
+          'input[name="distanceMetric"][value="straight"]'
+        ).checked = true;
       }
     } else {
       apiKeyRow.style.display = "flex";

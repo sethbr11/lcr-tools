@@ -68,9 +68,7 @@
       "geocodeProgressContainer"
     );
     const progressFill = document.getElementById("geocodeProgressFill");
-    const progressPercent = document.getElementById(
-      "geocodeProgressPercent"
-    );
+    const progressPercent = document.getElementById("geocodeProgressPercent");
     progressContainer.style.display = "block";
     progressFill.style.width = "0%";
     progressPercent.textContent = "0%";
@@ -84,6 +82,7 @@
           Name: row.name || "(Unknown)",
           Address: addr,
           Reason: "No address",
+          columns: row.columns || {},
         });
         continue;
       }
@@ -111,6 +110,7 @@
           Name: row.name || "(Unknown)",
           Address: addr,
           Reason: reason,
+          columns: row.columns || {},
         });
         tripUtils.log(`    ✗ Failed (${reason})`);
       }
@@ -143,7 +143,7 @@
     displayFailedGeocodes(); // New call
     document.getElementById("clusterBtn").disabled = geocoded.length === 0;
     document.getElementById("exportCsvBtn").disabled = false;
-    document.getElementById("exportPdfBtn").disabled = false;
+    //document.getElementById("exportPdfBtn").disabled = false;
   }
 
   function classifyFailure(address) {
@@ -155,9 +155,8 @@
     const zipPresent = /\b\d{5}(-\d{4})?\b/.test(address);
     const zipRatio =
       records.length > 0
-        ? records.filter((r) =>
-            /\b\d{5}(-\d{4})?\b/.test(r.address || "")
-          ).length / records.length
+        ? records.filter((r) => /\b\d{5}(-\d{4})?\b/.test(r.address || ""))
+            .length / records.length
         : 0;
     if (!zipPresent && zipRatio > 0.6) return "Missing zip";
     return "Not found";
@@ -198,24 +197,13 @@
           button.textContent = "Fixing...";
           button.disabled = true;
 
-          const latInput = document.getElementById(
-            `fix-lat-${index}`
-          ).value;
-          const lonInput = document.getElementById(
-            `fix-lon-${index}`
-          ).value;
-          const newAddress = document.getElementById(
-            `fix-addr-${index}`
-          ).value;
+          const latInput = document.getElementById(`fix-lat-${index}`).value;
+          const lonInput = document.getElementById(`fix-lon-${index}`).value;
+          const newAddress = document.getElementById(`fix-addr-${index}`).value;
 
           let geo = null;
 
-          if (
-            latInput &&
-            lonInput &&
-            !isNaN(latInput) &&
-            !isNaN(lonInput)
-          ) {
+          if (latInput && lonInput && !isNaN(latInput) && !isNaN(lonInput)) {
             tripUtils.log(` manual override for ${failure.Name}.`);
             geo = {
               lat: parseFloat(latInput),
@@ -223,8 +211,7 @@
               usedVariant: "manual",
             };
           } else {
-            const provider =
-              document.getElementById("geocodeProvider").value;
+            const provider = document.getElementById("geocodeProvider").value;
             const apiKey = document.getElementById("apiKey").value.trim();
             geo = await geocodeAddressMulti(newAddress, provider, apiKey);
           }
@@ -232,9 +219,7 @@
           if (geo) {
             tripUtils.log(`✅ Fixed ${failure.Name} successfully.`);
             // Find original record data
-            const originalRecord = records.find(
-              (r) => r.name === failure.Name
-            );
+            const originalRecord = records.find((r) => r.name === failure.Name);
 
             // Add to geocoded array
             const newRecord = {

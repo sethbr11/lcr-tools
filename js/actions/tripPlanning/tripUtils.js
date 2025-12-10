@@ -6,6 +6,7 @@
   window.optimized = [];
   window.failedGeocodes = [];
   window.commonLocality = "";
+  window.originalHeaders = [];
 
   // Utility Functions
   const sleep = (ms) => new Promise((res) => setTimeout(res, ms));

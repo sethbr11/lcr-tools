@@ -44,7 +44,9 @@
     const finalClusterCount = new Set(
       clustered.map((c) => c.cluster).filter((c) => c !== undefined && c !== -1)
     ).size;
-    tripUtils.log(`✅ Clustering complete. Found ${finalClusterCount} clusters.`);
+    tripUtils.log(
+      `✅ Clustering complete. Found ${finalClusterCount} clusters.`
+    );
 
     tripUtils.updateStats();
     tripMap.drawMarkers(clustered, true);
@@ -55,19 +57,10 @@
   }
 
   function clusterBySize(points) {
-    const minSize = parseInt(
-      document.getElementById("minClusterSize").value
-    );
-    const maxSize = parseInt(
-      document.getElementById("maxClusterSize").value
-    );
+    const minSize = parseInt(document.getElementById("minClusterSize").value);
+    const maxSize = parseInt(document.getElementById("maxClusterSize").value);
 
-    if (
-      isNaN(minSize) ||
-      isNaN(maxSize) ||
-      minSize > maxSize ||
-      minSize < 1
-    ) {
+    if (isNaN(minSize) || isNaN(maxSize) || minSize > maxSize || minSize < 1) {
       tripUtils.log("❌ Invalid min/max cluster size.");
       return points.features;
     }
@@ -224,9 +217,7 @@
     const centroids = {};
     for (const id in clusterMap) {
       if (clusterMap[id] && clusterMap[id].length > 0) {
-        centroids[id] = turf.centroid(
-          turf.featureCollection(clusterMap[id])
-        );
+        centroids[id] = turf.centroid(turf.featureCollection(clusterMap[id]));
       }
     }
     return centroids;
