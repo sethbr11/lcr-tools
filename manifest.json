@@ -8,7 +8,10 @@
     "https://lcr.churchofjesuschrist.org/*",
     "https://lcrf.churchofjesuschrist.org/*",
     "https://lcrffe.churchofjesuschrist.org/*",
-    "https://directory.churchofjesuschrist.org/*"
+    "https://directory.churchofjesuschrist.org/*",
+    "https://nominatim.openstreetmap.org/*",
+    "https://us1.locationiq.com/*",
+    "https://api.mapbox.com/*"
   ],
   "content_scripts": [
     {

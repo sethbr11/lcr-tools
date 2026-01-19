@@ -273,8 +273,8 @@ window.ACTION_METADATA = [
   },
   {
     id: "membersOutsideBoundary",
-    title: "Get Boundary Report (CSV)",
-    category: "Data Export",
+    title: "Get Boundary Report",
+    category: "Mapping",
     description:
       "Export full member list with designations of who is in and outside the ward boundary.",
     type: "script",
