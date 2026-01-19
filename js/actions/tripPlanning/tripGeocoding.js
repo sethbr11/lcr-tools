@@ -7,9 +7,11 @@
     for (const attempt of variants) {
       let url;
       if (provider === "nominatim") {
+        // Nominatim requires an email or a unique user agent.
+        // We add a contact email parameter as recommended by their usage policy.
         url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(
           attempt
-        )}&limit=1`;
+        )}&limit=1&email=lcr-tools-extension@brockefni.com`;
       } else if (provider === "locationiq") {
         url = `https://us1.locationiq.com/v1/search.php?key=${apiKey}&q=${encodeURIComponent(
           attempt
@@ -22,8 +24,19 @@
         continue; // Unknown provider
       }
       try {
+        let version = "1.3.0";
+        // Attempt to get dynamic version from manifest if available
+        if (typeof chrome !== "undefined" && chrome.runtime && chrome.runtime.getManifest) {
+          try {
+            version = chrome.runtime.getManifest().version;
+          } catch (e) {
+            // Ignore error if manifest cannot be read
+          }
+        }
+
         const res = await fetch(url, {
-          headers: { "User-Agent": "AddressClusterTool/1.0" },
+          // Chrome extensions might strip this, but good practice to include it
+          headers: { "User-Agent": `LCR-Tools-Extension/${version} (https://github.com/sethbr11/lcr-tools)` },
         });
         const data = await res.json();
         let lat, lon;

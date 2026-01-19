@@ -11,6 +11,8 @@ const createChromeMock = () => ({
   runtime: {
     lastError: null,
     id: "test-extension-id",
+    getManifest: jest.fn(() => ({ version: "1.2.3" })),
+    getURL: jest.fn((path) => `chrome-extension://test-extension-id/${path}`),
   },
   tabs: {
     query: sinon.stub(),

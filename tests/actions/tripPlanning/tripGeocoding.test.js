@@ -282,6 +282,26 @@ describe("Trip Geocoding Utilities", () => {
 
       expect(result).toBeNull();
     });
+
+    it("should include correct User-Agent with version from manifest", async () => {
+      // Mock chrome.runtime.getManifest to return specific version
+      global.chrome.runtime.getManifest.mockReturnValue({ version: "9.9.9" });
+      
+      fetch.mockResolvedValueOnce({
+        json: async () => [{ lat: "1", lon: "1" }],
+      });
+
+      await window.tripGeocoding.geocodeAddressMulti("123 Main St", "nominatim", "");
+
+      expect(fetch).toHaveBeenCalledWith(
+        expect.stringContaining("nominatim"),
+        expect.objectContaining({
+          headers: expect.objectContaining({
+            "User-Agent": expect.stringContaining("LCR-Tools-Extension/9.9.9"),
+          }),
+        })
+      );
+    });
   });
 
   describe("classifyFailure", () => {

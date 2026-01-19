@@ -15,10 +15,11 @@ document.querySelectorAll = realQuerySelectorAll.bind(document);
 // Mock Papa Parse
 global.Papa = {
   unparse: jest.fn((data) => {
-    // Simple CSV mock - just return a string representation
-    if (!data || data.length === 0) return "";
-    const headers = Object.keys(data[0]).join(",");
-    const rows = data.map((row) => Object.values(row).join(",")).join("\n");
+    // Robust CSV mock
+    const actualData = data && data.data ? data.data : data;
+    if (!actualData || actualData.length === 0) return "";
+    const headers = Object.keys(actualData[0] || {}).join(",");
+    const rows = actualData.map((row) => Object.values(row || {}).join(",")).join("\n");
     return `${headers}\n${rows}`;
   }),
 };
@@ -39,6 +40,15 @@ global.clustered = [];
 global.geocoded = [];
 global.failedGeocodes = [];
 global.records = [];
+global.originalHeaders = [];
+
+// Also set them on window for modules that access them via window
+window.optimized = global.optimized;
+window.clustered = global.clustered;
+window.geocoded = global.geocoded;
+window.failedGeocodes = global.failedGeocodes;
+window.records = global.records;
+window.originalHeaders = global.originalHeaders;
 
 window.tripUtils = {
   log: jest.fn(),
@@ -146,20 +156,22 @@ describe("Trip Export Utilities", () => {
       window.tripExport.exportCsv();
 
       expect(Papa.unparse).toHaveBeenCalledWith(
-        expect.arrayContaining([
-          expect.objectContaining({
-            Name: "Point 1",
-            "Street Address": "123 Main St",
-            Cluster: 1,
-            RouteOrder: 1,
-          }),
-          expect.objectContaining({
-            Name: "Point 2",
-            "Street Address": "456 Oak Ave",
-            Cluster: 1,
-            RouteOrder: 2,
-          }),
-        ])
+        expect.objectContaining({
+          data: expect.arrayContaining([
+            expect.objectContaining({
+              Name: "Point 1",
+              Address: "123 Main St",
+              Cluster: 1,
+              RouteOrder: 1,
+            }),
+            expect.objectContaining({
+              Name: "Point 2",
+              Address: "456 Oak Ave",
+              Cluster: 1,
+              RouteOrder: 2,
+            }),
+          ]),
+        })
       );
     });
 
@@ -184,16 +196,18 @@ describe("Trip Export Utilities", () => {
       window.tripExport.exportCsv();
 
       expect(Papa.unparse).toHaveBeenCalledWith(
-        expect.arrayContaining([
-          expect.objectContaining({
-            Name: "Point 1",
-            Cluster: 1,
-          }),
-          expect.objectContaining({
-            Name: "Point 2",
-            Cluster: 2,
-          }),
-        ])
+        expect.objectContaining({
+          data: expect.arrayContaining([
+            expect.objectContaining({
+              Name: "Point 1",
+              Cluster: 1,
+            }),
+            expect.objectContaining({
+              Name: "Point 2",
+              Cluster: 2,
+            }),
+          ]),
+        })
       );
     });
 
@@ -211,12 +225,14 @@ describe("Trip Export Utilities", () => {
       window.tripExport.exportCsv();
 
       expect(Papa.unparse).toHaveBeenCalledWith(
-        expect.arrayContaining([
-          expect.objectContaining({
-            Name: "Outlier Point",
-            Cluster: "Outlier",
-          }),
-        ])
+        expect.objectContaining({
+          data: expect.arrayContaining([
+            expect.objectContaining({
+              Name: "Outlier Point",
+              Cluster: "Outlier",
+            }),
+          ]),
+        })
       );
     });
 
@@ -233,12 +249,14 @@ describe("Trip Export Utilities", () => {
       window.tripExport.exportCsv();
 
       expect(Papa.unparse).toHaveBeenCalledWith(
-        expect.arrayContaining([
-          expect.objectContaining({
-            Name: "Point 1",
-            Cluster: "N/A",
-          }),
-        ])
+        expect.objectContaining({
+          data: expect.arrayContaining([
+            expect.objectContaining({
+              Name: "Point 1",
+              Cluster: "N/A",
+            }),
+          ]),
+        })
       );
     });
 
@@ -262,7 +280,7 @@ describe("Trip Export Utilities", () => {
       window.tripExport.exportCsv();
 
       const callArg = Papa.unparse.mock.calls[0][0];
-      expect(callArg).toContainEqual(
+      expect(callArg.data).toContainEqual(
         expect.objectContaining({
           Name: "Failed Point",
           Cluster: "Failed",
@@ -284,12 +302,14 @@ describe("Trip Export Utilities", () => {
       window.tripExport.exportCsv();
 
       expect(Papa.unparse).toHaveBeenCalledWith(
-        expect.arrayContaining([
-          expect.objectContaining({
-            Name: "",
-            "Street Address": "",
-          }),
-        ])
+        expect.objectContaining({
+          data: expect.arrayContaining([
+            expect.objectContaining({
+              Name: "",
+              Address: "",
+            }),
+          ]),
+        })
       );
     });
 
@@ -373,9 +393,9 @@ describe("Trip Export Utilities", () => {
 
       const callArg = Papa.unparse.mock.calls[0][0];
       // Should be sorted: Alice (cluster 0), Bob (cluster 0), Charlie (cluster 1)
-      expect(callArg[0].Name).toBe("Alice");
-      expect(callArg[1].Name).toBe("Bob");
-      expect(callArg[2].Name).toBe("Charlie");
+      expect(callArg.data[0].Name).toBe("Alice");
+      expect(callArg.data[1].Name).toBe("Bob");
+      expect(callArg.data[2].Name).toBe("Charlie");
     });
   });
 

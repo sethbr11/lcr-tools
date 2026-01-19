@@ -8,13 +8,21 @@
   ];
 
   function resolveBaseHeaders() {
-    if (Array.isArray(originalHeaders) && originalHeaders.length) {
-      return [...originalHeaders];
+    // Safely check for global variables
+    const getGlobal = (name) => (typeof window !== 'undefined' && window[name]) || [];
+    const _originalHeaders = typeof originalHeaders !== 'undefined' ? originalHeaders : [];
+    const _records = getGlobal('records');
+    const _geocoded = getGlobal('geocoded');
+    const _clustered = getGlobal('clustered');
+    const _optimized = typeof optimized !== 'undefined' ? optimized : [];
+
+    if (Array.isArray(_originalHeaders) && _originalHeaders.length) {
+      return [..._originalHeaders];
     }
 
-    const sources = [records, geocoded, clustered];
-    if (optimized.length) {
-      sources.push(optimized.flatMap((r) => r.points || []));
+    const sources = [_records, _geocoded, _clustered];
+    if (_optimized.length) {
+      sources.push(_optimized.flatMap((r) => r.points || []));
     }
 
     for (const source of sources) {
@@ -56,15 +64,20 @@
     const baseHeaders = resolveBaseHeaders();
     const fields = [...baseHeaders, ...CUSTOM_FIELDS];
 
+    // Safe access to global arrays
+    const _optimized = typeof optimized !== 'undefined' ? optimized : [];
+    const _clustered = typeof clustered !== 'undefined' ? clustered : [];
+    const _geocoded = typeof geocoded !== 'undefined' ? geocoded : [];
+    const _failedGeocodes = typeof failedGeocodes !== 'undefined' ? failedGeocodes : [];
+
     let successData = [];
-    const metric = document.querySelector(
-      'input[name="distanceMetric"]:checked'
-    ).value;
+    const metricEl = document.querySelector('input[name="distanceMetric"]:checked');
+    const metric = metricEl ? metricEl.value : 'straight';
     const unit = metric === "mapbox" ? "minutes" : "miles"; // Unit now "miles" for straight line
 
-    if (optimized.length > 0) {
+    if (_optimized.length > 0) {
       tripUtils.log("📦 Preparing optimized data for export...");
-      optimized.forEach((route) => {
+      _optimized.forEach((route) => {
         const routeDistance = route.distance.toFixed(2);
         route.points.forEach((p, index) => {
           const baseRow = buildBaseRow(p, baseHeaders);
@@ -81,15 +94,15 @@
           });
         });
       });
-    } else if (clustered.length > 0) {
+    } else if (_clustered.length > 0) {
       tripUtils.log("📦 Preparing clustered data for export...");
-      clustered.sort((a, b) => {
+      const sortedClustered = [..._clustered].sort((a, b) => {
         if (a.cluster < b.cluster) return -1;
         if (a.cluster > b.cluster) return 1;
         return (a.name || "").localeCompare(b.name || "");
       });
 
-      successData = clustered.map((r) => {
+      successData = sortedClustered.map((r) => {
         const baseRow = buildBaseRow(r, baseHeaders);
         return {
           ...baseRow,
@@ -100,9 +113,9 @@
           FailureReason: "",
         };
       });
-    } else if (geocoded.length > 0) {
+    } else if (_geocoded.length > 0) {
       tripUtils.log("📦 Preparing geocoded data for export...");
-      successData = geocoded.map((r) => {
+      successData = _geocoded.map((r) => {
         const baseRow = buildBaseRow(r, baseHeaders);
         return {
           ...baseRow,
@@ -115,7 +128,7 @@
       });
     }
 
-    const failureData = failedGeocodes.map((f) => {
+    const failureData = _failedGeocodes.map((f) => {
       const baseRow = buildBaseRow(
         { name: f.Name, address: f.Address, columns: f.columns },
         baseHeaders
@@ -131,6 +144,9 @@
     });
 
     const combined = successData.concat(failureData);
+    if (combined.length === 0) {
+      combined.push(buildBaseRow({}, baseHeaders));
+    }
     const csv = Papa.unparse({ data: combined, fields });
 
     const blob = new Blob([csv], { type: "text/csv" });
