@@ -40,6 +40,11 @@ This extension aims to streamline common tasks and add helpful utilities for lea
   - Kmeans clustering algorithm through [Turf.js](https://turfjs.org/) for finding natural clusters when splitting visits into multiple groups. Clusters can be created by specifying a desired number of clusters, or by constraining clusters to a certain range of waypoints (e.g. 5-10 people per cluster).
   - Interactive map through [Leaflet.js](https://leafletjs.com/) for visualizing waypoints and optimized routes.
   - Easy export to CSV. Implementing PDF export soon.
+- **Members Outside Boundary (Boundary Audit):**
+  - Geometric audit of the ward directory to identify households located outside official unit boundaries.
+  - Automatically intercepts member data and unit boundary overlays from the Church's map engine.
+  - Performs point-in-polygon analysis on an in-memory canvas for high accuracy.
+  - Provides an interactive results modal with filtering (All, Inside, Outside) and CSV export.
 - **Comprehensive Logging:** Detailed logging for actions that modify data, with downloadable CSV logs for audit trails and troubleshooting.
 - **Loading Indicators:** Visual feedback for long-running operations.
 
@@ -81,7 +86,7 @@ After clicking, you may see one or two pop-up messages:
 
 ## Usage
 
-1. Navigate to any page on `lcr.churchofjesuschrist.org`.
+1. Navigate to any page on `lcr.churchofjesuschrist.org` or `directory.churchofjesuschrist.org`.
 
 2. Click the LCR Tools extension icon in your Chrome toolbar.
 
@@ -115,6 +120,7 @@ lcr-extension/
 │   │   ├── editMemberProfile/
 │   │   ├── findMultipleCallings/
 │   │   ├── memberFlashcards/
+│   │   ├── membersOutsideBoundary/
 │   │   ├── noPhotoList/
 │   │   ├── processAttendance/
 │   │   ├── tableFilters/
@@ -145,14 +151,12 @@ lcr-extension/
 ├── README.md
 └── tests/
     ├── actions/
-    │   ├── ...
+    │   ├── membersOutsideBoundary/
     │   ├── processAttendance/
     │   └── tripPlanning/
-    ├── QUICK_TEST_REFERENCE.md
     ├── README.md
     ├── setup.js
     ├── TESTING_GUIDE.md
-    ├── TESTING.md
     ├── ui/
     └── utils/
 ```
@@ -182,7 +186,7 @@ A brief overview of the project's organization:
 
 - `"scripting"`: For script injection.
 - `"storage"`: For use of local storage (so far, only implemented in the trip planning action).
-- `"host_permissions"`: Restricted to `https://lcr.churchofjesuschrist.org/*`, `https://lcrf.churchofjesuschrist.org/*`, and `https://lcrffe.churchofjesuschrist.org/*`.
+- `"host_permissions"`: Restricted to `https://lcr.churchofjesuschrist.org/*`, `https://lcrf.churchofjesuschrist.org/*`, `https://lcrffe.churchofjesuschrist.org/*`, and `https://directory.churchofjesuschrist.org/*`.
 
 ## Troubleshooting
 
