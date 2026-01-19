@@ -1,167 +1,129 @@
 # Testing Setup for LCR Tools Extension
 
-## Quick Start
+This directory contains the automated test suite for the LCR Tools extension. The tests use **Jest** and **jsdom** to simulate the browser environment and verify the functionality of utilities, UI components, and complex actions.
 
-1. Install dependencies:
+## 🚀 Quick Start
+
+### Common Commands
 
 ```bash
+# Install dependencies
 npm install
-```
 
-2. Run tests:
-
-```bash
+# Run all tests
 npm test
-```
 
-3. Run tests in watch mode:
-
-```bash
+# Run tests in watch mode (auto-rerun on file changes)
 npm run test:watch
-```
 
-4. Generate coverage report:
-
-```bash
+# Run with coverage report
 npm run test:coverage
+
+# Run a specific test file
+npm test -- membersOutsideBoundary
+
+# Run tests matching a pattern
+npm test -- -t "triggerAudit"
 ```
 
-## Test Directory Structure
+## 📂 Test Directory Structure
 
-Tests are organized to mirror the source code structure:
+The `tests/` directory mirrors the source code structure (`js/`):
 
 ```
 tests/
-├── setup.js                    # Jest configuration and global mocks
-├── README.md                   # This file
-├── actions/                    # Action-related tests
-│   ├── actions.test.js         # URL pattern matching and action logic
-│   ├── actions.real.test.js    # Integration tests for actions
-│   └── tripPlanning/           # Trip Planning feature tests
-│       ├── tripUtils.test.js           # 31 tests - State management
-│       ├── tripMap.test.js             # 30 tests - Leaflet map integration
-│       ├── tripExport.test.js          # 11 tests - CSV/PDF export
-│       ├── tripGeocoding.test.js       # 23 tests - Address geocoding
-│       ├── tripClustering.test.js      # 30 tests - K-means clustering
-│       └── tripRouting.test.js         # 33 tests - TSP optimization
-├── utils/                      # Utility function tests
-│   ├── dataUtils.test.js       # Data processing utilities
-│   ├── fileUtils.test.js       # File download and ZIP generation
-│   ├── loggingUtils.test.js    # Logging functionality
-│   ├── modalUtils.test.js      # 19 tests - Modal UI components
-│   ├── navigationUtils.test.js # 10 tests - URL navigation
-│   ├── tableUtils.test.js      # Table manipulation
-│   ├── uiUtils.test.js         # UI helper functions
-│   ├── utils.test.js           # Core utility functions
-│   └── utils.core.test.js      # Additional utility tests
-└── ui/                         # UI component tests
-    ├── directory.test.js       # 19 tests - Directory page
-    ├── popup.test.js           # Popup functionality
-    └── popup.real.test.js      # Popup integration tests
+├── setup.js                        # Global Jest configuration and mocks (Chrome API, DOM)
+├── README.md                       # This file
+├── TESTING_GUIDE.md                # Detailed guide on writing and debugging tests
+├── actions/                        # Action-specific tests
+│   ├── membersOutsideBoundary/     # Boundary Audit tests
+│   │   └── membersOutsideBoundaryUtils.test.js # Canvas geometry & network interception
+│   ├── processAttendance/          # Attendance processing tests
+│   │   └── attendanceUtils.test.js # CSV parsing & logic
+│   ├── tripPlanning/               # Trip Planning feature tests
+│   │   ├── tripClustering.test.js
+│   │   ├── tripExport.test.js
+│   │   ├── tripGeocoding.test.js
+│   │   ├── tripMap.test.js
+│   │   ├── tripRouting.test.js
+│   │   └── tripUtils.test.js
+│   ├── actions.test.js             # URL pattern matching
+│   └── actions.real.test.js        # Integration tests
+├── ui/                             # UI Component tests
+│   ├── directory.test.js
+│   ├── popup.test.js
+│   └── popup.real.test.js
+└── utils/                          # Core Utility tests
+    ├── dataUtils.test.js
+    ├── fileUtils.test.js
+    ├── loggingUtils.test.js
+    ├── modalUtils.test.js
+    ├── navigationUtils.test.js
+    ├── tableUtils.test.js
+    ├── uiUtils.test.js
+    ├── utils.core.test.js
+    └── utils.test.js
 ```
 
-## Test Coverage Summary
+## 📊 Test Coverage Summary
 
-**Total**: 439 tests passing (1 skipped) across 20 test suites
+**Total**: ~450+ tests passing across 20+ test suites.
 
-### By Category
-- **Trip Planning**: 158 tests (6 modules)
-- **Utilities**: ~150 tests (9 modules)
-- **UI Components**: ~50 tests (3 modules)
-- **Actions**: ~80 tests (2 modules)
+### Key Areas Covered
+- **Core Utilities**: `utils.js`, `loggingUtils.js` (High coverage)
+- **Feature Actions**:
+    - **Trip Planning**: Comprehensive coverage of routing, mapping, and export.
+    - **Boundary Audit**: Canvas geometry, network interception, and UI flows.
+    - **Attendance**: CSV parsing and validation.
+- **UI Components**: Loading indicators, modals, and popup interactions.
 
-## Chrome API Mocking
+## 🛠 Testing Strategy
 
-The setup uses a custom mock built with `sinon` to mock Chrome extension APIs. Note that all LCR sites are password-protected, so tests use mock data rather than actual site interactions.
+### 1. Unit Tests
+Target core utility functions and isolated business logic.
+- **Framework**: Jest
+- **Location**: `tests/utils/*.test.js`
 
-- `chrome.runtime` - Extension info and error handling
-- `chrome.tabs` - Tab management and querying
-- `chrome.scripting` - Content script injection (Manifest V3)
+### 2. Integration Tests
+Target component interactions, DOM manipulation, and complex workflows.
+- **Location**: `tests/actions/*.test.js`, `tests/ui/*.test.js`
 
-Global mocks in `setup.js`:
-- `window.alert`, `window.confirm`, `window.prompt` - Dialog methods
-- `localStorage` - Browser storage
-- `fetch` - Network requests
-- `console` methods - Logging (to reduce test noise)
+### 3. Chrome API Mocking
+We use a custom mock setup in `setup.js` to simulate the Chrome Extension API (`chrome.runtime`, `chrome.tabs`, `chrome.scripting`, etc.). This allows us to test extension logic without running in a real browser.
 
-## Writing Tests
+### 4. DOM Simulation
+**jsdom** is used to simulate the DOM. Tests can create mock HTML structures (tables, modals, inputs) and assert on their state changes.
+- **Special Case**: `membersOutsideBoundary` tests mock the HTML5 Canvas API and `Image` loading to test geometric analysis logic.
 
-### Testing Chrome APIs
+## 📝 Writing Tests
 
-```javascript
-// Mock Chrome API calls
-chrome.runtime.sendMessage.resolves({ success: true });
+For a detailed guide on how to write tests, including patterns for async code, DOM manipulation, and mocking, please refer to [TESTING_GUIDE.md](TESTING_GUIDE.md).
 
-// Verify calls were made
-expect(chrome.runtime.sendMessage).toHaveBeenCalledWith(expectedMessage);
-```
-
-### Testing Async Functions
+### Quick Template
 
 ```javascript
-test("should handle async operations", async () => {
-  chrome.storage.local.get.resolves({ data: "value" });
+/**
+ * Tests for myFeature.js
+ */
+describe("My Feature", () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+    // Reset global state if needed
+  });
 
-  const result = await someAsyncFunction();
-  expect(result).toBe("expected");
+  test("should perform expected action", () => {
+    // Arrange
+    document.body.innerHTML = '<div id="target"></div>';
+    
+    // Act
+    window.myFeature.doSomething();
+    
+    // Assert
+    expect(document.getElementById("target").textContent).toBe("Done");
+  });
 });
 ```
 
-### Testing DOM Manipulation
+## 🔄 CI/CD
 
-```javascript
-test("should manipulate DOM", () => {
-  document.querySelector.mockReturnValue(mockElement);
-
-  // Test your DOM code
-  expect(document.querySelector).toHaveBeenCalledWith(".selector");
-});
-```
-
-### Testing Trip Planning Modules
-
-Trip Planning modules are wrapped in IIFEs and exposed via `window.tripX`:
-
-```javascript
-// Access exposed functions
-const result = await window.tripGeocoding.geocodeAddressMulti(address, provider, apiKey);
-
-// Mock external dependencies
-global.turf = {
-  distance: jest.fn(() => 1.5),
-  point: jest.fn((coords) => ({ geometry: { coordinates: coords } }))
-};
-
-global.fetch = jest.fn(() => Promise.resolve({
-  json: () => Promise.resolve({ /* mock response */ })
-}));
-```
-
-## Best Practices
-
-1. **Test Isolation**: Each test should be independent. Use `beforeEach` to reset state.
-2. **Mock External Dependencies**: Mock APIs, file system, and browser APIs.
-3. **Test Edge Cases**: Empty arrays, null values, invalid input, etc.
-4. **Descriptive Test Names**: Use "should..." format for clarity.
-5. **Arrange-Act-Assert**: Structure tests clearly with setup, execution, and verification.
-
-## Running Specific Tests
-
-```bash
-# Run a specific test file
-npm test tripGeocoding.test.js
-
-# Run tests in a specific directory
-npm test tests/actions/tripPlanning
-
-# Run tests matching a pattern
-npm test -- --testNamePattern="geocoding"
-```
-
-## Coverage Goals
-
-- **Unit Tests**: All business logic and utility functions
-- **Integration Tests**: Key workflows (geocoding → clustering → routing → export)
-- **Edge Cases**: Error handling, empty data, invalid input
-
-Current coverage is comprehensive for all core functionality. E2E testing could be added for UI workflows if needed.
+Tests are automatically run via GitHub Actions on every push and pull request to `main` or `develop`. See `.github/workflows/tests.yml` for configuration.

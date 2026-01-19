@@ -3,14 +3,27 @@
   "name": "LCR Tools (Local Copy)",
   "version": "1.3.0",
   "description": "An extension to help make LCR easier to use.",
-  "permissions": [
-    "scripting",
-    "storage"
-  ],
+  "permissions": ["scripting", "storage"],
   "host_permissions": [
     "https://lcr.churchofjesuschrist.org/*",
     "https://lcrf.churchofjesuschrist.org/*",
-    "https://lcrffe.churchofjesuschrist.org/*"
+    "https://lcrffe.churchofjesuschrist.org/*",
+    "https://directory.churchofjesuschrist.org/*"
+  ],
+  "content_scripts": [
+    {
+      "matches": ["https://directory.churchofjesuschrist.org/*"],
+      "js": [
+        "js/utils/utils.js",
+        "js/utils/uiUtils.js",
+        "js/utils/modalUtils.js",
+        "js/utils/fileUtils.js",
+        "js/actions/membersOutsideBoundary/templates.js",
+        "js/actions/membersOutsideBoundary/membersOutsideBoundaryUtils.js"
+      ],
+      "run_at": "document_start",
+      "world": "MAIN"
+    }
   ],
   "action": {
     "default_popup": "html/popup.html",
@@ -44,7 +57,8 @@
       "matches": [
         "https://lcr.churchofjesuschrist.org/*",
         "https://lcrf.churchofjesuschrist.org/*",
-        "https://lcrffe.churchofjesuschrist.org/*"
+        "https://lcrffe.churchofjesuschrist.org/*",
+        "https://directory.churchofjesuschrist.org/*"
       ]
     }
   ]

@@ -260,12 +260,7 @@ window.ACTION_METADATA = [
     category: "Mapping",
     description: "Optimize routes and plan trips to visit members.",
     type: "script",
-    scriptFile: [
-      utils,
-      uiUtils,
-      tableUtils,
-      "js/actions/tripPlanning/main.js",
-    ],
+    scriptFile: [utils, uiUtils, tableUtils, "js/actions/tripPlanning/main.js"],
     urlPatterns: {
       include: ["mlt/report/members-moved-in"],
     },
@@ -273,6 +268,32 @@ window.ACTION_METADATA = [
       {
         name: "Members Moved In Report",
         url: "https://lcr.churchofjesuschrist.org/mlt/report/members-moved-in",
+      },
+    ],
+  },
+  {
+    id: "membersOutsideBoundary",
+    title: "Get Boundary Report (CSV)",
+    category: "Data Export",
+    description:
+      "Export full member list with designations of who is in and outside the ward boundary.",
+    type: "script",
+    scriptFile: [
+      utils,
+      uiUtils,
+      modalUtils,
+      fileUtils,
+      "js/actions/membersOutsideBoundary/templates.js",
+      "js/actions/membersOutsideBoundary/membersOutsideBoundaryUtils.js",
+      "js/actions/membersOutsideBoundary/main.js",
+    ],
+    urlPatterns: {
+      include: ["directory.churchofjesuschrist.org/"],
+    },
+    directoryPages: [
+      {
+        name: "Directory/Map Page",
+        url: "https://directory.churchofjesuschrist.org/",
       },
     ],
   },
@@ -312,7 +333,7 @@ function matchesUrlPatterns(url, patterns) {
 
   // Check if URL matches any include pattern
   const includeMatch = patterns.include.some((pattern) =>
-    url.includes(pattern)
+    url.includes(pattern),
   );
   if (!includeMatch) return false;
 
