@@ -117,7 +117,6 @@ lcr-extension/
 ├── js/
 │   ├── actions/
 │   │   ├── downloadReportData/
-│   │   ├── editMemberProfile/
 │   │   ├── findMultipleCallings/
 │   │   ├── memberFlashcards/
 │   │   ├── membersOutsideBoundary/

@@ -108,29 +108,6 @@ window.ACTION_METADATA = [
     ],
   },
   {
-    id: "editMemberProfile",
-    title: "Edit Member Profile",
-    category: "Member Records",
-    description:
-      "Quickly edit member profile information with an enhanced interface.",
-    type: "script",
-    scriptFile: [
-      utils,
-      uiUtils,
-      "js/actions/editMemberProfile/editMemberProfileUtils.js",
-      "js/actions/editMemberProfile/main.js",
-    ],
-    urlPatterns: {
-      include: ["records/member-profile"],
-    },
-    directoryPages: [
-      {
-        name: "Member Directory",
-        url: "https://lcr.churchofjesuschrist.org/records/member-list",
-      },
-    ],
-  },
-  {
     id: "noPhotoList",
     title: "Download List of Members with No Photo",
     category: "Photo Management",

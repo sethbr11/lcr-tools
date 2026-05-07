@@ -167,21 +167,6 @@ describe("Actions Logic", () => {
         "js/actions/downloadReportData/main.js"
       );
     });
-
-    test("should create correct member profile files array", () => {
-      const u = (n) => `js/utils/${n}.js`;
-
-      const memberProfileFiles = [
-        u("uiUtils"),
-        "js/actions/editMemberProfile/editMemberProfileUtils.js",
-        "js/actions/editMemberProfile/main.js",
-      ];
-
-      expect(memberProfileFiles).toContain("js/utils/uiUtils.js");
-      expect(memberProfileFiles).toContain(
-        "js/actions/editMemberProfile/main.js"
-      );
-    });
   });
 
   describe("Action Object Structure", () => {
