@@ -297,7 +297,13 @@
         );
         return true;
       }
-      selectElement.value = value;
+      // Bypass React's property tracker so the change event actually fires
+      const nativeSelectValueSetter = Object.getOwnPropertyDescriptor(window.HTMLSelectElement.prototype, "value")?.set;
+      if (nativeSelectValueSetter) {
+        nativeSelectValueSetter.call(selectElement, value);
+      } else {
+        selectElement.value = value;
+      }
       const event = new Event("change", { bubbles: true });
       selectElement.dispatchEvent(event);
       console.log(`LCR Tools: Set select ${elementName} to ${value}`);

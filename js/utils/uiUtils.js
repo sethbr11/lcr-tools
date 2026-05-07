@@ -554,6 +554,39 @@
     });
   }
 
+  /**
+   * Sleep utility that checks for abort status periodically.
+   * @param {number} ms - Milliseconds to sleep
+   * @param {number} checkInterval - How often to check for abort (default: 100ms)
+   * @throws {Error} - Throws "Process aborted by user." if aborted
+   */
+  async function sleepWithAbortCheck(ms, checkInterval = 100) {
+    const start = Date.now();
+    while (Date.now() - start < ms) {
+      if (isAborted()) {
+        throw new Error("Process aborted by user.");
+      }
+      const remaining = ms - (Date.now() - start);
+      await new Promise((resolve) =>
+        setTimeout(resolve, Math.min(remaining, checkInterval))
+      );
+    }
+    // Final check before returning
+    if (isAborted()) {
+      throw new Error("Process aborted by user.");
+    }
+  }
+
+  /**
+   * Sleep utility with a bit of random jitter to mimic human timing.
+   * @param {number} baseMs - Base milliseconds to sleep
+   * @param {number} jitterMs - Maximum additional random milliseconds
+   */
+  async function sleepWithJitter(baseMs, jitterMs = 200) {
+    const totalMs = baseMs + Math.floor(Math.random() * jitterMs);
+    await sleepWithAbortCheck(totalMs);
+  }
+
   window.uiUtils = {
     showLoadingIndicator,
     hideLoadingIndicator,
@@ -564,5 +597,7 @@
     changeDropdown,
     showToast,
     showConfirmationModal,
+    sleepWithAbortCheck,
+    sleepWithJitter,
   };
 })();
