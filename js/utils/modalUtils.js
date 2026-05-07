@@ -5,6 +5,122 @@
 (() => {
   utils.returnIfLoaded("modalUtils");
 
+  /**
+   * Injects common styles for LCR Tools modals (buttons, toggles, etc.)
+   */
+  function injectGlobalModalStyles() {
+    if (document.getElementById("lcr-tools-modal-global-styles")) return;
+
+    const style = document.createElement("style");
+    style.id = "lcr-tools-modal-global-styles";
+    style.innerHTML = `
+      /* Common Button Styles */
+      .lcr-tools-btn {
+        padding: 10px 20px;
+        border: none;
+        border-radius: 8px;
+        font-size: 0.9rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.2s;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 5px;
+        font-family: inherit;
+      }
+
+      .lcr-tools-btn-primary {
+        background: #007bff;
+        color: white !important;
+      }
+
+      .lcr-tools-btn-primary:hover {
+        background: #0056b3;
+        transform: translateY(-1px);
+        box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+      }
+
+      .lcr-tools-btn-secondary {
+        background: #6c757d;
+        color: white !important;
+      }
+
+      .lcr-tools-btn-secondary:hover {
+        background: #545b62;
+        transform: translateY(-1px);
+        box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+      }
+
+      .lcr-tools-btn:disabled {
+        opacity: 0.6;
+        cursor: not-allowed;
+        transform: none;
+      }
+
+      /* Toggle Switch Styles */
+      .switch {
+        position: relative;
+        display: inline-block;
+        width: 40px;
+        height: 20px;
+      }
+
+      .switch input {
+        opacity: 0;
+        width: 0;
+        height: 0;
+      }
+
+      .slider {
+        position: absolute;
+        cursor: pointer;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background-color: #ccc;
+        transition: 0.4s;
+      }
+
+      .slider.round {
+        border-radius: 20px;
+      }
+
+      .slider.round:before {
+        border-radius: 50%;
+      }
+
+      .slider:before {
+        position: absolute;
+        content: "";
+        height: 14px;
+        width: 14px;
+        left: 3px;
+        bottom: 3px;
+        background-color: white;
+        transition: 0.4s;
+      }
+
+      input:checked + .slider {
+        background-color: #007bff;
+      }
+
+      input:focus + .slider {
+        box-shadow: 0 0 1px #007bff;
+      }
+
+      input:checked + .slider:before {
+        transform: translateX(20px);
+      }
+    `;
+    document.head.appendChild(style);
+  }
+
+  // Inject styles immediately
+  injectGlobalModalStyles();
+
   // Global state for selection mode
   let isSelectMode = false;
   let selectedItems = new Set();

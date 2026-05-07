@@ -16,7 +16,11 @@ The extension is designed to interact with the content of Leader and Clerk Resou
 
 ## Data Storage
 
-The extension **does not** store any personal data. It may use Chrome's local storage for benign settings related to the extension's functionality (e.g., trip planning preferences), but not for your personal information from LCR.
+The extension uses Chrome's `local.storage` for the following purposes:
+
+- **Functional Settings:** Benign settings related to extension functionality (e.g., trip planning preferences, geocoding provider selection).
+- **Performance Caching:** To improve performance and reduce site interaction on the Member Directory, the extension may cache member-related data (such as photo availability and name-to-ID mappings).
+- **Security & Privacy of Stored Data:** All data stored via Chrome's `local.storage` remains **strictly on your local device**. It is never synced to your Google Account (not using `storage.sync`), never transmitted to external servers, and never shared with the extension developers or third parties. You can clear this cache at any time via the extension's settings.
 
 ## Permissions Justification
 
@@ -25,8 +29,8 @@ The extension requests the following permissions:
 - `"host_permissions"`:
     - `https://lcr.churchofjesuschrist.org/*`, `https://lcrf.churchofjesuschrist.org/*`, `https://lcrffe.churchofjesuschrist.org/*`, `https://directory.churchofjesuschrist.org/*`: Required to interact with Church websites to provide extension features.
     - `https://nominatim.openstreetmap.org/*`, `https://us1.locationiq.com/*`, `https://api.mapbox.com/*`: Required *only* for the Trip Planning feature to perform address geocoding via these public APIs.
-- `scripting`: This permission is necessary to inject the code that provides the extension's features onto the supported pages.
-- `storage`: This permission is used to save user preferences locally (such as trip planning state) to improve the user experience.
+- `scripting`: This permission is necessary to inject the logic that provides features onto the supported pages.
+- `storage`: This permission is used to save user preferences and performance caches locally on your device.
 
 ## Changes to This Privacy Policy
 

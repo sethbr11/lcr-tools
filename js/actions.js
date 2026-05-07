@@ -50,6 +50,7 @@ window.ACTION_METADATA = [
         "manage-photos",
         "report/self-reliance",
         "records/merge-duplicate",
+        "mlt/approve-photos",
         CA_PATH_REGEX,
         basePage,
       ],
@@ -93,6 +94,7 @@ window.ACTION_METADATA = [
         "manage-photos",
         "report/self-reliance",
         "records/merge-duplicate",
+        "mlt/approve-photos",
         CA_PATH_REGEX,
         basePage,
       ],
@@ -119,16 +121,18 @@ window.ACTION_METADATA = [
       fileUtils,
       navUtils,
       uiUtils,
+      modalUtils,
+      u("storageUtils"),
       "js/actions/noPhotoList/noPhotoUtils.js",
       "js/actions/noPhotoList/main.js",
     ],
     urlPatterns: {
-      include: ["manage-photos"],
+      include: ["records/member-list"],
     },
     directoryPages: [
       {
-        name: "Manage Photos page",
-        url: "https://lcr.churchofjesuschrist.org/manage-photos",
+        name: "Member Directory",
+        url: "https://lcr.churchofjesuschrist.org/records/member-list",
       },
     ],
   },
@@ -144,18 +148,15 @@ window.ACTION_METADATA = [
       navUtils,
       uiUtils,
       modalUtils,
+      u("storageUtils"),
       "js/actions/memberFlashcards/templates.js",
       "js/actions/memberFlashcards/memberFlashcardsUtils.js",
       "js/actions/memberFlashcards/main.js",
     ],
     urlPatterns: {
-      include: ["manage-photos", "records/member-list"],
+      include: ["records/member-list"],
     },
     directoryPages: [
-      {
-        name: "Manage Photos page",
-        url: "https://lcr.churchofjesuschrist.org/manage-photos",
-      },
       {
         name: "Member Directory",
         url: "https://lcr.churchofjesuschrist.org/records/member-list",

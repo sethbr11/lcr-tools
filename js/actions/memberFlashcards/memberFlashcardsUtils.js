@@ -3,12 +3,9 @@
  * Handles the navigation, filtering, data extraction, and flashcard interface creation
  * required to generate an interactive flashcard experience for learning member names and faces.
  * This includes:
- * - Navigating to the "Manage Photos" page
- * - Navigating to the "Manage" tab on the photo management page
- * - Applying filters such as "Subject Type" to "Individual" and "Photo Filter" to "Members with Photo"
- * - Scrolling through the page to load all relevant data
- * - Extracting member photos and names from member-photo elements
+ * - Extracting member photos and names by clicking on members to reveal popovers
  * - Creating an interactive flashcard interface with flip functionality
+ * - Caching photo data to avoid redundant page interactions
  *
  * Integrates with navigationUtils for page navigation and uiUtils for interface management.
  */
@@ -18,201 +15,14 @@
     "navigationUtils",
     "uiUtils",
     "modalUtils",
-    "memberFlashcardsTemplates"
+    "storageUtils",
+    "memberFlashcardsTemplates",
   );
 
   let currentFlashcardIndex = 0;
   let memberData = [];
   let shuffledData = [];
   let isShuffled = false;
-
-  /**
-   * Navigates to the manage photos page if not already there
-   * @returns {Promise<boolean>} - True if navigation succeeded, false otherwise
-   */
-  async function navigateToManagePhotosPage() {
-    const currentUrl = window.location.href;
-    if (currentUrl.includes("manage-photos")) {
-      console.log("LCR Tools: Already on manage photos page.");
-      return true;
-    }
-
-    window.location.href = "https://lcr.churchofjesuschrist.org/manage-photos";
-
-    // Wait for page to load
-    await new Promise((resolve) => setTimeout(resolve, 3000));
-    return true;
-  }
-
-  /**
-   * Navigates to the "Manage" tab on the photo management page.
-   * @returns {Promise<boolean>} - True if navigation succeeded, false otherwise.
-   */
-  async function navigateToManageTab() {
-    return navigationUtils.navigateToTab({
-      tabSelector: "li[ng-class*=\"mp.tab == 'manage'\"]",
-      linkSelector: "a[ng-click=\"mp.switchTab('manage')\"]",
-      tabName: "Manage",
-      delay: 1500,
-    });
-  }
-
-  /**
-   * Sets the "Subject Type" filter to "Individual" if not already set.
-   * @returns {Promise<boolean>} - True if the filter was successfully set, false otherwise.
-   */
-  async function setSubjectTypeToIndividual() {
-    return uiUtils.changeDropdown({
-      dropdownSelector: "select[ng-model='mp.subjectTypeFilter']",
-      value: "INDIVIDUAL",
-      dropdownName: "Subject Type",
-    });
-  }
-
-  /**
-   * Sets the "Photo Filter" filter to "Members with Photo" if not already set.
-   * @returns {Promise<boolean>} - True if the filter was successfully set, false otherwise.
-   */
-  async function setPhotoFilterToMembersWithPhoto() {
-    return uiUtils.changeDropdown({
-      dropdownSelector: "select[ng-model='mp.photoFilter']",
-      value: "MEMBERS_WITH_PHOTO",
-      dropdownName: "Photo Filter",
-    });
-  }
-
-  /**
-   * Waits for filters to be applied and page content to update
-   * @returns {Promise<void>}
-   */
-  async function waitForFiltersToApply() {
-    // Wait for the page to update after filter changes
-    await new Promise((resolve) => setTimeout(resolve, 2000));
-
-    // Wait for any loading indicators to disappear
-    let attempts = 0;
-    const maxAttempts = 10;
-    while (attempts < maxAttempts) {
-      const loadingElements = document.querySelectorAll(
-        '[ng-show*="loading"], .loading, .spinner'
-      );
-      const hasLoading = Array.from(loadingElements).some(
-        (el) => el.style.display !== "none" && !el.classList.contains("ng-hide")
-      );
-
-      if (!hasLoading) {
-        break;
-      }
-
-      console.log(
-        `LCR Tools: Still waiting for content to load (attempt ${
-          attempts + 1
-        }/${maxAttempts})`
-      );
-      await new Promise((resolve) => setTimeout(resolve, 1000));
-      attempts++;
-    }
-
-    // Additional wait to ensure all content is rendered
-    await new Promise((resolve) => setTimeout(resolve, 1000));
-  }
-
-  /**
-   * Collects member data from the page by scrolling and extracting member-photo elements
-   * @returns {Promise<Array>} - Array of member data objects
-   */
-  async function collectMemberData() {
-    // First wait for filters to be applied
-    await waitForFiltersToApply();
-
-    const collectedData = await navigationUtils.collectDataWithNavigation({
-      needs: ["scroll"],
-      onPageData: async () => {
-        const memberPhotos = document.querySelectorAll("member-photo");
-        const processedMembers = [];
-
-        memberPhotos.forEach((memberPhoto) => {
-          try {
-            // Check if the member-photo element is visible (not hidden by filters)
-            if (
-              memberPhoto.offsetParent === null ||
-              memberPhoto.classList.contains("ng-hide")
-            ) {
-              return; // Skip hidden elements
-            }
-
-            // Extract photo URL from the img element
-            const imgElement = memberPhoto.querySelector(
-              "img.manage-photo-thumbnail"
-            );
-            if (!imgElement) return;
-
-            const photoUrl = imgElement.src;
-            if (
-              !photoUrl ||
-              photoUrl.includes("placeholder") ||
-              photoUrl.includes("default") ||
-              photoUrl.includes("no-image") ||
-              photoUrl.includes("blank") ||
-              photoUrl.endsWith(".gif") ||
-              photoUrl.includes("data:image/svg")
-            ) {
-              return; // Skip if no valid photo
-            }
-
-            // Extract name from the h5 element
-            const nameElement = memberPhoto.querySelector(
-              "h5.manage-photo-name"
-            );
-            if (!nameElement) return;
-
-            const fullName = nameElement.textContent.trim();
-            if (!fullName) return;
-
-            // Parse name (assuming format "LAST, FIRST")
-            let firstName = "";
-            let lastName = "";
-            const commaIndex = fullName.indexOf(",");
-            if (commaIndex !== -1) {
-              lastName = fullName.substring(0, commaIndex).trim();
-              firstName = fullName.substring(commaIndex + 1).trim();
-            } else {
-              const parts = fullName.split(" ").filter((p) => p);
-              if (parts.length > 1) {
-                lastName = parts.pop();
-                firstName = parts.join(" ");
-              } else if (parts.length === 1) {
-                lastName = parts[0];
-              }
-            }
-
-            if (firstName || lastName) {
-              processedMembers.push({
-                firstName,
-                lastName,
-                fullName: `${firstName} ${lastName}`.trim(),
-                photoUrl,
-                originalName: fullName,
-              });
-            }
-          } catch (error) {
-            console.warn("LCR Tools: Error processing member photo:", error);
-          }
-        });
-
-        return processedMembers;
-      },
-    });
-
-    // Flatten and deduplicate the collected data
-    const flattenedData = collectedData.flat();
-    const uniqueMembers = flattenedData.filter(
-      (member, index, self) =>
-        index === self.findIndex((m) => m.photoUrl === member.photoUrl)
-    );
-
-    return uniqueMembers;
-  }
 
   /**
    * Creates the flashcard interface modal
@@ -253,7 +63,7 @@
       onClose: () => {
         // Clean up styles when modal closes
         const stylesElement = document.getElementById(
-          "lcr-tools-flashcard-styles"
+          "lcr-tools-flashcard-styles",
         );
         if (stylesElement) {
           stylesElement.remove();
@@ -410,7 +220,7 @@
    */
   function flipCurrentFlashcard() {
     const flashcard = document.getElementById(
-      `lcr-tools-flashcard-${currentFlashcardIndex}`
+      `lcr-tools-flashcard-${currentFlashcardIndex}`,
     );
     if (flashcard) {
       flashcard.classList.toggle("flipped");
@@ -427,22 +237,13 @@
 
       modalUtils.createStandardModal({
         id: "lcr-tools-flashcard-warning",
-        title: "Member Flashcards - Choose Your Option",
+        title: "Member Flashcards",
         content,
         hideDefaultButtons: true,
         onClose: () => resolve(false),
       });
 
       // Add event listeners
-      document
-        .getElementById("lcr-tools-go-to-photos")
-        .addEventListener("click", () => {
-          modalUtils.closeModal("lcr-tools-flashcard-warning");
-          window.location.href =
-            "https://lcr.churchofjesuschrist.org/manage-photos";
-          resolve(false);
-        });
-
       document
         .getElementById("lcr-tools-continue-here")
         .addEventListener("click", () => {
@@ -460,28 +261,23 @@
   }
 
   /**
-   * Waits for a popover to appear and be fully loaded with image
+   * Waits for a popover to appear and be fully loaded
    * @param {number} maxWaitMs - Maximum time to wait in milliseconds
    * @returns {Promise<Element|null>} - The popover element or null
    */
-  async function waitForPopover(maxWaitMs = 1200) {
+  async function waitForPopover(maxWaitMs = 1500) {
     const startTime = Date.now();
 
     while (Date.now() - startTime < maxWaitMs) {
       const popover = document.querySelector(
-        ".popover.member-card-popover.fade.in"
+        'dialog[data-testid="popover"][open].member-card__styled-member-card-popover',
       );
 
-      // Check if popover is fully loaded with BOTH name AND image
       if (popover) {
-        const nameDiv = popover.querySelector(".popover-title .ng-binding");
-        const img = popover.querySelector(".member-card-image img");
-
-        // Wait for BOTH name AND img element to exist
-        // Don't check img.src yet - just that the element exists
-        if (nameDiv && img) {
-          // Give it a tiny bit more time for img.src to populate
-          await utils.sleep(100);
+        const nameDiv = popover.querySelector(".member-card__styled-div");
+        if (nameDiv) {
+          // Give it a tiny bit more time for content to settle
+          await utils.sleep(150);
           return popover;
         }
       }
@@ -494,177 +290,157 @@
 
   /**
    * Collects member data from the member directory page by clicking names to reveal popovers
-   * Uses navigationUtils.collectDataWithNavigation to handle scrolling properly
    * @returns {Promise<Array>} - Array of member data objects
    */
   async function collectMemberDataFromDirectory() {
-    const processedHrefs = new Set(); // Track which links we've already clicked
-    const membersByPhotoUrl = new Map(); // Store members by photoUrl to prevent duplicates
-    let totalProcessed = 0;
+    const membersByPhotoUrl = new Map();
+    const newCacheEntries = {};
 
-    // First, get total count from the page if available
-    const countElement = document.querySelector(
-      '[translate="common.table.filtered"]'
-    );
-    const totalCount = countElement
-      ? parseInt(countElement.textContent.match(/\d+/)?.[0] || "0")
-      : null;
+    // Get cache settings and current cache
+    const cacheSettings = await storageUtils.getCacheSettings();
+    const currentCache = cacheSettings.enabled
+      ? await storageUtils.getPhotoCache()
+      : {};
 
-    // Use navigationUtils to handle scrolling and data collection
-    await navigationUtils.collectDataWithNavigation({
-      needs: ["scroll"],
-      onPageData: async () => {
-        // Tighten selector to main name column
-        const allMemberLinks = Array.from(
-          document.querySelectorAll(
-            'td.n.fn member-card[ng-show*="individuals"] a[href*="/records/member-profile/"]'
-          )
-        );
+    // Find all rows in the table that have an ID
+    const allRows = Array.from(document.querySelectorAll('tr[id][role="row"]'));
 
-        // Filter to only NEW links we haven't processed yet
-        const newLinks = allMemberLinks.filter(
-          (link) => !processedHrefs.has(link.href)
-        );
+    const totalCount = allRows.length;
 
-        if (newLinks.length === 0) {
-          return [];
+    for (let i = 0; i < allRows.length; i++) {
+      if (uiUtils.isAborted()) {
+        break;
+      }
+
+      const row = allRows[i];
+      const rowId = row.id;
+
+      // Check cache first
+      if (cacheSettings.enabled && currentCache[rowId]) {
+        const cached = currentCache[rowId];
+        if (cached.hasPhoto && cached.photoUrl) {
+          membersByPhotoUrl.set(cached.photoUrl, cached);
+          continue; // Skip clicking if we have cached photo
+        } else if (cached.hasPhoto === false) {
+          continue; // Skip if we know they don't have a photo
+        }
+      }
+
+      try {
+        // Find the member card button inside this row
+        const link = row.querySelector("button.member-card__styled-ghost");
+        if (!link) {
+          continue;
         }
 
-        // Process only the NEW member links
-        for (let i = 0; i < newLinks.length; i++) {
-          if (uiUtils.isAborted()) {
-            break;
-          }
+        uiUtils.showLoadingIndicator(
+          `Collecting member photos (processing ${i + 1} / ${totalCount})...`,
+        );
 
-          const link = newLinks[i];
-          const href = link.href;
+        // Scroll row into view to ensure it's visible (still needed for clickability)
+        row.scrollIntoView({ behavior: "instant", block: "center" });
+        await utils.sleep(150);
 
-          try {
-            // Mark this link as processed immediately to avoid re-processing
-            processedHrefs.add(href);
+        // Click the button to show popover
+        link.click();
 
-            uiUtils.showLoadingIndicator(
-              `Collecting member photos (processing ${
-                i + 1
-              } / ${totalCount})...`
-            );
+        // Wait for popover
+        const popover = await waitForPopover();
 
-            // Scroll link into view to ensure it's visible
-            link.scrollIntoView({ behavior: "instant", block: "center" });
-            await utils.sleep(100);
+        if (popover) {
+          // Extract full name and image
+          const nameDiv = popover.querySelector(".member-card__styled-div");
+          const img = popover.querySelector(
+            "img.eden-image.eden-avatar__image-decorator",
+          );
 
-            // Click the link to show popover
-            link.click();
+          if (nameDiv) {
+            const fullNameWithAge = nameDiv.textContent.trim();
+            const fullName = fullNameWithAge.replace(/\s*\(\d+\)$/, "");
 
-            // Wait for popover (will wait up to configured timeout for both name AND image)
-            const popover = await waitForPopover();
+            let hasPhoto = false;
+            let photoUrl = null;
 
-            if (popover) {
-              // Extract full name from popover title and image
-              const nameDiv = popover.querySelector(
-                ".popover-title .ng-binding"
-              );
-              const fullName = nameDiv ? nameDiv.textContent.trim() : "";
-              const img = popover.querySelector(".member-card-image img");
+            if (img && img.src) {
+              photoUrl = img.src;
 
-              if (img && img.src && fullName) {
-                const photoUrl = img.src;
+              // Check if it's a valid photo (not a placeholder)
+              const isPlaceholder =
+                photoUrl.includes("placeholder") ||
+                photoUrl.includes("default") ||
+                photoUrl.includes("no-image") ||
+                photoUrl.includes("blank") ||
+                photoUrl.endsWith(".gif") ||
+                photoUrl.includes("data:image/svg");
 
-                // Skip placeholder/default images
-                if (
-                  !photoUrl.includes("placeholder") &&
-                  !photoUrl.includes("default") &&
-                  !photoUrl.includes("no-image") &&
-                  !photoUrl.includes("blank") &&
-                  !photoUrl.endsWith(".gif") &&
-                  !photoUrl.includes("data:image/svg")
-                ) {
-                  if (!membersByPhotoUrl.has(photoUrl)) {
-                    // Parse name - try comma format first, then space-separated
-                    let firstName = "";
-                    let lastName = "";
-                    const commaIndex = fullName.indexOf(",");
+              const parts = fullName.split(" ").filter((p) => p);
+              let firstName = "";
+              let lastName = "";
 
-                    if (commaIndex !== -1) {
-                      lastName = fullName.substring(0, commaIndex).trim();
-                      firstName = fullName.substring(commaIndex + 1).trim();
-                    } else {
-                      const parts = fullName.split(" ").filter((p) => p);
-                      if (parts.length > 1) {
-                        lastName = parts.pop();
-                        firstName = parts.join(" ");
-                      } else if (parts.length === 1) {
-                        lastName = parts[0];
-                      }
-                    }
-
-                    if (firstName || lastName) {
-                      const memberData = {
-                        firstName,
-                        lastName,
-                        fullName: `${firstName} ${lastName}`.trim(),
-                        photoUrl,
-                        originalName: fullName,
-                      };
-
-                      membersByPhotoUrl.set(photoUrl, memberData);
-                    }
-                  }
-                }
+              if (parts.length > 1) {
+                lastName = parts.pop();
+                firstName = parts.join(" ");
+              } else if (parts.length === 1) {
+                lastName = parts[0];
               }
-            }
 
-            // Close the popover by clicking elsewhere
-            document.body.click();
-            await utils.sleep(150);
-          } catch (error) {
-            console.warn(`LCR Tools: Error processing member ${href}:`, error);
-            // Try to close any open popover
-            document.body.click();
-            await utils.sleep(50);
+              if (!isPlaceholder) {
+                hasPhoto = true;
+
+                if (firstName || lastName) {
+                  const member = {
+                    firstName,
+                    lastName,
+                    fullName: fullName,
+                    photoUrl,
+                    originalName: fullNameWithAge,
+                    hasPhoto: true,
+                    rowId,
+                  };
+                  membersByPhotoUrl.set(photoUrl, member);
+                  newCacheEntries[rowId] = member;
+                }
+              } else {
+                // It's a placeholder
+                newCacheEntries[rowId] = {
+                  firstName,
+                  lastName,
+                  fullName,
+                  hasPhoto: false,
+                  timestamp: Date.now(),
+                };
+              }
+            } else {
+              // No img element at all
+              newCacheEntries[rowId] = {
+                fullName,
+                hasPhoto: false,
+                timestamp: Date.now(),
+              };
+            }
           }
         }
 
-        // Return empty array since we're accumulating in membersByPhotoUrl Map
-        return [];
-      },
-    });
-
-    // Convert Map values to array
-    const uniqueMembers = Array.from(membersByPhotoUrl.values());
-
-    return uniqueMembers;
-  }
-
-  /**
-   * Detects which page we're on and uses the appropriate collection method
-   * @returns {Promise<Array>} - Array of member data objects
-   */
-  async function collectMemberDataAuto() {
-    const currentUrl = window.location.href;
-
-    if (currentUrl.includes("records/member-list")) {
-      return await collectMemberDataFromDirectory();
-    } else if (currentUrl.includes("manage-photos")) {
-      // Navigate to manage tab and set filters
-      await navigateToManageTab();
-      await setSubjectTypeToIndividual();
-      await setPhotoFilterToMembersWithPhoto();
-      return await collectMemberData();
-    } else {
-      return await collectMemberDataFromDirectory();
+        // Close the popover
+        document.body.click();
+        await utils.sleep(200);
+      } catch (error) {
+        console.warn(`LCR Tools: Error processing row ${rowId}:`, error);
+        document.body.click();
+        await utils.sleep(100);
+      }
     }
+
+    // Save new entries to cache if enabled
+    if (cacheSettings.enabled && Object.keys(newCacheEntries).length > 0) {
+      await storageUtils.updatePhotoCache(newCacheEntries);
+    }
+
+    return Array.from(membersByPhotoUrl.values());
   }
 
   window.memberFlashcardsUtils = {
-    navigateToManagePhotosPage,
-    navigateToManageTab,
-    setSubjectTypeToIndividual,
-    setPhotoFilterToMembersWithPhoto,
-    collectMemberData,
     collectMemberDataFromDirectory,
-    collectMemberDataAuto,
     createFlashcardInterface,
-    showDirectoryPageWarning,
   };
 })();

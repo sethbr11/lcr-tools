@@ -1,135 +1,203 @@
 /**
  * Utility file specifically for the noPhotoList action.
- * Handles the navigation, filtering, and data extraction required to generate
- * a report of individuals without photos. This includes:
- * - Navigating to the "Manage" tab on the photo management page.
- * - Applying filters such as "Subject Type" and "Photo Filter."
- * - Scrolling through the page to load all relevant data.
- * - Extracting names of individuals without photos and exporting them as a CSV.
+ * Handles the data extraction required to generate a report of
+ * individuals without photos from the Member Directory page.
+ * Caches results to improve performance on subsequent runs.
  *
  * Integrates with navigationUtils for page navigation and fileUtils for CSV generation.
  */
 (() => {
   utils.returnIfLoaded("noPhotoUtils");
-  utils.ensureLoaded("navigationUtils", "uiUtils", "fileUtils");
+  utils.ensureLoaded("navigationUtils", "uiUtils", "fileUtils", "storageUtils");
 
   /**
-   * Navigates to the "Manage" tab on the photo management page.
-   * @returns {Promise<boolean>} - True if navigation succeeded, false otherwise.
+   * Waits for a popover to appear and be fully loaded
+   * @param {number} maxWaitMs - Maximum time to wait in milliseconds
+   * @returns {Promise<Element|null>} - The popover element or null
    */
-  async function navigateToManageTab() {
-    return navigationUtils.navigateToTab({
-      tabSelector: "li[ng-class*=\"mp.tab == 'manage'\"]",
-      linkSelector: "a[ng-click=\"mp.switchTab('manage')\"]",
-      tabName: "Manage",
-      delay: 1500,
-    });
+  async function waitForPopover(maxWaitMs = 1500) {
+    const startTime = Date.now();
+
+    while (Date.now() - startTime < maxWaitMs) {
+      const popover = document.querySelector(
+        'dialog[data-testid="popover"][open].member-card__styled-member-card-popover',
+      );
+
+      if (popover) {
+        const nameDiv = popover.querySelector(".member-card__styled-div");
+        if (nameDiv) {
+          // Give it a tiny bit more time for content to settle
+          await utils.sleep(150);
+          return popover;
+        }
+      }
+
+      await utils.sleep(50);
+    }
+
+    return null;
   }
 
   /**
-   * Sets the "Subject Type" filter to "Individual" if not already set.
-   * @returns {Promise<boolean>} - True if the filter was successfully set, false otherwise.
+   * Collects data of members without photos from the member directory page
+   * @returns {Promise<Array>} - Array of member name objects
    */
-  async function setSubjectTypeToIndividual() {
-    return uiUtils.changeDropdown({
-      dropdownSelector: "select[ng-model='mp.subjectTypeFilter']",
-      value: "INDIVIDUAL",
-      dropdownName: "Subject Type",
-    });
-  }
+  async function collectNoPhotoDataFromDirectory() {
+    const membersWithoutPhotos = [];
+    const newCacheEntries = {};
 
-  /**
-   * Sets the "Photo Filter" filter to "Members Without Photo" if not already set.
-   * @returns {Promise<boolean>} - True if the filter was successfully set, false otherwise.
-   */
-  async function setPhotoFilterToMembersWithoutPhoto() {
-    return uiUtils.changeDropdown({
-      dropdownSelector: "select[ng-model='mp.photoFilter']",
-      value: "MEMBERS_WITHOUT_PHOTO",
-      dropdownName: "Photo Filter",
-    });
+    // Get cache settings and current cache
+    const cacheSettings = await storageUtils.getCacheSettings();
+    const currentCache = cacheSettings.enabled
+      ? await storageUtils.getPhotoCache()
+      : {};
+
+    // Find all rows in the table that have an ID
+    const allRows = Array.from(document.querySelectorAll('tr[id][role="row"]'));
+
+    const totalCount = allRows.length;
+
+    for (let i = 0; i < allRows.length; i++) {
+      if (uiUtils.isAborted()) {
+        break;
+      }
+
+      const row = allRows[i];
+      const rowId = row.id;
+
+      // Extract name from the row itself as a fallback
+      const nameCell = row.querySelector("td.member-card__styled-td-name");
+      const nameFromRow = nameCell ? nameCell.textContent.trim() : "";
+
+      // Check cache first
+      if (cacheSettings.enabled && currentCache[rowId]) {
+        const cached = currentCache[rowId];
+        if (cached.hasPhoto === false) {
+          // Prefer fullName, then reconstruct if only parts exist, then fallback to row
+          let fullName = cached.fullName;
+          if (!fullName && (cached.firstName || cached.lastName)) {
+            fullName = `${cached.firstName} ${cached.lastName}`.trim();
+          }
+          if (!fullName) fullName = nameFromRow;
+
+          if (fullName) {
+            membersWithoutPhotos.push({ fullName });
+          }
+          continue;
+        } else if (cached.hasPhoto === true) {
+          continue;
+        }
+      }
+
+      try {
+        // ... (rest of the try block)
+        link.click();
+        const popover = await waitForPopover();
+
+        if (popover) {
+          const nameDiv = popover.querySelector(".member-card__styled-div");
+          const img = popover.querySelector(
+            "img.eden-image.eden-avatar__image-decorator",
+          );
+
+          if (nameDiv) {
+            const fullNameWithAge = nameDiv.textContent.trim();
+            const fullName = fullNameWithAge.replace(/\s*\(\d+\)$/, "");
+
+            // ... (photo detection logic remains same)
+            let hasNoPhoto = !img || !img.src;
+            let photoUrl = null;
+            if (img && img.src) {
+              photoUrl = img.src;
+              if (
+                photoUrl.includes("placeholder") ||
+                photoUrl.includes("default") ||
+                photoUrl.includes("no-image") ||
+                photoUrl.includes("blank") ||
+                photoUrl.endsWith(".gif") ||
+                photoUrl.includes("data:image/svg")
+              ) {
+                hasNoPhoto = true;
+              }
+            }
+
+            const parts = fullName.split(" ").filter((p) => p);
+            let firstName = "";
+            let lastName = "";
+            if (parts.length > 1) {
+              lastName = parts.pop();
+              firstName = parts.join(" ");
+            } else if (parts.length === 1) {
+              lastName = parts[0];
+            }
+
+            if (hasNoPhoto) {
+              const displayFullName = fullName || nameFromRow;
+              if (displayFullName) {
+                membersWithoutPhotos.push({ fullName: displayFullName });
+              }
+              newCacheEntries[rowId] = {
+                firstName,
+                lastName,
+                fullName: displayFullName,
+                hasPhoto: false,
+                timestamp: Date.now(),
+              };
+            } else {
+              newCacheEntries[rowId] = {
+                firstName,
+                lastName,
+                fullName,
+                hasPhoto: true,
+                photoUrl,
+                timestamp: Date.now(),
+              };
+            }
+          }
+        }
+        // ... (rest of the loop)
+
+        document.body.click();
+        await utils.sleep(200);
+      } catch (error) {
+        console.warn(`LCR Tools: Error processing row ${rowId}:`, error);
+        document.body.click();
+        await utils.sleep(100);
+      }
+    }
+
+    // Save new entries to cache if enabled
+    if (cacheSettings.enabled && Object.keys(newCacheEntries).length > 0) {
+      await storageUtils.updatePhotoCache(newCacheEntries);
+    }
+
+    return membersWithoutPhotos;
   }
 
   /**
    * Downloads a report of individuals without photos.
-   * @returns {Promise<void>}
+   * @param {Array} names - Array of member name objects
    */
-  async function downloadReportData() {
-    const collectedNames = await navigationUtils.collectDataWithNavigation({
-      needs: ["scroll"],
-      onPageData: async () => {
-        const divs = document.querySelectorAll(
-          ".manage-photo-thumbnail-container"
-        );
-        const visibleDivs = Array.from(divs).filter(
-          (div) => !div.classList.contains("ng-hide")
-        );
-
-        const processedNames = visibleDivs
-          .map((div) => {
-            const nameElement = div.querySelector("h5.manage-photo-name");
-            if (!nameElement) return null;
-
-            const fullName = nameElement.textContent.trim();
-            if (!fullName) return null;
-
-            let firstName = "";
-            let lastName = "";
-
-            const commaIndex = fullName.indexOf(",");
-            if (commaIndex !== -1) {
-              lastName = fullName.substring(0, commaIndex).trim();
-              firstName = fullName.substring(commaIndex + 1).trim();
-            } else {
-              const parts = fullName.split(" ").filter((p) => p);
-              if (parts.length > 1) {
-                lastName = parts.pop();
-                firstName = parts.join(" ");
-              } else if (parts.length === 1) {
-                lastName = parts[0];
-              }
-            }
-            return lastName || firstName ? { firstName, lastName } : null;
-          })
-          .filter((nameObj) => nameObj !== null);
-
-        return processedNames;
-      },
-    });
-
-    if (!collectedNames || collectedNames.length === 0) {
-      alert(
-        "LCR Tools: No names found to export after applying filters and scrolling. Check if the filters are correct or if there are any individuals without photos."
-      );
+  async function downloadReportData(names) {
+    if (!names || names.length === 0) {
+      alert("LCR Tools: No members without photos found.");
       return;
     }
 
-    // Flatten the collectedNames array and convert to CSV
-    const flattenedNames = collectedNames.flat();
-    const csvHeader = `"First Names","Last Name"\n`;
-    const csvRows = flattenedNames
+    const csvHeader = `"Full Name"\n`;
+    const csvRows = names
       .map((n) => {
-        if (!n.firstName && !n.lastName) return null;
-        const formattedFirstName = fileUtils.formatCsvCell(n.firstName || "");
-        const formattedLastName = fileUtils.formatCsvCell(n.lastName || "");
-        return `"${formattedFirstName}","${formattedLastName}"`;
+        const formattedFullName = fileUtils.formatCsvCell(n.fullName || "");
+        return `"${formattedFullName}"`;
       })
-      .filter((row) => row !== null)
       .join("\n");
-
-    if (!csvRows) {
-      alert("LCR Tools: No valid data to export as CSV.");
-      return;
-    }
 
     const csvContent = csvHeader + csvRows;
     fileUtils.downloadCsv(csvContent, "individuals_without_photos.csv");
   }
 
   window.noPhotoUtils = {
-    navigateToManageTab,
-    setSubjectTypeToIndividual,
-    setPhotoFilterToMembersWithoutPhoto,
+    collectNoPhotoDataFromDirectory,
     downloadReportData,
   };
 })();

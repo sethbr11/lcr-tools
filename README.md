@@ -8,8 +8,8 @@ This extension aims to streamline common tasks and add helpful utilities for lea
 
 - **Context-Aware Actions:** The extension icon displays a menu with actions relevant to the current LCR page.
 - **Action Directory:** A directory of all the possible actions and what page they can be used on is available from the main popup screen.
-- **Optimized Profile Editing:** Quickly enter edit mode on member profiles with an option to remove performance-impacting elements. This fixes the issue of trying to update the information of a member who has served a mission and not being able to since the screen freezes.
 - **Photo Management Utilities:**
+  - **Photo Data Caching:** Automatically caches photo availability and URLs locally to speed up subsequent runs on the Member Directory. Users can easily toggle this or clear the cache from the popup.
   - Download a CSV of individuals who do not have a photo in LCR.
   - Member Flashcards: Learn names and faces with an interactive, keyboard-friendly flashcard interface (shuffle/unshuffle, flip with SPACE, navigate with arrows).
 - **Multiple Callings Finder:** Quickly identify which members have more than one calling in your unit.
@@ -133,6 +133,7 @@ lcr-extension/
 │   │   ├── loggingUtils.js
 │   │   ├── modalUtils.js
 │   │   ├── navigationUtils.js
+│   │   ├── storageUtils.js
 │   │   ├── tableUtils.js
 │   │   ├── uiUtils.js
 │   │   └── utils.js
@@ -184,7 +185,7 @@ A brief overview of the project's organization:
 ### Permissions
 
 - `"scripting"`: For script injection.
-- `"storage"`: For use of local storage (so far, only implemented in the trip planning action).
+- `"storage"`: For use of local storage to save user preferences and performance caches.
 - `"host_permissions"`: Restricted to `https://lcr.churchofjesuschrist.org/*`, `https://lcrf.churchofjesuschrist.org/*`, `https://lcrffe.churchofjesuschrist.org/*`, and `https://directory.churchofjesuschrist.org/*`.
 
 ## Troubleshooting

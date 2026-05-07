@@ -1,24 +1,33 @@
 /**
  * ACTION: DOWNLOAD LIST OF MEMBERS WITH NO PHOTO
- * A simple action that navigates the manage photos page to download a list of
- * everyone in the ward without a photo in tools as a CSV.
+ * Scrapes the Member Directory page to find individuals without profile photos.
  *
- * See noPhotoUtils.js for in-depth implementation—this file acts as a
- * high level overview of everything that is happening.
+ * See noPhotoUtils.js for in-depth implementation.
  */
 (async function () {
-  utils.ensureLoaded("noPhotoUtils", "uiUtils");
+  utils.ensureLoaded("noPhotoUtils", "uiUtils", "modalUtils", "storageUtils");
   uiUtils.resetAborted();
 
-  // Apply filters to the table
-  uiUtils.showLoadingIndicator("Applying filters...");
-  await noPhotoUtils.navigateToManageTab();
-  await noPhotoUtils.setSubjectTypeToIndividual();
-  await noPhotoUtils.setPhotoFilterToMembersWithoutPhoto();
+  // Show confirmation warning and photo cache settings
+  const { proceed } = await storageUtils.showPhotoActionConfirmationModal({
+    title: "Missing Photos Report",
+    description: "<strong>Note:</strong> Generating this report on the Member Directory page is slower because it needs to click each member's name to check for a photo. Enabling the photo cache will make subsequent runs much faster."
+  });
 
-  // Scroll page and scrape data
-  uiUtils.showLoadingIndicator("Scrolling page to load all names...");
-  await noPhotoUtils.downloadReportData();
+  if (!proceed) {
+    console.log("LCR Tools: User cancelled missing photos report");
+    return;
+  }
+
+  uiUtils.showLoadingIndicator("Checking for missing photos...");
+  const names = await noPhotoUtils.collectNoPhotoDataFromDirectory();
+
+  if (names && names.length > 0) {
+    uiUtils.showLoadingIndicator("Generating report...");
+    await noPhotoUtils.downloadReportData(names);
+  } else if (!uiUtils.isAborted()) {
+    alert("LCR Tools: All members in the current view have photos!");
+  }
 
   uiUtils.hideLoadingIndicator();
 })();

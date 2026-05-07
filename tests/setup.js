@@ -26,6 +26,14 @@ const createChromeMock = () => ({
     insertCSS: sinon.stub(),
     removeCSS: sinon.stub(),
   },
+  storage: {
+    local: {
+      get: sinon.stub().callsArgWith(1, {}),
+      set: sinon.stub().callsArg(1),
+      remove: sinon.stub().callsArg(1),
+      clear: sinon.stub().callsArg(0),
+    },
+  },
 });
 
 // Global Chrome API mock

@@ -132,6 +132,7 @@ describe("Actions Logic", () => {
         "manage-photos",
         "report/self-reliance",
         "records/merge-duplicate",
+        "mlt/approve-photos",
         "ca",
       ];
 

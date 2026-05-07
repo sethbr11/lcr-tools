@@ -197,47 +197,6 @@
         gap: 10px;
       }
 
-      .lcr-tools-btn {
-        padding: 10px 20px;
-        border: none;
-        border-radius: 8px;
-        font-size: 0.9rem;
-        font-weight: 600;
-        cursor: pointer;
-        transition: all 0.2s;
-        text-decoration: none;
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        gap: 5px;
-      }
-
-      .lcr-tools-btn-primary {
-        background: #007bff;
-        color: white;
-      }
-
-      .lcr-tools-btn-primary:hover {
-        background: #0056b3;
-        transform: translateY(-1px);
-      }
-
-      .lcr-tools-btn-secondary {
-        background: #6c757d;
-        color: white;
-      }
-
-      .lcr-tools-btn-secondary:hover {
-        background: #545b62;
-        transform: translateY(-1px);
-      }
-
-      .lcr-tools-btn:disabled {
-        opacity: 0.6;
-        cursor: not-allowed;
-        transform: none;
-      }
-
       .lcr-tools-flashcard-shortcuts {
         margin-top: 15px;
         color: #666;
@@ -298,39 +257,10 @@
     </div>
   `;
 
-  // Directory warning modal HTML
-  const directoryWarningTemplate = `
-    <div style="padding: 20px; line-height: 1.6;">
-      <p style="margin-bottom: 15px;">
-        <strong>Note:</strong> Running flashcards on the Member Directory page is slower
-        because it needs to click each member's name to access their photo.
-      </p>
-      <p style="margin-bottom: 15px;">
-        <strong>Faster Option:</strong> The <strong>Manage Photos</strong> page is significantly faster
-        for creating flashcards.
-      </p>
-      <p style="margin-bottom: 20px;">
-        Would you like to continue here, or go to the Manage Photos page instead?
-      </p>
-      <div style="display: flex; gap: 10px; justify-content: center;">
-        <button id="lcr-tools-go-to-photos" style="padding: 10px 20px; background: #3b82f6; color: white; border: none; border-radius: 5px; cursor: pointer; font-size: 14px;">
-          Go to Manage Photos (Faster)
-        </button>
-        <button id="lcr-tools-continue-here" style="padding: 10px 20px; background: #6b7280; color: white; border: none; border-radius: 5px; cursor: pointer; font-size: 14px;">
-          Continue Here
-        </button>
-        <button id="lcr-tools-cancel" style="padding: 10px 20px; background: #ef4444; color: white; border: none; border-radius: 5px; cursor: pointer; font-size: 14px;">
-          Cancel
-        </button>
-      </div>
-    </div>
-  `;
-
   window.memberFlashcardsTemplates = {
     flashcardTemplate,
     flashcardControlsTemplate,
     flashcardStylesTemplate,
     flashcardModalContentTemplate,
-    directoryWarningTemplate,
   };
 })();

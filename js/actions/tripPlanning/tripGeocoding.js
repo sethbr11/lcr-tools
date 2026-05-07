@@ -1,6 +1,10 @@
 (() => {
   async function geocodeAddressMulti(addr, provider, apiKey) {
-    const cache = JSON.parse(localStorage.getItem("geocode_cache") || "{}");
+    const cache = await new Promise((resolve) => {
+      chrome.storage.local.get(["geocode_cache"], (result) => {
+        resolve(result.geocode_cache || {});
+      });
+    });
     if (cache[addr]) return cache[addr];
 
     const { variants } = tripUtils.advancedNormalizeAddress(addr);
@@ -51,7 +55,9 @@
         }
         const result = { lat, lon, usedVariant: attempt || "original" };
         cache[addr] = result;
-        localStorage.setItem("geocode_cache", JSON.stringify(cache));
+        await new Promise((resolve) => {
+          chrome.storage.local.set({ geocode_cache: cache }, resolve);
+        });
         return result;
       } catch {
         continue;
