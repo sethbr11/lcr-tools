@@ -29,21 +29,30 @@ async function main() {
   console.log(`   Name: ${manifest.name}`);
   console.log(`   Version: ${manifest.version}\n`);
 
-  // Ask about version
-  const versionAnswer = await promptUser(
-    `Keep version ${manifest.version}? (Y/n or enter new version): `
-  );
-
   let newVersion = manifest.version;
-  if (versionAnswer.toLowerCase() === "n") {
-    newVersion = await promptUser("Enter new version number: ");
-  } else if (
-    versionAnswer &&
-    versionAnswer.toLowerCase() !== "y" &&
-    versionAnswer.toLowerCase() !== "yes"
-  ) {
-    // They entered a version number directly
-    newVersion = versionAnswer;
+
+  // Check for command line argument or CI environment
+  const args = process.argv.slice(2);
+  const isCi = process.env.CI === "true" || !process.stdin.isTTY;
+
+  if (args.length > 0) {
+    newVersion = args[0];
+  } else if (!isCi) {
+    // Ask about version only if not in CI and no args provided
+    const versionAnswer = await promptUser(
+      `Keep version ${manifest.version}? (Y/n or enter new version): `,
+    );
+
+    if (versionAnswer.toLowerCase() === "n") {
+      newVersion = await promptUser("Enter new version number: ");
+    } else if (
+      versionAnswer &&
+      versionAnswer.toLowerCase() !== "y" &&
+      versionAnswer.toLowerCase() !== "yes"
+    ) {
+      // They entered a version number directly
+      newVersion = versionAnswer;
+    }
   }
 
   // Update source manifest if version changed
@@ -135,7 +144,7 @@ async function main() {
     if (process.platform === "win32") {
       execSync(
         "powershell Compress-Archive -Path * -DestinationPath ../lcr-tools-extension.zip",
-        { stdio: "inherit" }
+        { stdio: "inherit" },
       );
     } else {
       execSync("zip -r ../lcr-tools-extension.zip *", { stdio: "inherit" });
