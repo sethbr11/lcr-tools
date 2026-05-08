@@ -182,19 +182,14 @@ window.ACTION_METADATA = [
     ],
     urlPatterns: {
       include: [
-        "orgs/callings-by-organization",
-        "orgs/members-with-callings",
+        "mlt/orgs",
         "mlt/report/member-callings",
       ],
     },
     directoryPages: [
       {
         name: "Callings by Organization",
-        url: "https://lcr.churchofjesuschrist.org/orgs/callings-by-organization",
-      },
-      {
-        name: "Members with Callings",
-        url: "https://lcr.churchofjesuschrist.org/orgs/members-with-callings",
+        url: "https://lcr.churchofjesuschrist.org/mlt/orgs",
       },
       {
         name: "Member Callings Report",

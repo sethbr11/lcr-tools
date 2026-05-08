@@ -152,11 +152,9 @@
    * @returns {string|null} - Label or null
    */
   const getLabelFromContainer = (table) => {
-    let container = table.closest(".callings-group, sub-org, [cr-callings]");
+    let container = table.closest(".eden-card, .eden-panel, .callings-group, sub-org");
     if (container) {
-      let h2 =
-        container.querySelector("h2 span.ng-binding") ||
-        container.querySelector("h2");
+      let h2 = container.querySelector("h2, .eden-card-header__title, .eden-panel-header__title");
       if (h2 && h2.textContent.trim()) return h2.textContent.trim();
     }
     return null;
@@ -358,15 +356,13 @@
         }
       }
       // Non-vacant: Check for visible Yes/No spans
-      const yesSpan = cell.querySelector("span.callings-mobile:not(.ng-hide)");
+      const yesSpan = Array.from(cell.querySelectorAll("span.callings-mobile, span")).find(s => 
+        getComputedStyle(s).display !== "none" &&
+        ["Yes", "No"].includes(s.textContent.trim())
+      );
       if (yesSpan) {
-        const spanText = (
-          yesSpan.innerText ||
-          yesSpan.textContent ||
-          ""
-        ).trim();
-        if (spanText === "Yes") return "Yes";
-        if (spanText === "No") return "No";
+        const spanText = yesSpan.textContent.trim();
+        return spanText;
       }
       return "No"; // Default for Set Apart if no clear Yes/No span found
     }
@@ -379,11 +375,13 @@
       "i.icon-check",
       "img[src*='checkmark']",
       "img[src*='check']",
+      "svg.eden-icon", // New React UI icons
     ];
 
     for (const selector of checkIcons) {
       const icon = cell.querySelector(selector);
-      if (icon && !icon.classList.contains("ng-hide") && isVisible(icon)) {
+      if (icon && isVisible(icon)) {
+        // For SVGs, we might want to check the path or data-testid, but usually visibility is enough for a 'Yes' column
         return "Yes";
       }
     }
@@ -392,7 +390,7 @@
     const spans = cell.querySelectorAll("span");
     for (const span of spans) {
       const spanText = (span.innerText || span.textContent || "").trim();
-      const isHidden = span.classList.contains("ng-hide");
+      const isHidden = getComputedStyle(span).display === "none";
 
       if ((spanText === "Yes" || spanText === "No") && !isHidden) {
         return spanText;

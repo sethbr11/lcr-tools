@@ -302,7 +302,7 @@
       ? await storageUtils.getPhotoCache()
       : {};
 
-    // Find all rows in the table that have an ID
+    // Find all rows in the table
     const allRows = Array.from(document.querySelectorAll('tr[id][role="row"]'));
 
     const totalCount = allRows.length;
@@ -313,7 +313,24 @@
       }
 
       const row = allRows[i];
-      const rowId = row.id;
+
+      // Find the member card button inside this row
+      const link = row.querySelector("button.member-card__styled-ghost");
+      if (!link) {
+        continue;
+      }
+
+      // Determine a unique ID for caching
+      let rowId = row.id;
+      if (!rowId || rowId === "") {
+        const href = link.getAttribute("href") || "";
+        const uuidMatch = href.match(/member-profile\/([a-f0-9-]+)/);
+        if (uuidMatch) {
+          rowId = uuidMatch[1];
+        } else {
+          rowId = `row-${i}`;
+        }
+      }
 
       // Check cache first
       if (cacheSettings.enabled && currentCache[rowId]) {
@@ -327,12 +344,6 @@
       }
 
       try {
-        // Find the member card button inside this row
-        const link = row.querySelector("button.member-card__styled-ghost");
-        if (!link) {
-          continue;
-        }
-
         uiUtils.showLoadingIndicator(
           `Collecting member photos (processing ${i + 1} / ${totalCount})...`,
         );
