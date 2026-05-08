@@ -9,7 +9,7 @@
     "tableUtils",
     "fileUtils",
     "modalUtils",
-    "findMultipleCallingsTemplates"
+    "findMultipleCallingsTemplates",
   );
 
   /**
@@ -18,7 +18,7 @@
   async function navigateToWithCallingsTab() {
     uiUtils.clickButton(
       'button#tab-withCallings[role="tab"]',
-      "With Callings tab button"
+      "With Callings tab button",
     );
   }
 
@@ -26,12 +26,26 @@
    * Navigate to the "All Organization" designation on the Callings by Organization page.
    */
   async function navigateToAllOrganizations() {
-    const ignoreNotPresent = true;
-    uiUtils.clickButton(
-      'a[ng-click="selectAllOrgs()"]',
-      "All Organizations link",
-      ignoreNotPresent
+    // In the new React UI, we look for the Organizations multi-select dropdown
+    const orgsDropdown = document.querySelector(
+      'button[aria-haspopup="listbox"], button.multi-select__styled-secondary',
     );
+    if (orgsDropdown) {
+      orgsDropdown.click();
+      await utils.sleep(300);
+
+      const allOrgsCheckbox = document.querySelector(
+        'input[value*="all-organizations"]',
+      );
+      if (allOrgsCheckbox && !allOrgsCheckbox.checked) {
+        allOrgsCheckbox.click();
+        await utils.sleep(500);
+      }
+
+      // Close dropdown
+      orgsDropdown.click();
+      await utils.sleep(200);
+    }
   }
 
   /**
@@ -40,11 +54,16 @@
    * @returns {Array<Object>} - List of members with multiple callings.
    */
   function getList(page) {
-    const isOrgsPage = page === "callings-by-organization";
+    // Robust detection for the overhauled organizations page
+    const isOrgsPage =
+      page === "callings-by-organization" ||
+      !!document.querySelector(".eden-table-table");
+
     const pageTables = isOrgsPage
       ? tableUtils.getPageTables().tables
       : [{ id: null }];
-    if (!pageTables || (isOrgsPage && pageTables.count === 0)) return [];
+
+    if (!pageTables || pageTables.length === 0) return [];
 
     const membersWithMultipleCallings = [];
     const memberCallingsMap = new Map();
@@ -53,16 +72,38 @@
       const tableData = isOrgsPage
         ? tableUtils.tableToCSV(table.id, table.label, table.type)
         : tableUtils.tableToCSV();
+
       if (!tableData || !tableData.csvContent) return;
 
-      const rows = tableData.csvContent.split("\r\n");
-      const headers = rows[0].split(","); // Extract headers
+      // Handle different line endings (LCR often uses CRLF)
+      const rows = tableData.csvContent
+        .split(/\r?\n/)
+        .filter((line) => line.trim());
+      if (rows.length < 2) return;
+
       const dataRows = rows.slice(1); // Skip header row
 
       dataRows.forEach((row) => {
-        const columns = row.match(/(".*?"|[^",]+)(?=\s*,|\s*$)/g);
-        if (!columns || columns.length < headers.length) return;
+        // Robust CSV column extraction handling quotes and empty values
+        const columns = [];
+        let col = "";
+        let inQuotes = false;
+        for (let i = 0; i < row.length; i++) {
+          const char = row[i];
+          if (char === '"') inQuotes = !inQuotes;
+          else if (char === "," && !inQuotes) {
+            columns.push(col.trim());
+            col = "";
+          } else {
+            col += char;
+          }
+        }
+        columns.push(col.trim());
 
+        if (columns.length < 2) return;
+
+        // On the Organizations page: Col 0 = Calling, Col 1 = Name
+        // On the Member Callings page: Col 0 = Name, Col 6 = Calling, Col 5 = Org
         const name = isOrgsPage
           ? columns[1]?.replace(/"/g, "").trim()
           : columns[0]?.replace(/"/g, "").trim();
@@ -113,7 +154,7 @@
 
     // Check if we're on the ward callings page to show disclaimer
     const isWardCallingsPage = window.location.href.includes(
-      "orgs/callings-by-organization"
+      "orgs/callings-by-organization",
     );
 
     // Prepare alerts
@@ -150,7 +191,7 @@
             utils.replaceTemplate(templates.callingItem, {
               calling: calling.calling,
               organization: calling.organization || "N/A",
-            })
+            }),
           )
           .join("");
 
@@ -231,7 +272,7 @@
     modalUtils.showStatus(
       "lcr-tools-multiple-callings-status",
       message,
-      isError
+      isError,
     );
   }
 
@@ -250,7 +291,7 @@
         return;
       }
       membersToExport = membersWithMultipleCallings.filter((member) =>
-        selectedItems.has(member.name)
+        selectedItems.has(member.name),
       );
     }
 
@@ -270,7 +311,7 @@
           member.callings.length
         }","${callings.replace(/"/g, '""')}","${organizations.replace(
           /"/g,
-          '""'
+          '""',
         )}"`;
       })
       .join("\n");
@@ -283,7 +324,7 @@
       : membersWithMultipleCallings.length;
     showUiStatus(
       `CSV report with ${exportCount} members downloaded successfully.`,
-      false
+      false,
     );
   }
 

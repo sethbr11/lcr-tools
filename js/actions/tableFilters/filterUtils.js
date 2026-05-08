@@ -12,7 +12,7 @@
     "uiUtils",
     "modalUtils",
     "dataUtils",
-    "tableFilterTemplates"
+    "tableFilterTemplates",
   );
 
   // Global state for current filtering
@@ -28,14 +28,9 @@
   function createModalButtons() {
     return [
       {
-        text: "Clear Current Filters",
+        text: "Clear Filters",
         options: { variant: "warning" },
         onClick: () => clearCurrentTableFilters(),
-      },
-      {
-        text: "Clear All Filters",
-        options: { variant: "danger" },
-        onClick: () => clearAllFilters(),
       },
       {
         text: "Apply Filters",
@@ -104,9 +99,9 @@
       const content = createModalContent(
         tableFilterTemplates.singleTableModalContent.replace(
           "{{tableLabel}}",
-          currentTable.label || "Table"
+          currentTable.label || "Table",
         ),
-        needsScrolling
+        needsScrolling,
       );
 
       modalUtils.createSideModal({
@@ -128,21 +123,28 @@
     }
 
     // Create table dropdown options
-    const tableOptions = pageTables.tables
-      .map(
-        (table, index) =>
-          `<option value="${index}">${table.label || `Table ${index + 1}`} (${
-            table.type
-          })</option>`
-      )
-      .join("");
+    const options = pageTables.tables.map(
+      (table, index) =>
+        `<option value="${index}">${table.label || `Table ${index + 1}`} (${
+          table.type
+        })</option>`,
+    );
+
+    // Add 'All Tables' option if there's more than one
+    if (pageTables.tables.length > 1) {
+      options.unshift(
+        `<option value="all">All Tables (${pageTables.tables.length})</option>`,
+      );
+    }
+
+    const tableOptions = options.join("");
 
     const content = createModalContent(
       tableFilterTemplates.multiTableModalContent.replace(
         "{{tableOptions}}",
-        tableOptions
+        tableOptions,
       ),
-      needsScrolling
+      needsScrolling,
     );
 
     modalUtils.createSideModal({
@@ -160,18 +162,25 @@
     const tableSelector = document.getElementById("lcr-tools-table-selector");
     if (tableSelector) {
       tableSelector.addEventListener("change", (e) => {
-        const selectedIndex = parseInt(e.target.value);
-        if (!isNaN(selectedIndex) && selectedIndex >= 0) {
-          const selectedTable = pageTables.tables[selectedIndex];
-          currentTable = selectedTable;
-          showFilterOptions(selectedTable);
+        const val = e.target.value;
+        if (val === "all") {
+          currentTable = "all";
+          // Use the first table to determine filter options (assuming similar schemas)
+          showFilterOptions(pageTables.tables[0], true);
         } else {
-          // Hide filter options if no table selected
-          const filterOptions = document.getElementById(
-            "lcr-tools-filter-options"
-          );
-          if (filterOptions) {
-            filterOptions.style.display = "none";
+          const selectedIndex = parseInt(val);
+          if (!isNaN(selectedIndex) && selectedIndex >= 0) {
+            const selectedTable = pageTables.tables[selectedIndex];
+            currentTable = selectedTable;
+            showFilterOptions(selectedTable);
+          } else {
+            // Hide filter options if no table selected
+            const filterOptions = document.getElementById(
+              "lcr-tools-filter-options",
+            );
+            if (filterOptions) {
+              filterOptions.style.display = "none";
+            }
           }
         }
       });
@@ -181,13 +190,14 @@
   /**
    * Shows the filter options for the selected table in the side modal
    * @param {Object} selectedTable - The table to filter
+   * @param {boolean} isMultiTable - Whether we are filtering all tables
    */
-  function showFilterOptions(selectedTable) {
-    currentTable = selectedTable;
+  function showFilterOptions(selectedTable, isMultiTable = false) {
+    if (!isMultiTable) currentTable = selectedTable;
 
     // Get the actual table element
     const tableElement = document.querySelector(
-      `table[data-table-id="${selectedTable.id}"]`
+      `table[data-table-id="${selectedTable.id}"]`,
     );
     if (!tableElement) {
       alert("Table not found on page. The page may have changed.");
@@ -209,20 +219,23 @@
       .map((filter) => createFilterHTML(filter))
       .join("");
 
+    const displayLabel = isMultiTable
+      ? "All Tables"
+      : selectedTable.label || "Table";
     const content = tableFilterTemplates.filterOptionsContent
-      .replace("{{tableLabel}}", selectedTable.label || "Table")
+      .replace("{{tableLabel}}", displayLabel)
       .replace("{{filterOptions}}", filterOptions);
 
     // Update the filter options section in the side modal
     const filterOptionsContainer = document.getElementById(
-      "lcr-tools-filter-options"
+      "lcr-tools-filter-options",
     );
     if (filterOptionsContainer) {
       filterOptionsContainer.innerHTML = filterOptions;
       filterOptionsContainer.style.display = "block";
     } else {
       console.warn(
-        "LCR Tools: Filter options container not found. Modal may not be created yet."
+        "LCR Tools: Filter options container not found. Modal may not be created yet.",
       );
     }
 
@@ -428,7 +441,7 @@
         const options = filter.values
           .filter((value) => value && value.trim() !== "")
           .map((value) =>
-            tableFilterTemplates.dropdownOption.replaceAll("{{value}}", value)
+            tableFilterTemplates.dropdownOption.replaceAll("{{value}}", value),
           )
           .join("");
         return replaceStylePlaceholders(tableFilterTemplates.dropdownFilter)
@@ -460,7 +473,7 @@
   function setupFilterEventListeners() {
     // Add change listeners to all filter controls
     const filterControls = document.querySelectorAll(
-      "#lcr-tools-filter-options select, #lcr-tools-filter-options input"
+      "#lcr-tools-filter-options select, #lcr-tools-filter-options input",
     );
     filterControls.forEach((control) => {
       control.addEventListener("change", updateFilterStatus);
@@ -483,7 +496,7 @@
       statusElement.style.border = "1px solid #bee5eb";
       statusElement.innerHTML = tableFilterTemplates.filterStatusActive.replace(
         "{{activeFilters}}",
-        activeFilters.join(", ")
+        activeFilters.join(", "),
       );
     } else {
       statusElement.style.display = "none";
@@ -497,7 +510,7 @@
   function getActiveFilters() {
     const activeFilters = [];
     const filterControls = document.querySelectorAll(
-      "#lcr-tools-filter-options select, #lcr-tools-filter-options input"
+      "#lcr-tools-filter-options select, #lcr-tools-filter-options input",
     );
 
     filterControls.forEach((control) => {
@@ -512,24 +525,31 @@
   }
 
   /**
-   * Applies the current filters to the table
+   * Applies the current filters to the table(s)
    */
   function applyFilters() {
     if (!currentTable) return;
 
-    const tableElement = document.querySelector(
-      `table[data-table-id="${currentTable.id}"]`
-    );
-    if (!tableElement) return;
-
+    const tablesToFilter =
+      currentTable === "all" ? pageTables.tables : [currentTable];
     const filters = getCurrentFilters();
-    const rows = Array.from(tableElement.querySelectorAll("tbody tr"));
-    let visibleCount = 0;
 
-    rows.forEach((row) => {
-      const shouldShow = evaluateRow(row, filters);
-      row.style.display = shouldShow ? "" : "none";
-      if (shouldShow) visibleCount++;
+    let totalVisible = 0;
+    let totalRows = 0;
+
+    tablesToFilter.forEach((tableInfo) => {
+      const tableElement = document.querySelector(
+        `table[data-table-id="${tableInfo.id}"]`,
+      );
+      if (!tableElement) return;
+
+      const rows = Array.from(tableElement.querySelectorAll("tbody tr"));
+      rows.forEach((row) => {
+        const shouldShow = evaluateRow(row, filters);
+        row.style.display = shouldShow ? "" : "none";
+        if (shouldShow) totalVisible++;
+        totalRows++;
+      });
     });
 
     // Update status
@@ -540,12 +560,12 @@
       statusElement.style.color = "#155724";
       statusElement.style.border = "1px solid #c3e6cb";
       statusElement.innerHTML = tableFilterTemplates.filterStatusApplied
-        .replace("{{visibleCount}}", visibleCount)
-        .replace("{{totalCount}}", rows.length);
+        .replace("{{visibleCount}}", totalVisible)
+        .replace("{{totalCount}}", totalRows);
     }
 
     console.log(
-      `LCR Tools: Applied filters, showing ${visibleCount} of ${rows.length} rows`
+      `LCR Tools: Applied filters to ${tablesToFilter.length} table(s), showing ${totalVisible} of ${totalRows} rows`,
     );
   }
 
@@ -556,7 +576,7 @@
   function getCurrentFilters() {
     const filters = {};
     const filterControls = document.querySelectorAll(
-      "#lcr-tools-filter-options select, #lcr-tools-filter-options input"
+      "#lcr-tools-filter-options select, #lcr-tools-filter-options input",
     );
 
     filterControls.forEach((control) => {
@@ -661,7 +681,7 @@
    */
   function clearFilterControls() {
     const filterControls = document.querySelectorAll(
-      "#lcr-tools-filter-options select, #lcr-tools-filter-options input"
+      "#lcr-tools-filter-options select, #lcr-tools-filter-options input",
     );
     filterControls.forEach((control) => {
       control.value = "";
@@ -675,7 +695,7 @@
    */
   function resetTableRows(tableId) {
     const tableElement = document.querySelector(
-      `table[data-table-id="${tableId}"]`
+      `table[data-table-id="${tableId}"]`,
     );
     if (tableElement) {
       const rows = Array.from(tableElement.querySelectorAll("tbody tr"));
@@ -692,9 +712,18 @@
     if (!currentTable) return;
 
     clearFilterControls();
-    resetTableRows(currentTable.id);
 
-    console.log("LCR Tools: Cleared filters for current table");
+    if (currentTable === "all") {
+      pageTables.tables.forEach((table) => resetTableRows(table.id));
+    } else {
+      resetTableRows(currentTable.id);
+    }
+
+    // Hide status
+    const statusElement = document.getElementById("lcr-tools-filter-status");
+    if (statusElement) statusElement.style.display = "none";
+
+    console.log("LCR Tools: Cleared filters");
   }
 
   /**
@@ -720,7 +749,7 @@
     if (!currentTable || !originalTableData) return;
 
     const tableElement = document.querySelector(
-      `table[data-table-id="${currentTable.id}"]`
+      `table[data-table-id="${currentTable.id}"]`,
     );
     if (!tableElement) return;
 
@@ -745,7 +774,7 @@
       // Show loading indicator
       uiUtils.showLoadingIndicator(
         "Loading all data...",
-        "Scrolling to load content"
+        "Scrolling to load content",
       );
 
       // Scroll to load all content
@@ -772,7 +801,7 @@
       const loadDataBtn = document.getElementById("lcr-tools-load-data-btn");
       if (loadDataBtn) {
         const navSection = loadDataBtn.closest(
-          '[style*="background: linear-gradient"]'
+          '[style*="background: linear-gradient"]',
         );
         if (navSection) {
           navSection.style.display = "none";

@@ -11,11 +11,20 @@
   // Ensure utility functions are loaded
   utils.ensureLoaded("findMultipleCallingsUtils");
 
-  const page = window.location.href.includes("member-callings")
+  // Improved page detection for both legacy and React overhaul
+  const isMemberCallings = window.location.href.includes("member-callings");
+  const isOrgsPage =
+    window.location.href.includes("callings-by-organization") ||
+    window.location.href.includes("report/organizations") ||
+    Array.from(document.querySelectorAll("h1, .eden-headings-h1")).some((h) =>
+      h.textContent.includes("Organizations"),
+    );
+
+  const page = isMemberCallings
     ? "member-callings"
-    : window.location.href.includes("callings-by-organization")
-    ? "callings-by-organization"
-    : null;
+    : isOrgsPage
+      ? "callings-by-organization"
+      : null;
 
   // Do URL-specific actions to prepare page for processing
   if (page === "member-callings")

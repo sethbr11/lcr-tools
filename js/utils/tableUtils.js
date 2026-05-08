@@ -24,7 +24,7 @@
    */
   const getVisibleRows = (table) => {
     return Array.from(table.querySelectorAll("tbody tr")).filter(
-      (row) => row.offsetParent !== null
+      (row) => row.offsetParent !== null,
     );
   };
 
@@ -127,7 +127,7 @@
         if (text.length > 35) return null;
         return text;
       }
-      let thText = th.textContent.trim();
+      let thText = getCleanText(th);
       if (
         thText &&
         thText.length <= 35 &&
@@ -138,6 +138,10 @@
           "new unit",
           "prior unit",
           "preferred name",
+          "calling",
+          "position",
+          "sustained",
+          "set apart",
         ].includes(thText.toLowerCase())
       ) {
         return thText;
@@ -152,12 +156,103 @@
    * @returns {string|null} - Label or null
    */
   const getLabelFromContainer = (table) => {
-    let container = table.closest(".eden-card, .eden-panel, .callings-group, sub-org");
-    if (container) {
-      let h2 = container.querySelector("h2, .eden-card-header__title, .eden-panel-header__title");
-      if (h2 && h2.textContent.trim()) return h2.textContent.trim();
+    let specificHeader = null;
+    let mainHeader = null;
+
+    // Helper to check if a header is valid (visible and not in a modal)
+    const isValidHeader = (el) => {
+      if (!el) return false;
+      // Ignore headers in dialogs, hidden elements, or print-only sections
+      if (el.closest("dialog, [hidden], .no-print, .print-header"))
+        return false;
+      // Basic visibility check
+      if (el.offsetWidth === 0 && el.offsetHeight === 0) return false;
+      return true;
+    };
+
+    // Walk up from the table and check preceding siblings at each level
+    let current = table;
+    while (
+      current &&
+      !current.classList.contains("page-container__styled-page")
+    ) {
+      // Check preceding siblings of current element
+      let sibling = current.previousElementSibling;
+      while (sibling) {
+        // Look for headers within the sibling or the sibling itself
+        const found = Array.from(
+          sibling.querySelectorAll(
+            "h2, h3, .eden-headings-h2, .eden-headings-h3, .eden-card-header__title",
+          ),
+        )
+          .concat(
+            sibling.matches(
+              "h2, h3, .eden-headings-h2, .eden-headings-h3, .eden-card-header__title",
+            )
+              ? [sibling]
+              : [],
+          )
+          .filter(isValidHeader);
+
+        // Use the last one found in the sibling (nearest to the table)
+        const h = found[found.length - 1];
+
+        if (h) {
+          const text = getCleanText(h);
+          if (text) {
+            const isH3 =
+              h.tagName === "H3" || h.classList.contains("eden-headings-h3");
+            const isH2 =
+              h.tagName === "H2" ||
+              h.classList.contains("eden-headings-h2") ||
+              h.classList.contains("eden-card-header__title");
+
+            if (isH3 && !specificHeader) {
+              specificHeader = text;
+            } else if (isH2) {
+              if (!specificHeader) {
+                specificHeader = text;
+              } else if (!mainHeader && text !== specificHeader) {
+                mainHeader = text;
+                // If specific already contains main, just use specific
+                if (
+                  specificHeader
+                    .toLowerCase()
+                    .includes(mainHeader.toLowerCase())
+                )
+                  return specificHeader;
+                return `${mainHeader} - ${specificHeader}`;
+              }
+            }
+          }
+        }
+        sibling = sibling.previousElementSibling;
+      }
+
+      // Check the container itself for a header
+      if (
+        current.matches(".eden-card, .eden-panel, .callings-group, sub-org")
+      ) {
+        const h = Array.from(
+          current.querySelectorAll(
+            "h2, .eden-headings-h2, .eden-card-header__title",
+          ),
+        ).filter(isValidHeader)[0];
+        if (h) {
+          const text = getCleanText(h);
+          if (specificHeader && text !== specificHeader) {
+            if (specificHeader.toLowerCase().includes(text.toLowerCase()))
+              return specificHeader;
+            return `${text} - ${specificHeader}`;
+          }
+          return text;
+        }
+      }
+
+      current = current.parentElement;
     }
-    return null;
+
+    return specificHeader || null;
   };
 
   /**
@@ -167,21 +262,20 @@
    */
   const getLabelFromDomTraversal = (table) => {
     let current = table.parentElement;
-    while (current && !current.classList.contains("pageTitle")) {
-      let h2 = current.querySelector("h2");
-      if (h2 && h2.textContent.trim()) return h2.textContent.trim();
-      // First, check for h2 elements in the current container and its previous siblings
+    while (
+      current &&
+      !current.classList.contains("pageTitle") &&
+      !current.classList.contains("page-container__styled-page")
+    ) {
+      let h = current.querySelector("h2, .eden-headings-h2");
+      if (h && h.textContent.trim()) return h.textContent.trim();
+
+      // Check siblings
       let prev = current;
       while (prev) {
-        let h2 = prev.querySelector && prev.querySelector("h2");
-        if (h2 && h2.textContent.trim()) return h2.textContent.trim();
-        prev = prev.previousElementSibling;
-      }
-      // If no h2 found, check for h1 elements in the current container and its previous siblings
-      prev = current;
-      while (prev) {
-        let h1 = prev.querySelector && prev.querySelector("h1");
-        if (h1 && h1.textContent.trim()) return h1.textContent.trim();
+        let hSib =
+          prev.querySelector && prev.querySelector("h2, .eden-headings-h2");
+        if (hSib && hSib.textContent.trim()) return hSib.textContent.trim();
         prev = prev.previousElementSibling;
       }
       current = current.parentElement;
@@ -196,6 +290,8 @@
    */
   const getTableType = (table) => {
     if (isFinanceTable(table)) return "finance-table";
+    if (table.classList && table.classList.contains("eden-table-table"))
+      return "eden-table";
     if (table.classList && table.classList.contains("data-table"))
       return "data-table";
     if (table.classList && table.classList.contains("emphasize"))
@@ -230,12 +326,44 @@
    * @returns {string|null} - Table label or null
    */
   const getTableLabel = (table) => {
+    const containerLabel = getLabelFromContainer(table);
+    if (containerLabel) return containerLabel;
+
+    const type = getTableType(table);
+    if (type === "eden-table") {
+      // For Eden tables, headers like "Calling" are likely column names,
+      // so we strongly prefer container or traversal labels
+      return (
+        getLabelFromDomTraversal(table) ||
+        getLabelFromHeader(table) ||
+        getLabelFromTh(table)
+      );
+    }
+
     return (
       getLabelFromHeader(table) ||
       getLabelFromTh(table) ||
-      getLabelFromContainer(table) ||
       getLabelFromDomTraversal(table)
     );
+  };
+
+  /**
+   * Helper: Get the text content of an element, ignoring elements with aria-hidden="true"
+   * @param {HTMLElement} el - The element to get text from
+   * @returns {string} - Cleaned text content
+   */
+  const getCleanText = (el) => {
+    if (!el) return "";
+    // Note: innerText requires the element to be in the DOM and rendered.
+    // textContent works on disconnected clones but includes hidden text.
+    // So we manually remove elements marked as hidden or cloned headers.
+    const clone = el.cloneNode(true);
+    clone
+      .querySelectorAll(
+        '[aria-hidden="true"], .eden-table-card-view__cloned-column-header',
+      )
+      .forEach((hidden) => hidden.remove());
+    return (clone.textContent || "").replace(/\s+/g, " ").trim();
   };
 
   /**
@@ -251,9 +379,9 @@
       const button = th.querySelector("button");
       let headerText = "";
       if (button) {
-        headerText = button.innerText.replace(/\s+/g, " ").trim();
+        headerText = getCleanText(button);
       } else {
-        headerText = (th.innerText || th.textContent || "").trim();
+        headerText = getCleanText(th);
       }
       return { th, headerText, index };
     });
@@ -265,7 +393,7 @@
         !th.classList.contains("hidden-print") &&
         headerText !== "" &&
         headerText.toLowerCase() !== "actions" &&
-        headerText.toLowerCase() !== "edit"
+        headerText.toLowerCase() !== "edit",
     );
     const headers = filtered.map(({ headerText }) => headerText);
     const indices = filtered.map(({ index }) => index);
@@ -281,7 +409,7 @@
     return Array.from(row.querySelectorAll("td"))
       .filter(
         (td) =>
-          td.offsetParent !== null && !td.classList.contains("checkbox-col")
+          td.offsetParent !== null && !td.classList.contains("checkbox-col"),
       )
       .map((td) => formatCsvValue(getCellValue(td)));
   }
@@ -294,7 +422,7 @@
   function hasKnownIcon(cell) {
     // Check for checkmark icons indicating "Yes"
     let icon = cell.querySelector(
-      '.lds.icon-check-open, .lds.icon-check-open-small, .lds.icon-checkmark, img[alt*="checkmark"], svg path[d*="M7.453 17.542"]'
+      '.lds.icon-check-open, .lds.icon-check-open-small, .lds.icon-checkmark, img[alt*="checkmark"], svg path[d*="M7.453 17.542"]',
     );
     if (icon && icon.offsetParent !== null) return "Yes";
 
@@ -349,16 +477,19 @@
         if (
           nameCell &&
           (nameCell.innerText || nameCell.textContent || "").includes(
-            "Calling Vacant"
+            "Calling Vacant",
           )
         ) {
           return ""; // Vacant calling: return blank
         }
       }
       // Non-vacant: Check for visible Yes/No spans
-      const yesSpan = Array.from(cell.querySelectorAll("span.callings-mobile, span")).find(s => 
-        getComputedStyle(s).display !== "none" &&
-        ["Yes", "No"].includes(s.textContent.trim())
+      const yesSpan = Array.from(
+        cell.querySelectorAll("span.callings-mobile, span"),
+      ).find(
+        (s) =>
+          getComputedStyle(s).display !== "none" &&
+          ["Yes", "No"].includes(s.textContent.trim()),
       );
       if (yesSpan) {
         const spanText = yesSpan.textContent.trim();
@@ -428,7 +559,7 @@
     const knownValue = hasKnownValue(cell);
     if (knownValue !== null) return knownValue;
 
-    const text = (cell.innerText || cell.textContent || "").trim();
+    const text = getCleanText(cell);
     return text
       .replace(/\s*\n\s*/g, " ")
       .replace(/\s+/g, " ")
@@ -499,7 +630,7 @@
               formatCsvValue(budget),
               formatCsvValue(balance),
               formatCsvValue(percentage),
-            ].join(",")
+            ].join(","),
           );
         }
       }
@@ -545,7 +676,7 @@
     const { headers, indices } = getRelevantHeaderCells(table);
     const csvRows = [];
     const allRows = Array.from(table.querySelectorAll("tr")).filter(
-      (row) => row.offsetParent !== null
+      (row) => row.offsetParent !== null,
     );
     for (const [i, row] of allRows.entries()) {
       const cells = Array.from(row.querySelectorAll("td"));
@@ -553,7 +684,7 @@
         i === 0
           ? headers
           : indices.map((index) =>
-              cells[index] ? formatCsvValue(getCellValue(cells[index])) : ""
+              cells[index] ? formatCsvValue(getCellValue(cells[index])) : "",
             );
       csvRows.push(rowData.join(","));
     }
@@ -602,12 +733,12 @@
         const link = cell.querySelector("a");
         if (link)
           return formatCsvValue(
-            (link.innerText || link.textContent || "").trim()
+            (link.innerText || link.textContent || "").trim(),
           );
         const divs = cell.querySelectorAll("div");
         if (divs.length >= 3)
           return formatCsvValue(
-            (divs[2].innerText || divs[2].textContent || "").trim()
+            (divs[2].innerText || divs[2].textContent || "").trim(),
           );
         return formatCsvValue(getCellValue(cell));
       });
@@ -630,7 +761,7 @@
     for (const row of getVisibleRows(table)) {
       const allCells = Array.from(row.querySelectorAll("td"));
       const visibleCells = visibleColumnIndices.map((index) =>
-        allCells[index] ? formatCsvValue(getCellValue(allCells[index])) : ""
+        allCells[index] ? formatCsvValue(getCellValue(allCells[index])) : "",
       );
       if (visibleCells.length > 0 && visibleCells.some((c) => c !== ""))
         csvRows.push(visibleCells.join(","));
@@ -669,7 +800,7 @@
 
     // Also look for finance tables (non-table elements)
     let allFinanceTables = Array.from(
-      document.querySelectorAll('article[data-qa="bloTable"]')
+      document.querySelectorAll('article[data-qa="bloTable"]'),
     );
 
     for (const financeTable of allFinanceTables) {
@@ -763,13 +894,13 @@
             label: table.label || `Table ${index + 1}`,
             type: table.type,
             id: table.id,
-          })
+          }),
         )
         .join("");
 
       const content = tableSelectionModal.replace(
         "{{tableOptions}}",
-        tableOptions
+        tableOptions,
       );
 
       // Create modal
@@ -796,15 +927,15 @@
                     options: { variant: "success" },
                     onClick: () => {
                       const selectedCheckboxes = document.querySelectorAll(
-                        'input[name="lcr-tools-table-select"]:checked'
+                        'input[name="lcr-tools-table-select"]:checked',
                       );
                       const selectedTables = Array.from(selectedCheckboxes).map(
                         (checkbox) =>
-                          pageTables.tables[parseInt(checkbox.value)]
+                          pageTables.tables[parseInt(checkbox.value)],
                       );
                       modalUtils.closeModal("lcr-tools-table-selection-modal");
                       resolve(
-                        selectedTables.length > 0 ? selectedTables : null
+                        selectedTables.length > 0 ? selectedTables : null,
                       );
                     },
                   },
@@ -823,10 +954,10 @@
           if (allowMultiple) {
             // Add event handlers for multi-selection mode
             const selectAllBtn = document.getElementById(
-              "lcr-tools-select-all-tables"
+              "lcr-tools-select-all-tables",
             );
             const deselectAllBtn = document.getElementById(
-              "lcr-tools-deselect-all-tables"
+              "lcr-tools-deselect-all-tables",
             );
 
             if (selectAllBtn) {
@@ -873,7 +1004,7 @@
           // Fallback if modalUtils not available
           console.warn("modalUtils not available, returning all tables");
           resolve(allowMultiple ? pageTables.tables : pageTables.tables[0]);
-        }
+        },
       );
     });
   };
@@ -901,7 +1032,7 @@
       // If no regular table, try finance table
       if (!table) {
         table = Array.from(
-          document.querySelectorAll('article[data-qa="bloTable"]')
+          document.querySelectorAll('article[data-qa="bloTable"]'),
         ).find(isVisible);
         console.log("LCR Tools: Found finance table:", table);
       }
@@ -922,6 +1053,7 @@
       "data-table": processDataTable,
       emphasize: processEmphasizeTable,
       "general-table": processGeneralTable,
+      "eden-table": processGeneralTable,
       "labeled-table": processLabeledTable,
       "finance-table": processFinanceTable,
     };
@@ -943,7 +1075,7 @@
         "fileUtils",
         (fu) =>
           fu.generateFilename("csv", name ? name.replace(/\s+/g, "_") : ""),
-        "lcr_table.csv"
+        "lcr_table.csv",
       );
     }
     return { csvContent, filename };
@@ -977,7 +1109,7 @@
       ];
 
       const monthIndex = monthNames.findIndex(
-        (m) => m.toLowerCase() === monthStr.toLowerCase()
+        (m) => m.toLowerCase() === monthStr.toLowerCase(),
       );
 
       if (day && monthIndex !== -1) {
@@ -1028,7 +1160,7 @@
         !th.classList.contains("hidden-print") &&
         headerText !== "" &&
         headerText.toLowerCase() !== "actions" &&
-        headerText.toLowerCase() !== "edit"
+        headerText.toLowerCase() !== "edit",
     );
     const headers = filtered.map(({ headerText }) => headerText);
     const indices = filtered.map(({ index }) => index);
@@ -1044,7 +1176,7 @@
   function getUniqueValues(table, columnIndex) {
     const values = new Set();
     const rows = Array.from(table.querySelectorAll("tbody tr")).filter(
-      (row) => row.offsetParent !== null
+      (row) => row.offsetParent !== null,
     );
 
     rows.forEach((row) => {
