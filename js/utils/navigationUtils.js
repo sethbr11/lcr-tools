@@ -14,21 +14,27 @@
   const SELECTORS = {
     firstPageButtons: [
       'button[data-testid="first"]',
-      "div.sc-f155593d-0.jVFBIX",
+      'button[aria-label*="first"]',
     ],
-    nextPageButtons: ['button[data-testid="next"]', "div.sc-b87b8e2-0.cLfglj"],
-    lastPageButtons: ['button[data-testid="last"]', "div.sc-cb69f8b7-0.cXraMi"],
-    firstPageNumberDiv: ".sc-9d92d0db-0.lnnvp .sc-66e0b3ee-0:first-child",
-    activePageClass: "ghqlVx",
+    nextPageButtons: [
+      'button[data-testid="next"]',
+      'button[aria-label*="next"]',
+    ],
+    lastPageButtons: [
+      'button[data-testid="last"]',
+      'button[aria-label*="last"]',
+    ],
+    firstPageNumberDiv: 'button[aria-label="Page 1"]',
+    activePageClass: "eden-button--primary", // Best guess for active state in Eden
     pageIndicatorText:
-      "div.sc-lf3bj0-0.biBXLT > div:last-of-type:not([class^='sc-'])",
+      '[data-testid="pagination-count"], [aria-label*="of"]',
     trueIconSvg:
-      'div.sc-5ba12d08-0 svg path[d*="M12 22c5.523"][d*="l-7.452 7.196"]',
-    falseIconSvg: 'div.sc-5ba12d08-0 svg path[d*="M12 3.5a8.5"][d*="M2 12C2"]',
+      'svg path[d*="M12 22c5.523"], svg path[d*="M7.453 17.542"]',
+    falseIconSvg: 'svg path[d*="M12 3.5a8.5"]',
     trueIconImg: 'img[src*="icon-16-checkmark.png"]',
-    countSpan: 'span[translate="common.table.count"]',
-    filteredSpan: 'span[translate="common.table.filtered"]',
-    infiniteScrollElement: "[infinite-scroll]",
+    countSpan: '[data-testid="table-count"]',
+    filteredSpan: '[data-testid="table-filtered"]',
+    infiniteScrollElement: ".eden-table-container, .eden-fade-scrollable",
   };
 
   /**

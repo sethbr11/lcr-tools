@@ -296,7 +296,7 @@
       return "data-table";
     if (table.classList && table.classList.contains("emphasize"))
       return "emphasize";
-    if (table.classList && table.classList.contains("sc-1i12zlh-0")) {
+    if (table.classList && (table.classList.contains("eden-table-table") || table.classList.contains("data-table"))) {
       const firstTh = table.querySelector("thead th:first-child");
       if (firstTh && firstTh.querySelector("h4")) return "summary";
     }
@@ -422,17 +422,13 @@
   function hasKnownIcon(cell) {
     // Check for checkmark icons indicating "Yes"
     let icon = cell.querySelector(
-      '.lds.icon-check-open, .lds.icon-check-open-small, .lds.icon-checkmark, img[alt*="checkmark"], svg path[d*="M7.453 17.542"]',
+      '.lds.icon-check-open, .lds.icon-check-open-small, .lds.icon-checkmark, img[alt*="checkmark"], svg path[d*="M7.453 17.542"], svg path[d*="M12 22c5.523"]',
     );
     if (icon && icon.offsetParent !== null) return "Yes";
 
-    // Check for the specific SVG checkmark that should show as "x"
-    icon = cell.querySelector('div.sc-5ba12d08-0 svg path[d*="M12 22c5.523"]');
-    if (icon && icon.offsetParent !== null) return "x";
-
-    // Check for another SVG checkmark indicating "Yes"
-    icon = cell.querySelector('svg path[d*="M7.453 17.542"]');
-    if (icon && icon.offsetParent !== null) return "Yes";
+    // Check for another cross/No indicating icon
+    icon = cell.querySelector('svg path[d*="M12 3.5a8.5"]');
+    if (icon && icon.offsetParent !== null) return "No";
 
     return null;
   }
@@ -617,10 +613,7 @@
 
         // Extract percentage spent
         const percentageCell = cells[4]; // Fifth cell contains percentage
-        const percentageDiv = percentageCell.querySelector(".sc-1gsg215-0");
-        const percentage = percentageDiv
-          ? (percentageDiv.innerText || percentageDiv.textContent || "").trim()
-          : "";
+        const percentage = (percentageCell.innerText || percentageCell.textContent || "").trim();
 
         // Only add row if it has meaningful data
         if (category || budget || balance || percentage) {
@@ -652,7 +645,7 @@
     let csvRows = ["Category,Count"];
     const totalCount =
       table
-        .querySelector("thead tr th:nth-child(2) span.sc-7a482c85-5")
+        .querySelector("thead tr th:nth-child(2) span")
         ?.textContent.trim() || "";
     for (const row of getVisibleRows(table)) {
       const cells = Array.from(row.querySelectorAll("td"));
