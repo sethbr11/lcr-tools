@@ -84,7 +84,7 @@ describe("Navigation Utilities", () => {
 
     it("should detect scroll need", () => {
       document.body.innerHTML = `
-        <div infinite-scroll></div>
+        <div class="eden-table-container"></div>
       `;
       const needs = window.navigationUtils.getNeeds();
       expect(needs).toContain("scroll");
@@ -111,7 +111,7 @@ describe("Navigation Utilities", () => {
         tabSelector: "#tab-li",
         linkSelector: "#tab-link",
         tabName: "Test Tab",
-        delay: 0
+        delay: 0,
       });
 
       expect(result).toBe(true);
@@ -131,7 +131,7 @@ describe("Navigation Utilities", () => {
         tabSelector: "#tab-li",
         linkSelector: "#tab-link",
         tabName: "Test Tab",
-        delay: 0
+        delay: 0,
       });
 
       expect(result).toBe(true);

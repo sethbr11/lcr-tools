@@ -83,30 +83,31 @@ describe("Trip Geocoding Utilities", () => {
 
   describe("geocodeAddressMulti", () => {
     it("should return cached result if available", async () => {
-      const cachedResult = { lat: 37.7749, lon: -122.4194, usedVariant: "cached" };
+      const cachedResult = {
+        lat: 37.7749,
+        lon: -122.4194,
+        usedVariant: "cached",
+      };
       const cacheKey = "100 Cached St";
-      
-      // Mock localStorage.getItem to return our cached value
-      const getItemSpy = jest.spyOn(Storage.prototype, 'getItem').mockImplementation((key) => {
-        if (key === "geocode_cache") {
-          return JSON.stringify({ [cacheKey]: cachedResult });
-        }
-        return null;
+
+      // Setup chrome.storage.local.get to return our cached value
+      global.chrome.storage.local.get.callsArgWith(1, {
+        geocode_cache: { [cacheKey]: cachedResult },
       });
 
       const result = await window.tripGeocoding.geocodeAddressMulti(
         cacheKey,
         "nominatim",
-        ""
+        "",
       );
 
       expect(result).toEqual(cachedResult);
       expect(fetch).not.toHaveBeenCalled();
-      
-      getItemSpy.mockRestore();
     });
 
     it("should geocode with Nominatim provider", async () => {
+      global.chrome.storage.local.get.callsArgWith(1, {}); // Empty cache
+
       fetch.mockResolvedValueOnce({
         json: async () => [{ lat: "37.7749", lon: "-122.4194" }],
       });
@@ -114,12 +115,12 @@ describe("Trip Geocoding Utilities", () => {
       const result = await window.tripGeocoding.geocodeAddressMulti(
         "111 Nominatim St",
         "nominatim",
-        ""
+        "",
       );
 
       expect(fetch).toHaveBeenCalledWith(
         expect.stringContaining("nominatim.openstreetmap.org"),
-        expect.any(Object)
+        expect.any(Object),
       );
       expect(result).toEqual({
         lat: 37.7749,
@@ -129,6 +130,8 @@ describe("Trip Geocoding Utilities", () => {
     });
 
     it("should geocode with LocationIQ provider", async () => {
+      global.chrome.storage.local.get.callsArgWith(1, {}); // Empty cache
+
       fetch.mockResolvedValueOnce({
         json: async () => [{ lat: "37.7749", lon: "-122.4194" }],
       });
@@ -136,16 +139,16 @@ describe("Trip Geocoding Utilities", () => {
       const result = await window.tripGeocoding.geocodeAddressMulti(
         "222 LocationIQ Ave",
         "locationiq",
-        "test-api-key"
+        "test-api-key",
       );
 
       expect(fetch).toHaveBeenCalledWith(
         expect.stringContaining("locationiq.com"),
-        expect.any(Object)
+        expect.any(Object),
       );
       expect(fetch).toHaveBeenCalledWith(
         expect.stringContaining("key=test-api-key"),
-        expect.any(Object)
+        expect.any(Object),
       );
       expect(result).toEqual({
         lat: 37.7749,
@@ -155,6 +158,8 @@ describe("Trip Geocoding Utilities", () => {
     });
 
     it("should geocode with Mapbox provider", async () => {
+      global.chrome.storage.local.get.callsArgWith(1, {}); // Empty cache
+
       fetch.mockResolvedValueOnce({
         json: async () => ({
           features: [{ center: [-122.4194, 37.7749] }],
@@ -164,16 +169,16 @@ describe("Trip Geocoding Utilities", () => {
       const result = await window.tripGeocoding.geocodeAddressMulti(
         "333 Mapbox Blvd",
         "mapbox",
-        "test-token"
+        "test-token",
       );
 
       expect(fetch).toHaveBeenCalledWith(
         expect.stringContaining("api.mapbox.com"),
-        expect.any(Object)
+        expect.any(Object),
       );
       expect(fetch).toHaveBeenCalledWith(
         expect.stringContaining("access_token=test-token"),
-        expect.any(Object)
+        expect.any(Object),
       );
       expect(result).toEqual({
         lat: 37.7749,
@@ -183,9 +188,15 @@ describe("Trip Geocoding Utilities", () => {
     });
 
     it("should try multiple variants on failure", async () => {
+      global.chrome.storage.local.get.callsArgWith(1, {}); // Empty cache
+
       const uniqueAddress = "444 Variant Test St";
       window.tripUtils.advancedNormalizeAddress.mockReturnValueOnce({
-        variants: [`${uniqueAddress}`, `${uniqueAddress} variant1`, `${uniqueAddress} variant2`],
+        variants: [
+          `${uniqueAddress}`,
+          `${uniqueAddress} variant1`,
+          `${uniqueAddress} variant2`,
+        ],
       });
 
       // First two fail, third succeeds
@@ -199,7 +210,7 @@ describe("Trip Geocoding Utilities", () => {
       const result = await window.tripGeocoding.geocodeAddressMulti(
         uniqueAddress,
         "nominatim",
-        ""
+        "",
       );
 
       expect(fetch).toHaveBeenCalledTimes(3);
@@ -207,18 +218,22 @@ describe("Trip Geocoding Utilities", () => {
     });
 
     it("should return null if all variants fail", async () => {
+      global.chrome.storage.local.get.callsArgWith(1, {}); // Empty cache
+
       fetch.mockResolvedValue({ json: async () => [] });
 
       const result = await window.tripGeocoding.geocodeAddressMulti(
         "555 Invalid Address",
         "nominatim",
-        ""
+        "",
       );
 
       expect(result).toBeNull();
     });
 
     it("should cache successful results", async () => {
+      global.chrome.storage.local.get.callsArgWith(1, {}); // Empty cache
+
       fetch.mockResolvedValueOnce({
         json: async () => [{ lat: "40.7128", lon: "-74.0060" }],
       });
@@ -227,32 +242,40 @@ describe("Trip Geocoding Utilities", () => {
       const result = await window.tripGeocoding.geocodeAddressMulti(
         uniqueAddress,
         "nominatim",
-        ""
+        "",
       );
 
       // Verify the geocoding succeeded
       expect(result).toBeDefined();
       expect(result.lat).toBe(40.7128);
-      
+      expect(global.chrome.storage.local.set.called).toBe(true);
+
+      // Setup mock to return the cached value for next call
+      global.chrome.storage.local.get.callsArgWith(1, {
+        geocode_cache: { [uniqueAddress]: result },
+      });
+
       // Call again - should return cached result without fetching
       fetch.mockClear();
       const cachedResult = await window.tripGeocoding.geocodeAddressMulti(
         uniqueAddress,
         "nominatim",
-        ""
+        "",
       );
-      
+
       expect(cachedResult).toEqual(result);
       expect(fetch).not.toHaveBeenCalled(); // Should use cache
     });
 
     it("should handle fetch errors gracefully", async () => {
+      global.chrome.storage.local.get.callsArgWith(1, {}); // Empty cache
+
       fetch.mockRejectedValue(new Error("Network error"));
 
       const result = await window.tripGeocoding.geocodeAddressMulti(
         "999 Error St",
         "nominatim",
-        ""
+        "",
       );
 
       expect(result).toBeNull();
@@ -262,7 +285,7 @@ describe("Trip Geocoding Utilities", () => {
       const result = await window.tripGeocoding.geocodeAddressMulti(
         "888 Unknown Ave",
         "unknown-provider",
-        ""
+        "",
       );
 
       expect(fetch).not.toHaveBeenCalled();
@@ -277,7 +300,7 @@ describe("Trip Geocoding Utilities", () => {
       const result = await window.tripGeocoding.geocodeAddressMulti(
         "777 Empty Blvd",
         "mapbox",
-        "test-token"
+        "test-token",
       );
 
       expect(result).toBeNull();
@@ -286,12 +309,16 @@ describe("Trip Geocoding Utilities", () => {
     it("should include correct User-Agent with version from manifest", async () => {
       // Mock chrome.runtime.getManifest to return specific version
       global.chrome.runtime.getManifest.mockReturnValue({ version: "9.9.9" });
-      
+
       fetch.mockResolvedValueOnce({
         json: async () => [{ lat: "1", lon: "1" }],
       });
 
-      await window.tripGeocoding.geocodeAddressMulti("123 Main St", "nominatim", "");
+      await window.tripGeocoding.geocodeAddressMulti(
+        "123 Main St",
+        "nominatim",
+        "",
+      );
 
       expect(fetch).toHaveBeenCalledWith(
         expect.stringContaining("nominatim"),
@@ -299,7 +326,7 @@ describe("Trip Geocoding Utilities", () => {
           headers: expect.objectContaining({
             "User-Agent": expect.stringContaining("LCR-Tools-Extension/9.9.9"),
           }),
-        })
+        }),
       );
     });
   });
@@ -321,34 +348,34 @@ describe("Trip Geocoding Utilities", () => {
 
     it("should classify addresses without leading number", () => {
       expect(window.tripGeocoding.classifyFailure("Main Street")).toBe(
-        "No leading number"
+        "No leading number",
       );
       expect(window.tripGeocoding.classifyFailure("Oak Avenue")).toBe(
-        "No leading number"
+        "No leading number",
       );
     });
 
     it("should classify incomplete street addresses", () => {
       expect(window.tripGeocoding.classifyFailure("123")).toBe(
-        "Incomplete street"
+        "Incomplete street",
       );
       expect(window.tripGeocoding.classifyFailure("456 ")).toBe(
-        "Incomplete street"
+        "Incomplete street",
       );
     });
 
     it("should classify addresses missing state", () => {
       expect(window.tripGeocoding.classifyFailure("123 Main St")).toBe(
-        "Missing state"
+        "Missing state",
       );
       expect(window.tripGeocoding.classifyFailure("456 Oak Ave, City")).toBe(
-        "Missing state"
+        "Missing state",
       );
     });
 
     it("should classify addresses missing zip when most have zip", () => {
       expect(
-        window.tripGeocoding.classifyFailure("123 Main St, City, CA")
+        window.tripGeocoding.classifyFailure("123 Main St, City, CA"),
       ).toBe("Missing zip");
     });
 
@@ -359,13 +386,13 @@ describe("Trip Geocoding Utilities", () => {
       ];
 
       expect(
-        window.tripGeocoding.classifyFailure("789 Elm St, Village, NY")
+        window.tripGeocoding.classifyFailure("789 Elm St, Village, NY"),
       ).toBe("Not found");
     });
 
     it("should return 'Not found' for otherwise valid addresses", () => {
       expect(
-        window.tripGeocoding.classifyFailure("999 Unknown St, City, CA 12345")
+        window.tripGeocoding.classifyFailure("999 Unknown St, City, CA 12345"),
       ).toBe("Not found");
     });
 
@@ -373,7 +400,9 @@ describe("Trip Geocoding Utilities", () => {
       global.records = [{ address: "123 Main St, City, CA 12345-6789" }];
 
       expect(
-        window.tripGeocoding.classifyFailure("456 Oak Ave, Town, TX 67890-1234")
+        window.tripGeocoding.classifyFailure(
+          "456 Oak Ave, Town, TX 67890-1234",
+        ),
       ).toBe("Not found");
     });
   });
