@@ -7,7 +7,8 @@ const u = (n) => `js/utils/${n}.js`,
   tableUtils = u("tableUtils"),
   uiUtils = u("uiUtils"),
   modalUtils = u("modalUtils"),
-  dataUtils = u("dataUtils");
+  dataUtils = u("dataUtils"),
+  lcrApiUtils = u("lcrApiUtils");
 
 // Vendor files
 const jszip = "js/vendor/jszip.min.js";
@@ -123,6 +124,7 @@ window.ACTION_METADATA = [
       uiUtils,
       modalUtils,
       u("storageUtils"),
+      lcrApiUtils,
       "js/actions/noPhotoList/noPhotoUtils.js",
       "js/actions/noPhotoList/main.js",
     ],
@@ -149,6 +151,7 @@ window.ACTION_METADATA = [
       uiUtils,
       modalUtils,
       u("storageUtils"),
+      lcrApiUtils,
       "js/actions/memberFlashcards/templates.js",
       "js/actions/memberFlashcards/memberFlashcardsUtils.js",
       "js/actions/memberFlashcards/main.js",

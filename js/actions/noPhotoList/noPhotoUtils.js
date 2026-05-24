@@ -8,35 +8,13 @@
  */
 (() => {
   utils.returnIfLoaded("noPhotoUtils");
-  utils.ensureLoaded("navigationUtils", "uiUtils", "fileUtils", "storageUtils");
-
-  /**
-   * Waits for a popover to appear and be fully loaded
-   * @param {number} maxWaitMs - Maximum time to wait in milliseconds
-   * @returns {Promise<Element|null>} - The popover element or null
-   */
-  async function waitForPopover(maxWaitMs = 1500) {
-    const startTime = Date.now();
-
-    while (Date.now() - startTime < maxWaitMs) {
-      const popover = document.querySelector(
-        'dialog[data-testid="popover"][open].member-card__styled-member-card-popover',
-      );
-
-      if (popover) {
-        const nameDiv = popover.querySelector(".member-card__styled-div");
-        if (nameDiv) {
-          // Give it a tiny bit more time for content to settle
-          await utils.sleep(150);
-          return popover;
-        }
-      }
-
-      await utils.sleep(50);
-    }
-
-    return null;
-  }
+  utils.ensureLoaded(
+    "navigationUtils",
+    "uiUtils",
+    "fileUtils",
+    "storageUtils",
+    "lcrApiUtils",
+  );
 
   /**
    * Collects data of members without photos from the member directory page
@@ -54,142 +32,75 @@
 
     // Find all rows in the table
     const allRows = Array.from(document.querySelectorAll('tr[id][role="row"]'));
-
-    const totalCount = allRows.length;
+    const membersToFetch = [];
 
     for (let i = 0; i < allRows.length; i++) {
-      if (uiUtils.isAborted()) {
-        break;
-      }
+      const memberInfo = lcrApiUtils.getMemberInfoFromRow(allRows[i]);
+      if (!memberInfo) continue;
 
-      const row = allRows[i];
-
-      // Find the member card button inside this row
-      const link = row.querySelector("button.member-card__styled-ghost");
-      if (!link) {
-        continue;
-      }
-
-      // Determine a unique ID for caching
-      let rowId = row.id;
-      if (!rowId || rowId === "") {
-        const href = link.getAttribute("href") || "";
-        const uuidMatch = href.match(/member-profile\/([a-f0-9-]+)/);
-        if (uuidMatch) {
-          rowId = uuidMatch[1];
-        } else {
-          rowId = `row-${i}`;
-        }
-      }
-
-      // Extract name from the row itself as a fallback
-      const nameCell = row.querySelector("td.member-card__styled-td-name");
-      const nameFromRow = nameCell ? nameCell.textContent.trim() : "";
+      const { memberId, firstName, lastName } = memberInfo;
 
       // Check cache first
-      if (cacheSettings.enabled && currentCache[rowId]) {
-        const cached = currentCache[rowId];
+      if (cacheSettings.enabled && currentCache[memberId]) {
+        const cached = currentCache[memberId];
         if (cached.hasPhoto === false) {
-          // Prefer fullName, then reconstruct if only parts exist, then fallback to row
-          let fullName = cached.fullName;
-          if (!fullName && (cached.firstName || cached.lastName)) {
-            fullName = `${cached.firstName} ${cached.lastName}`.trim();
-          }
-          if (!fullName) fullName = nameFromRow;
-
-          if (fullName) {
-            membersWithoutPhotos.push({ fullName });
-          }
+          // Guaranteed to have firstName and lastName from either cache or fallback logic
+          membersWithoutPhotos.push({
+            firstName: cached.firstName || firstName,
+            lastName: cached.lastName || lastName,
+          });
           continue;
         } else if (cached.hasPhoto === true) {
           continue;
         }
       }
 
-      try {
-        uiUtils.showLoadingIndicator(
-          `Checking member photos (processing ${i + 1} / ${totalCount})...`,
-        );
+      membersToFetch.push(memberInfo);
+    }
 
-        // Scroll row into view to ensure it's visible (still needed for clickability)
-        row.scrollIntoView({ behavior: "instant", block: "center" });
-        await utils.sleep(150);
+    await lcrApiUtils.processInBatches(
+      membersToFetch,
+      10,
+      async (memberInfo) => {
+        const cardData = await lcrApiUtils.fetchMemberCard(memberInfo.memberId);
 
-        // Click the button to show popover
-        link.click();
+        let hasPhoto = false;
+        let photoUrl = null;
 
-        // Wait for popover
-        const popover = await waitForPopover();
-
-        if (popover) {
-          const nameDiv = popover.querySelector(".member-card__styled-div");
-          const img = popover.querySelector(
-            "img.eden-image.eden-avatar__image-decorator",
-          );
-
-          if (nameDiv) {
-            const fullNameWithAge = nameDiv.textContent.trim();
-            const fullName = fullNameWithAge.replace(/\s*\(\d+\)$/, "");
-
-            let hasNoPhoto = !img || !img.src;
-            let photoUrl = null;
-            if (img && img.src) {
-              photoUrl = img.src;
-              if (
-                photoUrl.includes("placeholder") ||
-                photoUrl.includes("default") ||
-                photoUrl.includes("no-image") ||
-                photoUrl.includes("blank") ||
-                photoUrl.endsWith(".gif") ||
-                photoUrl.includes("data:image/svg")
-              ) {
-                hasNoPhoto = true;
-              }
-            }
-
-            const parts = fullName.split(" ").filter((p) => p);
-            let firstName = "";
-            let lastName = "";
-            if (parts.length > 1) {
-              lastName = parts.pop();
-              firstName = parts.join(" ");
-            } else if (parts.length === 1) {
-              lastName = parts[0];
-            }
-
-            if (hasNoPhoto) {
-              const displayFullName = fullName || nameFromRow;
-              if (displayFullName) {
-                membersWithoutPhotos.push({ fullName: displayFullName });
-              }
-              newCacheEntries[rowId] = {
-                firstName,
-                lastName,
-                fullName: displayFullName,
-                hasPhoto: false,
-                timestamp: Date.now(),
-              };
-            } else {
-              newCacheEntries[rowId] = {
-                firstName,
-                lastName,
-                fullName,
-                hasPhoto: true,
-                photoUrl,
-                timestamp: Date.now(),
-              };
-            }
-          }
+        if (
+          cardData &&
+          cardData.photoMetadata &&
+          cardData.photoMetadata.tokenUrl
+        ) {
+          photoUrl = `${cardData.photoMetadata.tokenUrl}/MEDIUM`;
+          hasPhoto = true;
         }
 
-        document.body.click();
-        await utils.sleep(200);
-      } catch (error) {
-        console.warn(`LCR Tools: Error processing row ${rowId}:`, error);
-        document.body.click();
-        await utils.sleep(100);
-      }
-    }
+        if (!hasPhoto) {
+          membersWithoutPhotos.push({ 
+            firstName: memberInfo.firstName, 
+            lastName: memberInfo.lastName 
+          });
+          newCacheEntries[memberInfo.memberId] = {
+            ...memberInfo,
+            hasPhoto: false,
+            timestamp: Date.now(),
+          };
+        } else {
+          newCacheEntries[memberInfo.memberId] = {
+            ...memberInfo,
+            hasPhoto: true,
+            photoUrl,
+            timestamp: Date.now(),
+          };
+        }
+      },
+      (start, end, total) => {
+        uiUtils.showLoadingIndicator(
+          `Checking member photos (processing ${start + 1}-${end} / ${total})...`,
+        );
+      },
+    );
 
     // Save new entries to cache if enabled
     if (cacheSettings.enabled && Object.keys(newCacheEntries).length > 0) {
@@ -209,11 +120,12 @@
       return;
     }
 
-    const csvHeader = `"Full Name"\n`;
+    const csvHeader = `Last Name,First Name\n`;
     const csvRows = names
       .map((n) => {
-        const formattedFullName = fileUtils.formatCsvCell(n.fullName || "");
-        return `"${formattedFullName}"`;
+        const ln = fileUtils.formatCsvCell(n.lastName || "");
+        const fn = fileUtils.formatCsvCell(n.firstName || "");
+        return `${ln},${fn}`;
       })
       .join("\n");
 

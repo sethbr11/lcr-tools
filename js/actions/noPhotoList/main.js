@@ -11,7 +11,7 @@
   // Show confirmation warning and photo cache settings
   const { proceed } = await storageUtils.showPhotoActionConfirmationModal({
     title: "Missing Photos Report",
-    description: "<strong>Note:</strong> Generating this report on the Member Directory page is slower because it needs to click each member's name to check for a photo. Enabling the photo cache will make subsequent runs much faster."
+    description: "Generating this report will check each member in the current view for a profile photo. Enabling the photo cache will make subsequent runs even faster."
   });
 
   if (!proceed) {

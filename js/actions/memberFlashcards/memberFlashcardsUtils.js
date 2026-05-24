@@ -16,6 +16,7 @@
     "uiUtils",
     "modalUtils",
     "storageUtils",
+    "lcrApiUtils",
     "memberFlashcardsTemplates",
   );
 
@@ -74,12 +75,6 @@
     // Set up event listeners
     setupFlashcardEventListeners();
 
-    // Update shuffle button to show current state
-    const shuffleBtn = document.getElementById("lcr-tools-flashcard-shuffle");
-    if (shuffleBtn) {
-      shuffleBtn.textContent = "↩️ Unshuffle";
-    }
-
     // Show the first flashcard
     showFlashcard(0);
   }
@@ -91,8 +86,6 @@
     const modal = document.getElementById("lcr-tools-flashcard-modal");
     const prevBtn = document.getElementById("lcr-tools-flashcard-prev");
     const nextBtn = document.getElementById("lcr-tools-flashcard-next");
-    const shuffleBtn = document.getElementById("lcr-tools-flashcard-shuffle");
-    const resetBtn = document.getElementById("lcr-tools-flashcard-reset");
 
     // Navigation buttons
     if (prevBtn) {
@@ -109,41 +102,6 @@
         if (currentFlashcardIndex < currentData.length - 1) {
           showFlashcard(currentFlashcardIndex + 1);
         }
-      });
-    }
-
-    // Shuffle button
-    if (shuffleBtn) {
-      shuffleBtn.addEventListener("click", () => {
-        if (!isShuffled) {
-          // Shuffle the data using Fisher-Yates shuffle
-          shuffledData = [...memberData];
-          for (let i = shuffledData.length - 1; i > 0; i--) {
-            const j = Math.floor(Math.random() * (i + 1));
-            [shuffledData[i], shuffledData[j]] = [
-              shuffledData[j],
-              shuffledData[i],
-            ];
-          }
-          isShuffled = true;
-          currentFlashcardIndex = 0;
-          shuffleBtn.textContent = "↩️ Unshuffle";
-          showFlashcard(0);
-        } else {
-          // Unshuffle - return to original order
-          isShuffled = false;
-          currentFlashcardIndex = 0;
-          shuffleBtn.textContent = "🔀 Shuffle";
-          showFlashcard(0);
-        }
-      });
-    }
-
-    // Reset button
-    if (resetBtn) {
-      resetBtn.addEventListener("click", () => {
-        currentFlashcardIndex = 0;
-        showFlashcard(0);
       });
     }
 
@@ -261,35 +219,7 @@
   }
 
   /**
-   * Waits for a popover to appear and be fully loaded
-   * @param {number} maxWaitMs - Maximum time to wait in milliseconds
-   * @returns {Promise<Element|null>} - The popover element or null
-   */
-  async function waitForPopover(maxWaitMs = 1500) {
-    const startTime = Date.now();
-
-    while (Date.now() - startTime < maxWaitMs) {
-      const popover = document.querySelector(
-        'dialog[data-testid="popover"][open].member-card__styled-member-card-popover',
-      );
-
-      if (popover) {
-        const nameDiv = popover.querySelector(".member-card__styled-div");
-        if (nameDiv) {
-          // Give it a tiny bit more time for content to settle
-          await utils.sleep(150);
-          return popover;
-        }
-      }
-
-      await utils.sleep(50);
-    }
-
-    return null;
-  }
-
-  /**
-   * Collects member data from the member directory page by clicking names to reveal popovers
+   * Collects member data from the member directory page by calling internal APIs
    * @returns {Promise<Array>} - Array of member data objects
    */
   async function collectMemberDataFromDirectory() {
@@ -302,145 +232,74 @@
       ? await storageUtils.getPhotoCache()
       : {};
 
-    // Find all rows in the table
+    // Find all rows in the table to extract UUIDs and names
     const allRows = Array.from(document.querySelectorAll('tr[id][role="row"]'));
-
-    const totalCount = allRows.length;
+    const membersToFetch = [];
 
     for (let i = 0; i < allRows.length; i++) {
-      if (uiUtils.isAborted()) {
-        break;
-      }
+      const memberInfo = lcrApiUtils.getMemberInfoFromRow(allRows[i]);
+      if (!memberInfo) continue;
 
-      const row = allRows[i];
-
-      // Find the member card button inside this row
-      const link = row.querySelector("button.member-card__styled-ghost");
-      if (!link) {
-        continue;
-      }
-
-      // Determine a unique ID for caching
-      let rowId = row.id;
-      if (!rowId || rowId === "") {
-        const href = link.getAttribute("href") || "";
-        const uuidMatch = href.match(/member-profile\/([a-f0-9-]+)/);
-        if (uuidMatch) {
-          rowId = uuidMatch[1];
-        } else {
-          rowId = `row-${i}`;
-        }
-      }
+      const { memberId } = memberInfo;
 
       // Check cache first
-      if (cacheSettings.enabled && currentCache[rowId]) {
-        const cached = currentCache[rowId];
+      if (cacheSettings.enabled && currentCache[memberId]) {
+        const cached = currentCache[memberId];
         if (cached.hasPhoto && cached.photoUrl) {
-          membersByPhotoUrl.set(cached.photoUrl, cached);
-          continue; // Skip clicking if we have cached photo
+          // Use fullName from cache, fallback to constructing it from parts or directoryName
+          const displayFullName = cached.fullName || 
+                                 (cached.firstName && cached.lastName ? `${cached.firstName} ${cached.lastName}` : "") || 
+                                 memberInfo.fullName; // memberInfo.fullName is First Last
+          
+          membersByPhotoUrl.set(cached.photoUrl, {
+            ...cached,
+            fullName: displayFullName
+          });
+          continue; // Skip if we have cached photo
         } else if (cached.hasPhoto === false) {
           continue; // Skip if we know they don't have a photo
         }
       }
 
-      try {
-        uiUtils.showLoadingIndicator(
-          `Collecting member photos (processing ${i + 1} / ${totalCount})...`,
-        );
-
-        // Scroll row into view to ensure it's visible (still needed for clickability)
-        row.scrollIntoView({ behavior: "instant", block: "center" });
-        await utils.sleep(150);
-
-        // Click the button to show popover
-        link.click();
-
-        // Wait for popover
-        const popover = await waitForPopover();
-
-        if (popover) {
-          // Extract full name and image
-          const nameDiv = popover.querySelector(".member-card__styled-div");
-          const img = popover.querySelector(
-            "img.eden-image.eden-avatar__image-decorator",
-          );
-
-          if (nameDiv) {
-            const fullNameWithAge = nameDiv.textContent.trim();
-            const fullName = fullNameWithAge.replace(/\s*\(\d+\)$/, "");
-
-            let hasPhoto = false;
-            let photoUrl = null;
-
-            if (img && img.src) {
-              photoUrl = img.src;
-
-              // Check if it's a valid photo (not a placeholder)
-              const isPlaceholder =
-                photoUrl.includes("placeholder") ||
-                photoUrl.includes("default") ||
-                photoUrl.includes("no-image") ||
-                photoUrl.includes("blank") ||
-                photoUrl.endsWith(".gif") ||
-                photoUrl.includes("data:image/svg");
-
-              const parts = fullName.split(" ").filter((p) => p);
-              let firstName = "";
-              let lastName = "";
-
-              if (parts.length > 1) {
-                lastName = parts.pop();
-                firstName = parts.join(" ");
-              } else if (parts.length === 1) {
-                lastName = parts[0];
-              }
-
-              if (!isPlaceholder) {
-                hasPhoto = true;
-
-                if (firstName || lastName) {
-                  const member = {
-                    firstName,
-                    lastName,
-                    fullName: fullName,
-                    photoUrl,
-                    originalName: fullNameWithAge,
-                    hasPhoto: true,
-                    rowId,
-                  };
-                  membersByPhotoUrl.set(photoUrl, member);
-                  newCacheEntries[rowId] = member;
-                }
-              } else {
-                // It's a placeholder
-                newCacheEntries[rowId] = {
-                  firstName,
-                  lastName,
-                  fullName,
-                  hasPhoto: false,
-                  timestamp: Date.now(),
-                };
-              }
-            } else {
-              // No img element at all
-              newCacheEntries[rowId] = {
-                fullName,
-                hasPhoto: false,
-                timestamp: Date.now(),
-              };
-            }
-          }
-        }
-
-        // Close the popover
-        document.body.click();
-        await utils.sleep(200);
-      } catch (error) {
-        console.warn(`LCR Tools: Error processing row ${rowId}:`, error);
-        document.body.click();
-        await utils.sleep(100);
-      }
+      membersToFetch.push(memberInfo);
     }
+
+    await lcrApiUtils.processInBatches(
+      membersToFetch,
+      10,
+      async (memberInfo) => {
+        const cardData = await lcrApiUtils.fetchMemberCard(memberInfo.memberId);
+
+        if (
+          cardData &&
+          cardData.photoMetadata &&
+          cardData.photoMetadata.tokenUrl
+        ) {
+          const photoUrl = `${cardData.photoMetadata.tokenUrl}/MEDIUM`;
+
+          const member = {
+            ...memberInfo,
+            photoUrl,
+            hasPhoto: true,
+          };
+
+          membersByPhotoUrl.set(photoUrl, member);
+          newCacheEntries[memberInfo.memberId] = member;
+        } else {
+          // No photo available or failed to fetch
+          newCacheEntries[memberInfo.memberId] = {
+            ...memberInfo,
+            hasPhoto: false,
+            timestamp: Date.now(),
+          };
+        }
+      },
+      (start, end, total) => {
+        uiUtils.showLoadingIndicator(
+          `Fetching member photos (processing ${start + 1}-${end} / ${total})...`,
+        );
+      },
+    );
 
     // Save new entries to cache if enabled
     if (cacheSettings.enabled && Object.keys(newCacheEntries).length > 0) {

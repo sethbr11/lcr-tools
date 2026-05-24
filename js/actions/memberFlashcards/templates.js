@@ -47,14 +47,6 @@
           Next →
         </button>
       </div>
-      <div class="lcr-tools-flashcard-actions">
-        <button type="button" class="lcr-tools-btn lcr-tools-btn-primary" id="lcr-tools-flashcard-shuffle">
-          🔀 Shuffle
-        </button>
-        <button type="button" class="lcr-tools-btn lcr-tools-btn-secondary" id="lcr-tools-flashcard-reset">
-          ↩️ Reset to First
-        </button>
-      </div>
       <div class="lcr-tools-flashcard-shortcuts">
         <small>Keyboard shortcuts: ← → (navigate), SPACE (flip), ESC (close)</small>
       </div>
@@ -73,17 +65,17 @@
         flex-direction: column;
         align-items: center;
         justify-content: center;
-        min-height: 600px;
+        min-height: 500px;
       }
 
       #lcr-tools-flashcard-container {
-        margin-bottom: 30px;
+        margin-bottom: 25px;
       }
 
       .lcr-tools-flashcard {
-        width: 400px;
-        height: 500px;
-        margin: 0 auto 30px;
+        width: 350px;
+        height: 450px;
+        margin: 0 auto 25px;
         perspective: 1000px;
         cursor: pointer;
       }
@@ -130,8 +122,8 @@
       }
 
       .lcr-tools-flashcard-photo-container {
-        width: 280px;
-        height: 280px;
+        width: 240px;
+        height: 240px;
         border-radius: 50%;
         overflow: hidden;
         margin-bottom: 20px;
@@ -154,7 +146,7 @@
       }
 
       .lcr-tools-flashcard-name {
-        font-size: 2.5rem;
+        font-size: 2rem;
         font-weight: 700;
         margin: 0;
         text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
@@ -167,7 +159,7 @@
         left: 50%;
         transform: translateX(-50%);
         opacity: 0.9;
-        font-size: 0.9rem;
+        font-size: 0.85rem;
         font-weight: 500;
       }
 
