@@ -137,6 +137,11 @@
           calling = isOrgsPage ? columns[0] : columns[6];
         }
 
+        // Clean up "Custom Calling" text from the calling name
+        if (calling) {
+          calling = calling.replace(/\s*Custom\s*Calling\s*/gi, "").trim();
+        }
+
         if (orgIdx !== -1) {
           organization = columns[orgIdx];
         } else {
@@ -211,7 +216,7 @@
     if (isWardCallingsPage) {
       alerts.push({
         message: templates.wardCallingsAlert,
-        type: "warning",
+        type: "info",
       });
     }
 
