@@ -134,7 +134,7 @@ window.ACTION_METADATA = [
     directoryPages: [
       {
         name: "Member Directory",
-        url: "https://lcr.churchofjesuschrist.org/records/member-list",
+        url: "https://lcr.churchofjesuschrist.org/mlt/records/member-list",
       },
     ],
   },
@@ -162,7 +162,7 @@ window.ACTION_METADATA = [
     directoryPages: [
       {
         name: "Member Directory",
-        url: "https://lcr.churchofjesuschrist.org/records/member-list",
+        url: "https://lcr.churchofjesuschrist.org/mlt/records/member-list",
       },
     ],
   },
@@ -184,10 +184,7 @@ window.ACTION_METADATA = [
       "js/actions/findMultipleCallings/main.js",
     ],
     urlPatterns: {
-      include: [
-        "mlt/orgs",
-        "mlt/report/member-callings",
-      ],
+      include: ["mlt/orgs", "mlt/report/member-callings"],
     },
     directoryPages: [
       {
