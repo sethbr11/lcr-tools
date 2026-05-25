@@ -162,11 +162,30 @@
 
     // Find members with multiple callings
     memberCallingsMap.forEach((callings, memberName) => {
-      if (callings.length > 1) {
+      // 1. Deduplicate by calling name to handle redundant listings (e.g. Bishopric in two orgs)
+      const uniqueCallings = [];
+      const seenNames = new Set();
+
+      callings.forEach((c) => {
+        if (!seenNames.has(c.calling)) {
+          uniqueCallings.push(c);
+          seenNames.add(c.calling);
+        }
+      });
+
+      // 2. Calculate effective count for threshold
+      // Special case: Bishop is automatically the Priests Quorum President
+      let effectiveCount = seenNames.size;
+      if (seenNames.has("Bishop") && seenNames.has("Priests Quorum President")) {
+        effectiveCount--;
+      }
+
+      // 3. Only show if they have more than one distinct calling (after accounting for expected overlaps)
+      if (effectiveCount > 1) {
         membersWithMultipleCallings.push({
           name: memberName,
-          callings: callings,
-          count: callings.length,
+          callings: callings, // Show all occurrences for full context in the UI
+          count: effectiveCount,
         });
       }
     });
