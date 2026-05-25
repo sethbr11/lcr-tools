@@ -129,7 +129,7 @@ window.ACTION_METADATA = [
       "js/actions/noPhotoList/main.js",
     ],
     urlPatterns: {
-      include: ["records/member-list"],
+      include: ["mlt/records/member-list"],
     },
     directoryPages: [
       {
@@ -157,7 +157,7 @@ window.ACTION_METADATA = [
       "js/actions/memberFlashcards/main.js",
     ],
     urlPatterns: {
-      include: ["records/member-list"],
+      include: ["mlt/records/member-list"],
     },
     directoryPages: [
       {
