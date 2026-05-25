@@ -49,7 +49,6 @@
           <div style="font-weight: 600; color: #333; margin-bottom: 2px;">{{name}}</div>
           <div style="font-size: 0.85em; color: #666; display: flex; align-items: center;">
             <span style="margin-right: 10px;">🏠 {{address}}</span>
-            {{reasonBadge}}
           </div>
         </div>
         <div style="font-size: 0.85em; font-weight: 700; padding: 4px 10px; border-radius: 20px; color: {{statusColor}}; background: {{statusBackground}};">
@@ -57,7 +56,6 @@
         </div>
       </div>
     `,
-    reasonBadge: `<span style="color: #dc3545; background: #ffebeb; padding: 1px 6px; border-radius: 4px; font-size: 0.9em;">{{reason}}</span>`,
     emptyState: `<div style="padding: 20px; text-align: center; color: #999;">No members found matching filter '{{filter}}'.</div>`,
   };
 

@@ -74,7 +74,6 @@ window.membersOutsideBoundaryTemplates = {
     </div>
   `,
   listItem: "<div>{{name}} - {{status}}</div>",
-  reasonBadge: "<span>{{reason}}</span>",
   emptyState: "Empty",
 };
 

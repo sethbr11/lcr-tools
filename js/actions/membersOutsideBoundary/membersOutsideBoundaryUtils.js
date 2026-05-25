@@ -202,7 +202,6 @@
           results.push({
             name,
             status: "Unknown",
-            reason: "No Coordinates",
             address,
             lat: "",
             lng: "",
@@ -224,7 +223,6 @@
           results.push({
             name,
             status: "Outside",
-            reason: "Outside Map View",
             address,
             lat,
             lng,
@@ -237,7 +235,6 @@
           results.push({
             name,
             status: "Inside",
-            reason: "",
             address,
             lat,
             lng,
@@ -246,7 +243,6 @@
           results.push({
             name,
             status: "Outside",
-            reason: "Outside Boundary",
             address,
             lat,
             lng,
@@ -332,9 +328,6 @@
           backgroundColor: isOutside ? "#fff5f5" : "#fff",
           name: r.name,
           address: r.address || "No Address",
-          reasonBadge: r.reason
-            ? utils.replaceTemplate(templates.reasonBadge, { reason: r.reason })
-            : "",
           statusColor: isOutside ? "#721c24" : "#155724",
           statusBackground: isOutside ? "#f8d7da" : "#d4edda",
           status: r.status,
