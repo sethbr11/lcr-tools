@@ -16,17 +16,8 @@
   "content_scripts": [
     {
       "matches": ["https://directory.churchofjesuschrist.org/*"],
-      "js": [
-        "js/utils/utils.js",
-        "js/utils/uiUtils.js",
-        "js/utils/modalUtils.js",
-        "js/utils/storageUtils.js",
-        "js/utils/fileUtils.js",
-        "js/actions/membersOutsideBoundary/templates.js",
-        "js/actions/membersOutsideBoundary/membersOutsideBoundaryUtils.js"
-      ],
-      "run_at": "document_start",
-      "world": "MAIN"
+      "js": ["js/actions/membersOutsideBoundary/bootstrap.js"],
+      "run_at": "document_start"
     }
   ],
   "action": {

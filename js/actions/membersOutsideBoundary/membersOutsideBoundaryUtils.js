@@ -1,5 +1,5 @@
 (() => {
-  utils.returnIfLoaded("membersOutsideBoundaryUtils");
+  if (utils.returnIfLoaded("membersOutsideBoundaryUtils")) return;
 
   const templates = window.membersOutsideBoundaryTemplates || {};
 
@@ -39,7 +39,6 @@
     const isAuditPending = sessionStorage.getItem("LCR_AUDIT_PENDING");
 
     if (!isAuditPending) {
-      console.log("🕵️ LCR Tools: membersOutsideBoundaryUtils ready.");
       return;
     }
 

@@ -2,7 +2,7 @@
  * Templates for the membersOutsideBoundary action UI
  */
 (() => {
-  utils.returnIfLoaded("membersOutsideBoundaryTemplates");
+  if (utils.returnIfLoaded("membersOutsideBoundaryTemplates")) return;
 
   const templates = {
     resultsModalStructure: `
