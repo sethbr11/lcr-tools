@@ -2,7 +2,7 @@
  * Templates for the findMultipleCallings action UI
  */
 (() => {
-  utils.returnIfLoaded("findMultipleCallingsTemplates");
+  if (utils.returnIfLoaded("findMultipleCallingsTemplates")) return;
 
   const templates = {
     noIssues: `

@@ -2,7 +2,7 @@
  * Templates for the tableFilters action UI
  */
 (() => {
-  utils.returnIfLoaded("tableFilterTemplates");
+  if (utils.returnIfLoaded("tableFilterTemplates")) return;
 
   const templates = {
     // Common styles

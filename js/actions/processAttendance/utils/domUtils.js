@@ -1,5 +1,5 @@
 (() => {
-  utils.returnIfLoaded("attendanceDomUtils");
+  if (utils.returnIfLoaded("attendanceDomUtils")) return;
   utils.ensureLoaded("dataUtils", "tableUtils", "utils", "uiUtils");
 
   const SELECTORS = {

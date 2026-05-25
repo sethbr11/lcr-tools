@@ -1,5 +1,5 @@
 (() => {
-  utils.returnIfLoaded("attendanceUi");
+  if (utils.returnIfLoaded("attendanceUi")) return;
   utils.ensureLoaded("modalUtils", "uiUtils", "attendanceGuestLogic", "utils", "fileUtils", "attendanceDomUtils");
 
   const UI_OVERLAY_ID = "lcr-tools-attendance-ui-overlay";

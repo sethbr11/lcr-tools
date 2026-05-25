@@ -3,7 +3,7 @@
  * Handles creating, displaying, and closing standardized modal windows.
  */
 (() => {
-  utils.returnIfLoaded("modalUtils");
+  if (utils.returnIfLoaded("modalUtils")) return;
 
   /**
    * Injects common styles for LCR Tools modals (buttons, toggles, etc.)
@@ -115,11 +115,12 @@
         transform: translateX(20px);
       }
     `;
-    document.head.appendChild(style);
+    if (document.head) {
+      document.head.appendChild(style);
+    } else {
+      document.documentElement.appendChild(style);
+    }
   }
-
-  // Inject styles immediately
-  injectGlobalModalStyles();
 
   // Global state for selection mode
   let isSelectMode = false;
@@ -151,6 +152,9 @@
     modalOptions = {},
     selectionConfig: config = null,
   }) {
+    // Inject styles if not already present
+    injectGlobalModalStyles();
+
     // Remove any existing modal with the same ID
     closeModal(id);
 
@@ -529,6 +533,9 @@
     side = "right",
     width = "400px",
   }) {
+    // Inject styles if not already present
+    injectGlobalModalStyles();
+
     // Remove any existing modal with the same ID
     closeModal(id);
 

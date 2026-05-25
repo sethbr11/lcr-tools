@@ -6,7 +6,7 @@
  * filtering experience for LCR table data.
  */
 (() => {
-  utils.returnIfLoaded("filterUtils");
+  if (utils.returnIfLoaded("filterUtils")) return;
   utils.ensureLoaded(
     "tableUtils",
     "uiUtils",

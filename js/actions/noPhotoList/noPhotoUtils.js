@@ -7,7 +7,7 @@
  * Integrates with navigationUtils for page navigation and fileUtils for CSV generation.
  */
 (() => {
-  utils.returnIfLoaded("noPhotoUtils");
+  if (utils.returnIfLoaded("noPhotoUtils")) return;
   utils.ensureLoaded(
     "navigationUtils",
     "uiUtils",

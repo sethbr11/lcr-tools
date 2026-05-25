@@ -3,7 +3,7 @@
  */
 
 (() => {
-  utils.returnIfLoaded("dataUtils");
+  if (utils.returnIfLoaded("dataUtils")) return;
 
   /**
    * Helper function: Calculates Levenshtein distance between two strings

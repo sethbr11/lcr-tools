@@ -6,7 +6,7 @@
  * to collect data across multiple pages and export it efficiently.
  */
 (() => {
-  utils.returnIfLoaded("downloadUtils");
+  if (utils.returnIfLoaded("downloadUtils")) return;
   utils.ensureLoaded("fileUtils", "navigationUtils", "tableUtils", "uiUtils");
 
   /**

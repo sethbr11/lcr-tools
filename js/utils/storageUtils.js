@@ -3,7 +3,7 @@
  * Specifically manages the photo cache for Member Flashcards and No Photo List.
  */
 (() => {
-  utils.returnIfLoaded("storageUtils");
+  if (utils.returnIfLoaded("storageUtils")) return;
   utils.ensureLoaded("modalUtils", "uiUtils"); // Ensure modalUtils is loaded
 
   const PHOTO_CACHE_KEY = "lcr_photo_cache";

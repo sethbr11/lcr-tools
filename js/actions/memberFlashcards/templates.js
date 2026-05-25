@@ -3,7 +3,7 @@
  * Contains HTML templates for the flashcard interface and modal.
  */
 (() => {
-  utils.returnIfLoaded("memberFlashcardsTemplates");
+  if (utils.returnIfLoaded("memberFlashcardsTemplates")) return;
 
   /**
    * Template for individual flashcard

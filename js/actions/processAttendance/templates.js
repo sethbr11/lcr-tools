@@ -2,7 +2,7 @@
  * Templates for the processAttendance action UI
  */
 (() => {
-  utils.returnIfLoaded("processAttendanceTemplates");
+  if (utils.returnIfLoaded("processAttendanceTemplates")) return;
 
   const templates = {
     setupModalStructure: `

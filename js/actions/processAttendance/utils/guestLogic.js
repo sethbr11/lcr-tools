@@ -1,5 +1,5 @@
 (() => {
-  utils.returnIfLoaded("attendanceGuestLogic");
+  if (utils.returnIfLoaded("attendanceGuestLogic")) return;
   utils.ensureLoaded("attendanceDomUtils", "utils", "uiUtils");
 
   const GUEST_CATEGORY_LABELS = {

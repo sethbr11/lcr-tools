@@ -5,7 +5,7 @@
  * UI utilities for loading indicators and abort handling.
  */
 (() => {
-  utils.returnIfLoaded("navigationUtils");
+  if (utils.returnIfLoaded("navigationUtils")) return;
 
   const DEFAULT_MAX_TOTAL_PAGES = 20; // Default safety limit to prevent infinite loops
   const DEFAULT_PAGINATION_DELAY_MS = 500;

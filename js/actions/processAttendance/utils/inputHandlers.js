@@ -4,7 +4,7 @@
  * the inline edit view, and the process button.
  */
 (() => {
-  utils.returnIfLoaded("attendanceInputHandlers");
+  if (utils.returnIfLoaded("attendanceInputHandlers")) return;
   utils.ensureLoaded(
     "attendanceCsvParser",
     "attendanceUi",

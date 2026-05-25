@@ -1,5 +1,5 @@
 (() => {
-  utils.returnIfLoaded("attendanceCsvParser");
+  if (utils.returnIfLoaded("attendanceCsvParser")) return;
   utils.ensureLoaded("dataUtils");
 
   /**

@@ -5,7 +5,7 @@
  * generating filenames for downloads.
  */
 (() => {
-  utils.returnIfLoaded("tableUtils");
+  if (utils.returnIfLoaded("tableUtils")) return;
 
   // ==================== HELPER FUNCTIONS ====================
   /**

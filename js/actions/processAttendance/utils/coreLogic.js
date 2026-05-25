@@ -1,5 +1,5 @@
 (() => {
-  utils.returnIfLoaded("attendanceCoreLogic");
+  if (utils.returnIfLoaded("attendanceCoreLogic")) return;
   utils.ensureLoaded("attendanceDomUtils", "attendanceUi", "uiUtils", "loggingUtils", "utils", "dataUtils");
 
   function buildFinalSummary(attendanceLog, aborted) {

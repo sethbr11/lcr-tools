@@ -1,7 +1,7 @@
 // Main logic for the Trip Planning action
 
 (async () => {
-  utils.returnIfLoaded("tripPlanning.main");
+  if (utils.returnIfLoaded("tripPlanning.main")) return;
   utils.ensureLoaded("tableUtils", "uiUtils");
 
   if (

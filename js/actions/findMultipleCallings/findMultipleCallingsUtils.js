@@ -3,7 +3,7 @@
  */
 
 (() => {
-  utils.returnIfLoaded("findMultipleCallingsUtils");
+  if (utils.returnIfLoaded("findMultipleCallingsUtils")) return;
   utils.ensureLoaded(
     "uiUtils",
     "tableUtils",

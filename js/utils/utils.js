@@ -7,11 +7,12 @@
   if (window.utils) return; // Prevent duplicate initialization
 
   /**
-   * Checks if a window variable is already loaded and returns early if so
+   * Checks if a window variable is already loaded and returns a boolean
    * @param {string} windowVar - The name of the window variable to check
+   * @returns {boolean} - True if already loaded
    */
   const returnIfLoaded = (windowVar) => {
-    if (window[windowVar]) return;
+    return !!window[windowVar];
   };
 
   /**

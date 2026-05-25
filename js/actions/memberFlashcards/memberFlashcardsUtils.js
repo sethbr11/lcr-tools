@@ -10,7 +10,7 @@
  * Integrates with navigationUtils for page navigation and uiUtils for interface management.
  */
 (() => {
-  utils.returnIfLoaded("memberFlashcardsUtils");
+  if (utils.returnIfLoaded("memberFlashcardsUtils")) return;
   utils.ensureLoaded(
     "navigationUtils",
     "uiUtils",

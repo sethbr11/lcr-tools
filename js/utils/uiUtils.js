@@ -4,7 +4,7 @@
  * to provide feedback during long-running processes like data collection.
  */
 (() => {
-  utils.returnIfLoaded("uiUtils");
+  if (utils.returnIfLoaded("uiUtils")) return;
   const LOADER_ID_SHARED = "lcr-tools-loader-overlay-shared";
 
   /**

@@ -14,21 +14,19 @@ describe("Core Utilities", () => {
   });
 
   describe("returnIfLoaded", () => {
-    test("should return undefined when variable exists", () => {
+    test("should return true when variable exists", () => {
       global.window.testVar = { someProperty: "value" };
       const result = window.utils.returnIfLoaded("testVar");
-      // Function returns early with undefined
-      expect(result).toBeUndefined();
+      expect(result).toBe(true);
     });
 
-    test("should return undefined when variable doesn't exist", () => {
+    test("should return false when variable doesn't exist", () => {
       const result = window.utils.returnIfLoaded("nonexistentVar");
-      // Function also returns undefined (implicit)
-      expect(result).toBeUndefined();
+      expect(result).toBe(false);
     });
 
     test("should be used to prevent duplicate script loading", () => {
-      // The main purpose is to use in IIFEs like: utils.returnIfLoaded("myUtil");
+      // The main purpose is to use in IIFEs like: if (utils.returnIfLoaded("myUtil")) return;
       // If already loaded, the return statement stops execution
       expect(typeof window.utils.returnIfLoaded).toBe("function");
     });

@@ -3,7 +3,7 @@
  * Centralizes common API requests and handles batching/concurrency.
  */
 (() => {
-  utils.returnIfLoaded("lcrApiUtils");
+  if (utils.returnIfLoaded("lcrApiUtils")) return;
   utils.ensureLoaded("uiUtils");
 
   /**

@@ -5,7 +5,7 @@
  * for data integrity.
  */
 (() => {
-  utils.returnIfLoaded("fileUtils");
+  if (utils.returnIfLoaded("fileUtils")) return;
 
   /**
    * Downloads content as a file
