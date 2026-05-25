@@ -207,9 +207,9 @@
     const UI_OVERLAY_ID = "lcr-tools-multiple-callings-ui-overlay";
 
     // Check if we're on the ward callings page to show disclaimer
-    const isWardCallingsPage = window.location.href.includes(
-      "orgs/callings-by-organization",
-    );
+    const isWardCallingsPage =
+      window.location.href.includes("orgs/callings-by-organization") ||
+      window.location.href.includes("/mlt/orgs");
 
     // Prepare alerts
     const alerts = [];
