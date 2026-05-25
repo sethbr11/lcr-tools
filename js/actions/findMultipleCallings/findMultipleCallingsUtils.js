@@ -81,38 +81,68 @@
         .filter((line) => line.trim());
       if (rows.length < 2) return;
 
-      const dataRows = rows.slice(1); // Skip header row
+      const headerRow = rows[0];
+      const dataRows = rows.slice(1);
 
-      dataRows.forEach((row) => {
-        // Robust CSV column extraction handling quotes and empty values
+      // Helper function to split CSV row robustly
+      const splitCsvRow = (rowStr) => {
         const columns = [];
         let col = "";
         let inQuotes = false;
-        for (let i = 0; i < row.length; i++) {
-          const char = row[i];
+        for (let i = 0; i < rowStr.length; i++) {
+          const char = rowStr[i];
           if (char === '"') inQuotes = !inQuotes;
           else if (char === "," && !inQuotes) {
-            columns.push(col.trim());
+            columns.push(col.trim().replace(/^"|"$/g, ""));
             col = "";
           } else {
             col += char;
           }
         }
-        columns.push(col.trim());
+        columns.push(col.trim().replace(/^"|"$/g, ""));
+        return columns;
+      };
 
+      const headers = splitCsvRow(headerRow);
+
+      // Find indices based on header names (case-insensitive)
+      const nameIdx = headers.findIndex((h) => h.toLowerCase() === "name");
+      const callingIdx = headers.findIndex((h) =>
+        ["calling", "position"].includes(h.toLowerCase()),
+      );
+      const orgIdx = headers.findIndex((h) =>
+        h.toLowerCase().includes("organization"),
+      );
+
+      dataRows.forEach((row) => {
+        const columns = splitCsvRow(row);
         if (columns.length < 2) return;
 
-        // On the Organizations page: Col 0 = Calling, Col 1 = Name
-        // On the Member Callings page: Col 0 = Name, Col 6 = Calling, Col 5 = Org
-        const name = isOrgsPage
-          ? columns[1]?.replace(/"/g, "").trim()
-          : columns[0]?.replace(/"/g, "").trim();
-        const calling = isOrgsPage
-          ? columns[0]?.replace(/"/g, "").trim()
-          : columns[6]?.replace(/"/g, "").trim();
-        const organization = isOrgsPage
-          ? table.label || "N/A"
-          : columns[5]?.replace(/"/g, "").trim();
+        // Extract values using discovered indices, falling back to old logic if headers missing
+        let name = "";
+        let calling = "";
+        let organization = "";
+
+        if (nameIdx !== -1) {
+          name = columns[nameIdx];
+        } else {
+          // Fallback logic
+          name = isOrgsPage ? columns[1] : columns[0];
+        }
+
+        if (callingIdx !== -1) {
+          calling = columns[callingIdx];
+        } else {
+          // Fallback logic
+          calling = isOrgsPage ? columns[0] : columns[6];
+        }
+
+        if (orgIdx !== -1) {
+          organization = columns[orgIdx];
+        } else {
+          // Fallback logic
+          organization = isOrgsPage ? table.label || "N/A" : columns[5];
+        }
 
         // Skip if we couldn't find a valid member name or if it's a vacant calling
         if (!name || name.toLowerCase().includes("vacant")) return;
