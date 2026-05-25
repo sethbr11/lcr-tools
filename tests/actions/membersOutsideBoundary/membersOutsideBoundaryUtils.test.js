@@ -23,7 +23,9 @@ global.uiUtils = {
 };
 
 global.modalUtils = {
-  createStandardModal: jest.fn(),
+  createStandardModal: jest.fn(({ content }) => {
+    document.body.innerHTML = content;
+  }),
 };
 
 global.fileUtils = {
@@ -62,7 +64,15 @@ window.location = { reload: jest.fn(), pathname: "/maps/12345" };
 
 // Mock Templates
 window.membersOutsideBoundaryTemplates = {
-  resultsModalStructure: "<div>Inside: {{insideCount}}, Outside: {{outsideCount}}</div>",
+  resultsModalStructure: `
+    <div>
+      <input type="radio" name="view-filter" value="all" checked>
+      <input type="radio" name="view-filter" value="outside">
+      <input type="radio" name="view-filter" value="inside">
+      <button id="download-csv-btn">Download</button>
+      <div id="member-list-container">{{memberListHTML}}</div>
+    </div>
+  `,
   listItem: "<div>{{name}} - {{status}}</div>",
   reasonBadge: "<span>{{reason}}</span>",
   emptyState: "Empty",
@@ -86,11 +96,23 @@ global.Image = class {
   }
 };
 
+// CRITICAL: Restore real querySelector/querySelectorAll for this test suite
+// The global setup.js mocks these, but we need real DOM querying for the modal
+const realQuerySelector = Document.prototype.querySelector;
+const realQuerySelectorAll = Document.prototype.querySelectorAll;
+document.querySelector = realQuerySelector.bind(document);
+document.querySelectorAll = realQuerySelectorAll.bind(document);
+
 // Load the file under test
 require("../../../js/actions/membersOutsideBoundary/membersOutsideBoundaryUtils.js");
 
 describe("membersOutsideBoundaryUtils", () => {
   beforeEach(() => {
+    // Ensure fetch is a mock (it might have been overridden by init)
+    if (typeof global.fetch.mockReset !== "function") {
+      global.fetch = jest.fn();
+    }
+    
     jest.clearAllMocks();
     sessionStorageMock.clear();
     window.location.reload.mockClear();
@@ -212,6 +234,77 @@ describe("membersOutsideBoundaryUtils", () => {
       // Cleanup
       expect(sessionStorageMock.removeItem).toHaveBeenCalledWith("LCR_AUDIT_PENDING");
       
+      jest.useRealTimers();
+    });
+  });
+
+  describe("Results Modal", () => {
+    test("should export filtered results based on selected radio button", async () => {
+      jest.useFakeTimers();
+      sessionStorageMock.setItem("LCR_AUDIT_PENDING", "true");
+
+      const mockMembers = [
+        { name: "Inside Family", latitude: 10, longitude: 10 },
+        { name: "Outside Family", latitude: 50, longitude: 50 }, // Outside map view
+      ];
+      
+      global.fetch.mockResolvedValue({
+        clone: () => ({ json: async () => ({ households: mockMembers, unit: { unitNo: "555" } }) }),
+        json: async () => ({ households: mockMembers, unit: { unitNo: "555" } }),
+        ok: true,
+      });
+
+      window.membersOutsideBoundaryUtils.init();
+      await window.fetch("https://lcr.churchofjesuschrist.org/api/member-list");
+      await Promise.resolve();
+      await Promise.resolve();
+
+      global.MapsService.getLocation.mockResolvedValue({ type: "WARD" });
+      global.MapsService.getLocationExtent.mockResolvedValue({
+        getNorthEast: () => ({ lat: () => 30, lng: () => 30 }),
+        getSouthWest: () => ({ lat: () => 0, lng: () => 0 }),
+      });
+      global.MapsService.getLocationsOverlay.mockResolvedValue("blob:fake-image");
+
+      jest.advanceTimersByTime(1000);
+      await Promise.resolve(); 
+      await Promise.resolve(); 
+      await Promise.resolve(); 
+      await Promise.resolve(); 
+      jest.advanceTimersByTime(20); 
+      await Promise.resolve(); 
+      await Promise.resolve(); 
+
+      expect(modalUtils.createStandardModal).toHaveBeenCalled();
+
+      // At this point, the modal is "open" and listeners are attached after 100ms
+      jest.advanceTimersByTime(200);
+
+      const dlBtn = document.getElementById("download-csv-btn");
+      const outsideRadio = document.querySelector('input[value="outside"]');
+
+      // 1. Default (All)
+      dlBtn.click();
+      expect(fileUtils.downloadCsv).toHaveBeenCalledWith(
+        expect.stringContaining("Inside Family"),
+        "boundary_audit_results.csv"
+      );
+      expect(fileUtils.downloadCsv).toHaveBeenCalledWith(
+        expect.stringContaining("Outside Family"),
+        "boundary_audit_results.csv"
+      );
+
+      // 2. Outside Only
+      outsideRadio.checked = true;
+      outsideRadio.dispatchEvent(new Event("change"));
+      dlBtn.click();
+      
+      // Check last call
+      const lastCall = fileUtils.downloadCsv.mock.calls[fileUtils.downloadCsv.mock.calls.length - 1];
+      expect(lastCall[1]).toBe("boundary_audit_results_outside.csv");
+      expect(lastCall[0]).not.toContain("Inside Family");
+      expect(lastCall[0]).toContain("Outside Family");
+
       jest.useRealTimers();
     });
   });

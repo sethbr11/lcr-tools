@@ -304,7 +304,13 @@
       const dlBtn = document.getElementById("download-csv-btn");
       if (dlBtn) {
         dlBtn.addEventListener("click", () => {
-          exportCsv(results);
+          const filter =
+            document.querySelector('input[name="view-filter"]:checked')
+              ?.value || "all";
+          const filteredResults = results.filter(
+            (r) => filter === "all" || r.status.toLowerCase() === filter,
+          );
+          exportCsv(filteredResults, filter);
         });
       }
     }, 100);
@@ -337,7 +343,7 @@
       .join("");
   }
 
-  function exportCsv(results) {
+  function exportCsv(results, filter = "all") {
     if (!window.fileUtils) {
       alert("FileUtils not loaded.");
       return;
@@ -367,7 +373,11 @@
       ),
     ].join("\n");
 
-    window.fileUtils.downloadCsv(csvContent, "boundary_audit_results.csv");
+    const suffix = filter === "all" ? "" : `_${filter}`;
+    window.fileUtils.downloadCsv(
+      csvContent,
+      `boundary_audit_results${suffix}.csv`,
+    );
   }
 
   function parseExtent(extent) {
