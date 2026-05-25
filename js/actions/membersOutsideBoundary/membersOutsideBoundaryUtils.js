@@ -352,7 +352,6 @@
     const headers = [
       "Name",
       "Status",
-      "Reason",
       "Address",
       "Latitude",
       "Longitude",
@@ -360,7 +359,6 @@
     const rows = results.map((r) => [
       r.name,
       r.status,
-      r.reason || "",
       r.address,
       r.lat,
       r.lng,
