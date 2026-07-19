@@ -15,9 +15,22 @@
    */
   async function getPhotoCache() {
     return new Promise((resolve) => {
-      chrome.storage.local.get([PHOTO_CACHE_KEY], (result) => {
-        resolve(result[PHOTO_CACHE_KEY] || {});
-      });
+      if (
+        typeof chrome !== "undefined" &&
+        chrome.storage &&
+        chrome.storage.local
+      ) {
+        chrome.storage.local.get([PHOTO_CACHE_KEY], (result) => {
+          resolve(result[PHOTO_CACHE_KEY] || {});
+        });
+      } else {
+        try {
+          const val = localStorage.getItem(PHOTO_CACHE_KEY);
+          resolve(val ? JSON.parse(val) : {});
+        } catch (e) {
+          resolve({});
+        }
+      }
     });
   }
 
@@ -28,19 +41,35 @@
   async function updatePhotoCache(newEntries) {
     const currentCache = await getPhotoCache();
     const updatedCache = { ...currentCache, ...newEntries };
-    
+
     // Limit cache size to prevent hitting storage limits (e.g., max 2000 members)
     const keys = Object.keys(updatedCache);
     if (keys.length > 2000) {
       // Simple FIFO: remove oldest entries
       const keysToRemove = keys.slice(0, keys.length - 2000);
-      keysToRemove.forEach(k => delete updatedCache[k]);
+      keysToRemove.forEach((k) => delete updatedCache[k]);
     }
 
     return new Promise((resolve) => {
-      chrome.storage.local.set({ [PHOTO_CACHE_KEY]: updatedCache }, () => {
+      if (
+        typeof chrome !== "undefined" &&
+        chrome.storage &&
+        chrome.storage.local
+      ) {
+        chrome.storage.local.set({ [PHOTO_CACHE_KEY]: updatedCache }, () => {
+          resolve();
+        });
+      } else {
+        try {
+          localStorage.setItem(PHOTO_CACHE_KEY, JSON.stringify(updatedCache));
+        } catch (e) {
+          console.error(
+            "LCR Tools: Failed to update localStorage photo cache:",
+            e,
+          );
+        }
         resolve();
-      });
+      }
     });
   }
 
@@ -49,11 +78,29 @@
    */
   async function clearPhotoCache() {
     return new Promise((resolve) => {
-      chrome.storage.local.remove([PHOTO_CACHE_KEY], () => {
-        console.log("LCR Tools: Photo cache cleared.");
-        uiUtils.showToast("Photo cache cleared!", "success");
+      if (
+        typeof chrome !== "undefined" &&
+        chrome.storage &&
+        chrome.storage.local
+      ) {
+        chrome.storage.local.remove([PHOTO_CACHE_KEY], () => {
+          console.log("LCR Tools: Photo cache cleared.");
+          uiUtils.showToast("Photo cache cleared!", "success");
+          resolve();
+        });
+      } else {
+        try {
+          localStorage.removeItem(PHOTO_CACHE_KEY);
+          console.log("LCR Tools: Photo cache cleared (localStorage).");
+          uiUtils.showToast("Photo cache cleared!", "success");
+        } catch (e) {
+          console.error(
+            "LCR Tools: Failed to clear localStorage photo cache:",
+            e,
+          );
+        }
         resolve();
-      });
+      }
     });
   }
 
@@ -63,9 +110,22 @@
    */
   async function getCacheSettings() {
     return new Promise((resolve) => {
-      chrome.storage.local.get([CACHE_SETTINGS_KEY], (result) => {
-        resolve(result[CACHE_SETTINGS_KEY] || { enabled: true });
-      });
+      if (
+        typeof chrome !== "undefined" &&
+        chrome.storage &&
+        chrome.storage.local
+      ) {
+        chrome.storage.local.get([CACHE_SETTINGS_KEY], (result) => {
+          resolve(result[CACHE_SETTINGS_KEY] || { enabled: true });
+        });
+      } else {
+        try {
+          const val = localStorage.getItem(CACHE_SETTINGS_KEY);
+          resolve(val ? JSON.parse(val) : { enabled: true });
+        } catch (e) {
+          resolve({ enabled: true });
+        }
+      }
     });
   }
 
@@ -75,9 +135,22 @@
    */
   async function setCacheSettings(settings) {
     return new Promise((resolve) => {
-      chrome.storage.local.set({ [CACHE_SETTINGS_KEY]: settings }, () => {
+      if (
+        typeof chrome !== "undefined" &&
+        chrome.storage &&
+        chrome.storage.local
+      ) {
+        chrome.storage.local.set({ [CACHE_SETTINGS_KEY]: settings }, () => {
+          resolve();
+        });
+      } else {
+        try {
+          localStorage.setItem(CACHE_SETTINGS_KEY, JSON.stringify(settings));
+        } catch (e) {
+          console.error("LCR Tools: Failed to set localStorage settings:", e);
+        }
         resolve();
-      });
+      }
     });
   }
 
@@ -139,7 +212,8 @@
         modalOptions: {
           maxWidth: "450px",
         },
-        onClose: () => resolve({ proceed: false, enabled: currentSettings.enabled }),
+        onClose: () =>
+          resolve({ proceed: false, enabled: currentSettings.enabled }),
       });
 
       const toggle = document.getElementById("photo-cache-toggle");

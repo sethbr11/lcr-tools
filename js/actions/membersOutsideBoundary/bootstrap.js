@@ -7,24 +7,43 @@
  */
 (() => {
   const AUDIT_FLAG = "LCR_AUDIT_PENDING";
+  const FLASHCARDS_FLAG = "LCR_FLASHCARDS_PENDING";
 
-  // Check if we are waking up for a pending audit
-  if (!sessionStorage.getItem(AUDIT_FLAG)) {
+  const isAuditPending = sessionStorage.getItem(AUDIT_FLAG);
+  const isFlashcardsPending = sessionStorage.getItem(FLASHCARDS_FLAG);
+
+  // Check if we are waking up for a pending audit or flashcard study session
+  if (!isAuditPending && !isFlashcardsPending) {
     return;
   }
 
-  console.log("🕵️ LCR Tools: Audit pending. Loading boundary analysis tools...");
+  console.log("🕵️ LCR Tools: Pending action detected. Injected bootstrap...");
 
   // List of scripts to inject into the MAIN world
-  const scripts = [
-    "js/utils/utils.js",
-    "js/utils/uiUtils.js",
-    "js/utils/modalUtils.js",
-    "js/utils/storageUtils.js",
-    "js/utils/fileUtils.js",
-    "js/actions/membersOutsideBoundary/templates.js",
-    "js/actions/membersOutsideBoundary/membersOutsideBoundaryUtils.js",
-  ];
+  let scripts = [];
+  if (isAuditPending) {
+    scripts = [
+      "js/utils/utils.js",
+      "js/utils/uiUtils.js",
+      "js/utils/modalUtils.js",
+      "js/utils/storageUtils.js",
+      "js/utils/fileUtils.js",
+      "js/actions/membersOutsideBoundary/templates.js",
+      "js/actions/membersOutsideBoundary/membersOutsideBoundaryUtils.js",
+    ];
+  } else if (isFlashcardsPending) {
+    scripts = [
+      "js/utils/utils.js",
+      "js/utils/navigationUtils.js",
+      "js/utils/uiUtils.js",
+      "js/utils/modalUtils.js",
+      "js/utils/storageUtils.js",
+      "js/utils/lcrApiUtils.js",
+      "js/actions/memberFlashcards/templates.js",
+      "js/actions/memberFlashcards/memberFlashcardsUtils.js",
+      "js/actions/memberFlashcards/main.js",
+    ];
+  }
 
   /**
    * Inject a script into the page context

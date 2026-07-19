@@ -1,6 +1,6 @@
 {
   "name": "lcr-tools-extension",
-  "version": "1.4.1",
+  "version": "1.4.2",
   "description": "An extension to help make LCR easier to use.",
   "scripts": {
     "test": "jest",

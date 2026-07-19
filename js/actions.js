@@ -157,12 +157,19 @@ window.ACTION_METADATA = [
       "js/actions/memberFlashcards/main.js",
     ],
     urlPatterns: {
-      include: ["mlt/records/member-list"],
+      include: [
+        "mlt/records/member-list",
+        "directory.churchofjesuschrist.org/",
+      ],
     },
     directoryPages: [
       {
         name: "Member Directory",
         url: "https://lcr.churchofjesuschrist.org/mlt/records/member-list",
+      },
+      {
+        name: "Directory/Map Page",
+        url: "https://directory.churchofjesuschrist.org/",
       },
     ],
   },
