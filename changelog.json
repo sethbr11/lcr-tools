@@ -1,0 +1,28 @@
+{
+  "1.4.2": [
+    "Church Directory & Map Integration: Member Flashcards is now fully supported on the Ward Directory & Map page (directory.churchofjesuschrist.org) in addition to LCR member lists.",
+    "Instant Directory Photo Extraction: Intercepts Next.js directory network payloads directly, loading all member photos immediately without slow DOM navigation.",
+    "Individual Member Filtering: Automatically filters out non-individual households (couples, families) to focus flashcards strictly on individual ward members.",
+    "CSP-Compliant Silhouette Fallback: Replaced missing photo placeholders with an inline SVG silhouette, eliminating Content Security Policy errors on missing images.",
+    "Photo Cache Expiration: Enforced a 24-hour expiration rule on cached photo tokens to ensure member photos stay current and avoid broken links.",
+    "Performance & Log Cleanup: Streamlined background operations and removed verbose prototyping logs."
+  ],
+  "1.4.1": [
+    "Modern Browser Mapping: Updated browser engine mappings and dependency audits to ensure optimal cross-version performance.",
+    "Script Injection Resilience: Enhanced script injection reliability and error recovery on dynamic LCR sub-routes.",
+    "UI Stability Fixes: Resolved edge cases in modal backdrop handling and loading indicator cleanup."
+  ],
+  "1.4.0": [
+    "Accelerated Flashcard Loading: Dramatically faster setup and extraction pipeline for flashcards and members without photos.",
+    "Direct API Acceleration: Bypasses redundant DOM interactions by querying internal member card data endpoints in batched requests.",
+    "Optimized Photo Caching: Improved photo cache validation and hit rate across multiple member study sessions."
+  ],
+  "1.3.1": [
+    "2026 UI Modernization: Complete rebuild of core logic to support the new LCR React (Eden) framework.",
+    "Easy Attendance Pasting: Paste attendance rows from a spreadsheet into the attendance processor instead of having to create a CSV each time.",
+    "Filter All Tables: Added a new feature to synchronize filtering across every organization block on multi-table pages.",
+    "Granular Labeling: Improved table detection to correctly identify specific organizational sub-headers for cleaner exports.",
+    "Stable Photo Caching: Redesigned the cache to use member UUIDs, ensuring it remains stable even if lists are sorted or filtered.",
+    "Restored full functionality to the missing photos report utility."
+  ]
+}

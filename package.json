@@ -7,7 +7,8 @@
     "test:watch": "jest --watch",
     "test:coverage": "jest --coverage",
     "test:ci": "jest --ci --coverage --watchAll=false",
-    "build": "node build.js"
+    "build": "node build.js",
+    "generate:description": "node scripts/generate-store-description.js"
   },
   "devDependencies": {
     "@babel/core": "^7.23.0",

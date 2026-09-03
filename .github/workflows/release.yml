@@ -4,43 +4,88 @@ on:
   push:
     branches:
       - main
+  workflow_dispatch:
+    inputs:
+      action:
+        description: "Chrome Web Store action (publish = submit for review, upload = draft only)"
+        required: true
+        default: "publish"
+        type: choice
+        options:
+          - publish
+          - upload
 
 jobs:
   build-and-release:
     runs-on: ubuntu-latest
     permissions:
       contents: write
-    
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # Fetch all tags to detect existing releases
 
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
-          cache: 'npm'
+          node-version: "20"
+          cache: "npm"
 
       - name: Install dependencies
         run: npm ci
 
+      - name: Run tests
+        run: npm test
+
+      - name: Check version and determine if new release
+        id: check_version
+        run: |
+          VERSION=$(node -e "console.log(require('./manifest.json').version)")
+          echo "VERSION=$VERSION" >> $GITHUB_OUTPUT
+          
+          # If manually triggered via workflow_dispatch, always run
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "IS_NEW=true" >> $GITHUB_OUTPUT
+            echo "Manually triggered for version v$VERSION"
+          elif git rev-parse "v$VERSION" >/dev/null 2>&1; then
+            echo "IS_NEW=false" >> $GITHUB_OUTPUT
+            echo "Version v$VERSION has already been released. Skipping release & CWS upload."
+          else
+            echo "IS_NEW=true" >> $GITHUB_OUTPUT
+            echo "New version detected: v$VERSION"
+          fi
+
       - name: Build extension
+        if: steps.check_version.outputs.IS_NEW == 'true'
         run: npm run build
         env:
           CI: true
 
-      - name: Get version from manifest
-        id: get_version
-        run: |
-          VERSION=$(node -e "console.log(require('./manifest.json').version)")
-          echo "VERSION=$VERSION" >> $GITHUB_OUTPUT
-
-      - name: Create Release
+      - name: Create GitHub Release
+        if: steps.check_version.outputs.IS_NEW == 'true'
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: v${{ steps.get_version.outputs.VERSION }}
-          name: Release v${{ steps.get_version.outputs.VERSION }}
+          tag_name: v${{ steps.check_version.outputs.VERSION }}
+          name: Release v${{ steps.check_version.outputs.VERSION }}
           generate_release_notes: true
           files: ./lcr-tools-extension.zip
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Upload & Publish to Chrome Web Store
+        if: steps.check_version.outputs.IS_NEW == 'true' && env.CHROME_CLIENT_ID != '' && env.CHROME_REFRESH_TOKEN != ''
+        uses: mobilefirstllc/cws-publish@latest
+        with:
+          action: ${{ github.event.inputs.action || 'publish' }}
+          client_id: ${{ secrets.CHROME_CLIENT_ID }}
+          client_secret: ${{ secrets.CHROME_CLIENT_SECRET }}
+          refresh_token: ${{ secrets.CHROME_REFRESH_TOKEN }}
+          extension_id: "camjilfjkjmgcpmnheoeoomfndedpmbn"
+          zip_file: "./lcr-tools-extension.zip"
+        env:
+          CHROME_CLIENT_ID: ${{ secrets.CHROME_CLIENT_ID }}
+          CHROME_REFRESH_TOKEN: ${{ secrets.CHROME_REFRESH_TOKEN }}
+
+
