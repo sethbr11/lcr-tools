@@ -2,7 +2,7 @@
 
 [![CI Testing](https://github.com/sethbr11/lcr-tools/actions/workflows/tests.yml/badge.svg)](https://github.com/sethbr11/lcr-tools/actions/workflows/tests.yml)
 [![Chrome Web Store](https://img.shields.io/chrome-web-store/v/camjilfjkjmgcpmnheoeoomfndedpmbn.svg)](https://chromewebstore.google.com/detail/lcr-tools/camjilfjkjmgcpmnheoeoomfndedpmbn)
-[![Version](https://img.shields.io/badge/version-1.4.2-blue.svg)](package.json)
+[![Version](https://img.shields.io/badge/version-1.5.0-blue.svg)](package.json)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 
 **LCR Tools** makes managing ward and branch records faster, easier, and more powerful. Built for the modern 2026 LCR interface, this extension automates tedious administrative tasks so you can focus more on people and less on paperwork.

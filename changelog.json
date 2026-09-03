@@ -1,4 +1,11 @@
 {
+  "1.5.0": [
+    "2026 Second-Hour Split Attendance: Full support for the new LCR schedule allowing attendance entry for Sunday School, Class/Quorum (Elders Quorum/Relief Society), or both simultaneously.",
+    "Single Sunday & Single Class Navigation: Modernized navigation flow to operate directly on Single Sunday date bar tabs and dynamic Class/Quorum dropdown filters.",
+    "Automated Multi-Organization Visitor Processing: Visitor counts automatically route to their mapped organization views (Men -> Elders Quorum, Women -> Relief Society, Youth -> Aaronic Priesthood/Young Women, Children -> Primary) and save per organization.",
+    "Smart Organization Reset: Restores the view back to All Classes and Quorums after visitor processing completes.",
+    "Enhanced Modal Usability: Redesigned class selection with high-contrast indicator cards, modal-wide paste detection, and locked top scroll position on launch."
+  ],
   "1.4.2": [
     "Church Directory & Map Integration: Member Flashcards is now fully supported on the Ward Directory & Map page (directory.churchofjesuschrist.org) in addition to LCR member lists.",
     "Instant Directory Photo Extraction: Intercepts Next.js directory network payloads directly, loading all member photos immediately without slow DOM navigation.",

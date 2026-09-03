@@ -29,6 +29,13 @@ Key Features:
 - Multiple Callings Finder: Quickly identify members holding more than one assignment to ensure ward records remain accurate.
 
 Recent Updates:
+(1.5.0)
+- 2026 Second-Hour Split Attendance: Full support for the new LCR schedule allowing attendance entry for Sunday School, Class/Quorum (Elders Quorum/Relief Society), or both simultaneously.
+- Single Sunday & Single Class Navigation: Modernized navigation flow to operate directly on Single Sunday date bar tabs and dynamic Class/Quorum dropdown filters.
+- Automated Multi-Organization Visitor Processing: Visitor counts automatically route to their mapped organization views (Men -> Elders Quorum, Women -> Relief Society, Youth -> Aaronic Priesthood/Young Women, Children -> Primary) and save per organization.
+- Smart Organization Reset: Restores the view back to All Classes and Quorums after visitor processing completes.
+- Enhanced Modal Usability: Redesigned class selection with high-contrast indicator cards, modal-wide paste detection, and locked top scroll position on launch.
+
 (1.4.2)
 - Church Directory & Map Integration: Member Flashcards is now fully supported on the Ward Directory & Map page (directory.churchofjesuschrist.org) in addition to LCR member lists.
 - Instant Directory Photo Extraction: Intercepts Next.js directory network payloads directly, loading all member photos immediately without slow DOM navigation.
@@ -41,11 +48,6 @@ Recent Updates:
 - Modern Browser Mapping: Updated browser engine mappings and dependency audits to ensure optimal cross-version performance.
 - Script Injection Resilience: Enhanced script injection reliability and error recovery on dynamic LCR sub-routes.
 - UI Stability Fixes: Resolved edge cases in modal backdrop handling and loading indicator cleanup.
-
-(1.4.0)
-- Accelerated Flashcard Loading: Dramatically faster setup and extraction pipeline for flashcards and members without photos.
-- Direct API Acceleration: Bypasses redundant DOM interactions by querying internal member card data endpoints in batched requests.
-- Optimized Photo Caching: Improved photo cache validation and hit rate across multiple member study sessions.
 
 ---
 Note: This tool is an independent open-source project and is not an official application of The Church of Jesus Christ of Latter-day Saints.

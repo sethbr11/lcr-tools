@@ -376,7 +376,8 @@
     const handler = new attendanceGuestLogic.GuestAttendanceHandler(
       logger,
       targetDate,
-      parentOptions.targetDateColumnIndex || -1
+      parentOptions.targetDateColumnIndex || -1,
+      parentOptions
     );
 
     if (parentOptions.wardMembers && parentOptions.wardMembers.length > 0) {
@@ -609,9 +610,9 @@
             // Set the handler to the right date/column
             const result = dateResults && dateResults[item.date];
             if (result && result.columnIndex !== -1) {
-              handler.setTargetDate(item.date, result.columnIndex);
+              handler.setTargetDate(item.date, result.columnIndex, result);
             } else {
-              handler.setTargetDate(item.date, attendanceDomUtils.findTargetDateColumnIndex(item.date, logger));
+              handler.setTargetDate(item.date, attendanceDomUtils.findTargetDateColumnIndex(item.date, logger), parentOptions);
             }
 
             const success = await handler.markMemberPresent(item.member);
@@ -643,18 +644,13 @@
           // Re-verify month on the visitors tab to be safe
           await attendanceDomUtils.ensureCorrectMonth(datesInMonthWithGuests[0], logger);
 
-          let updatedAny = false;
-          for (const date of datesInMonthWithGuests) {
-            if (uiUtils.isAborted()) throw new Error("Process aborted by user.");
-            
-            const counts = monthData.guestCounts[date];
-            const updatedCount = await handler.updateGuestCounts(counts, date);
-            
-            if (updatedCount > 0) {
-              updatedAny = true;
-              const dateTotal = Object.values(counts).reduce((sum, c) => sum + c, 0);
-              totalGuestsProcessed += dateTotal;
+          const updatedTotal = await handler.processMonthVisitorCounts(monthData.guestCounts);
 
+          if (updatedTotal > 0) {
+            totalGuestsProcessed += updatedTotal;
+
+            for (const date of datesInMonthWithGuests) {
+              const counts = monthData.guestCounts[date];
               for (const [key, label] of Object.entries(attendanceGuestLogic.GUEST_CATEGORY_LABELS)) {
                 const count = counts[key] || 0;
                 if (count > 0) {
@@ -670,10 +666,8 @@
             }
           }
 
-          if (updatedAny) {
-            await uiUtils.sleepWithJitter(1000, 500); // Let React settle
-            await handler.saveVisitorCounts();
-          }
+          // Always reset Class/Quorum dropdown to All Classes on the Visitors tab
+          await handler.resetVisitorsToAllClasses();
         }
       }
 

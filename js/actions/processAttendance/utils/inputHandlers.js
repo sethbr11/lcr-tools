@@ -438,10 +438,21 @@
       return attendanceUi.showUiErrorStatus("Data for processing is incomplete. Ensure date and names are present.");
     }
 
+    const classSelect = document.getElementById("lcr-tools-class-select");
+    const targetClassValue = classSelect ? classSelect.value : null;
+    const targetClassText = classSelect?.options[classSelect.selectedIndex]?.textContent?.trim() || null;
+
+    const meetingSplitRadio = document.querySelector('input[name="lcr-tools-meeting-split"]:checked');
+    const meetingSplit = meetingSplitRadio ? meetingSplitRadio.value : "BOTH";
+
     attendanceUi.closeAttendanceUI();
 
     try {
-      await attendanceCoreLogic.LCR_TOOLS_PROCESS_ATTENDANCE(namesByDate);
+      await attendanceCoreLogic.LCR_TOOLS_PROCESS_ATTENDANCE(namesByDate, {
+        targetClassValue,
+        targetClassText,
+        meetingSplit,
+      });
       if (uiUtils.isAborted()) throw new Error("Process aborted by user.");
     } catch (error) {
       attendanceUi.showUiErrorStatus(`Error processing attendance: ${error.message}`);
@@ -478,6 +489,45 @@
       buttons,
       onClose: attendanceUi.closeAttendanceUI,
     });
+
+    // Populate Class / Quorum dropdown dynamically from LCR
+    const classSelect = document.getElementById("lcr-tools-class-select");
+    const splitContainer = document.getElementById("lcr-tools-meeting-split-container");
+
+    const updateSplitVisibility = () => {
+      if (!splitContainer || !classSelect) return;
+      const val = classSelect.value;
+      const text = (classSelect.options[classSelect.selectedIndex]?.textContent || "").toLowerCase();
+      const isAll = !val || val === "ALL" || text.includes("all classes");
+      splitContainer.style.display = isAll ? "block" : "none";
+    };
+
+    if (classSelect) {
+      const options = attendanceDomUtils.getClassQuorumOptions?.() || [];
+      if (options.length > 0) {
+        classSelect.innerHTML = "";
+        options.forEach((opt) => {
+          const optionEl = document.createElement("option");
+          optionEl.value = opt.value;
+          optionEl.textContent = opt.text;
+          if (opt.selected) optionEl.selected = true;
+          classSelect.appendChild(optionEl);
+        });
+      } else {
+        // Fallback default options
+        classSelect.innerHTML = `
+          <option value="ALL">All Classes and Quorums</option>
+          <option value="SUNDAY_SCHOOL">Sunday School</option>
+          <option value="ELDERS_QUORUM">Elders Quorum</option>
+          <option value="RELIEF_SOCIETY">Relief Society</option>
+          <option value="AARONIC_PRIESTHOOD">Aaronic Priesthood Quorums</option>
+          <option value="YOUNG_WOMEN">Young Women</option>
+          <option value="PRIMARY">Primary</option>
+        `;
+      }
+      classSelect.addEventListener("change", updateSplitVisibility);
+      updateSplitVisibility();
+    }
 
     // Set default date to most recent Sunday
     const dateInput = document.getElementById("lcr-tools-attendance-date");
@@ -528,11 +578,34 @@
     const pasteTarget = document.getElementById("lcr-tools-paste-target");
     if (pasteTarget) {
       pasteTarget.addEventListener("paste", handlePasteEvent);
-      // Ensure focus on click to help user know they can paste
-      pasteTarget.addEventListener("click", () => pasteTarget.focus());
-      // Auto-focus the paste target after a short delay to be ready
-      setTimeout(() => pasteTarget.focus(), 300);
+      pasteTarget.addEventListener("click", () => pasteTarget.focus({ preventScroll: true }));
     }
+
+    // Modal-wide paste listener so user can paste immediately anywhere in the modal
+    const modalEl = document.getElementById(attendanceUi.UI_OVERLAY_ID);
+    if (modalEl) {
+      modalEl.addEventListener("paste", (e) => {
+        if (e.target.tagName === "INPUT" && (e.target.type === "text" || e.target.type === "date")) {
+          return;
+        }
+        handlePasteEvent(e);
+      });
+    }
+
+    // Ensure the modal stays scrolled to the top
+    const resetScrollToTop = () => {
+      if (pasteTarget) {
+        pasteTarget.focus({ preventScroll: true });
+      }
+      if (modalEl) {
+        modalEl.scrollTop = 0;
+        const scrollable = modalEl.querySelector("div[style*='overflow'], .modal-content, .modal-body");
+        if (scrollable) scrollable.scrollTop = 0;
+      }
+    };
+    resetScrollToTop();
+    setTimeout(resetScrollToTop, 50);
+    setTimeout(resetScrollToTop, 300);
 
     attendanceUi.showUiStatus("Paste your spreadsheet data into the box above to begin.");
   }

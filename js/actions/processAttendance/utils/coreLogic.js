@@ -38,18 +38,25 @@
 
   /**
    * Process a single date's member rows.
-   * Navigates to the correct month, finds the date column, and marks members present.
+   * In the new LCR layout: sets month, sets class dropdown, selects Sunday button, and marks single button.
+   * In the legacy layout: navigates to month, finds date column, and marks member cell.
    * Returns { columnIndex, wardMembers, presentMembers } for later guest processing.
    */
-  async function processDateBatch(targetDate, namesToMark, attendanceLog, logger) {
-    logger.logAction("Processing date batch", { targetDate, count: namesToMark.length });
+  async function processDateBatch(targetDate, namesToMark, attendanceLog, logger, options = {}) {
+    logger.logAction("Processing date batch", { targetDate, count: namesToMark.length, options });
 
     // Ensure we are on the Members tab
     const membersTab = document.querySelector(attendanceDomUtils.SELECTORS.membersTab);
-    if (membersTab && membersTab.getAttribute("aria-selected") !== "true") {
-      logger.logAction("Switching to Members tab");
-      membersTab.click();
-      await uiUtils.sleepWithJitter(1000, 500);
+    if (membersTab) {
+      const isMembersSelected =
+        membersTab.getAttribute("aria-selected") === "true" ||
+        membersTab.classList.contains("eden-tab--selected") ||
+        membersTab.classList.contains("active");
+      if (!isMembersSelected) {
+        logger.logAction("Switching to Members tab");
+        membersTab.click();
+        await uiUtils.sleepWithJitter(1000, 500);
+      }
     }
 
     // Helper to wait for table headers to appear and have text
@@ -72,7 +79,6 @@
         // Stability check: Wait until we have headers AND the number of headers with text is stable
         if (headers.length > 0 && headersWithText.length > 0) {
           if (headersWithText.length === lastTextCount) {
-             // Second time seeing the same count of headers with text, we're likely stable
              return true;
           }
           lastTextCount = headersWithText.length;
@@ -83,6 +89,140 @@
       return false;
     };
 
+    // Check if page uses the new 2026 UI layout (Single Sunday & Single Class view)
+    const isNewLayout = attendanceDomUtils.isTwoHourSplitLayout?.();
+    if (isNewLayout) {
+      logger.logAction("New LCR UI detected: using Single Sunday & Single Class flow", {
+        targetClass: options?.targetClassText || options?.targetClassValue || "All",
+      });
+      uiUtils.showLoadingIndicator(`Setting up Single Sunday view for ${targetDate}...`);
+
+      // 1. Ensure correct month
+      await attendanceDomUtils.ensureCorrectMonth(targetDate, logger);
+
+      // 2. Always ensure the page is set to the selected Class/Quorum (never assume initial state!)
+      const targetClass = options?.targetClassValue || "ALL";
+      await attendanceDomUtils.setClassQuorum(targetClass, logger);
+
+      // 3. Switch to Single Sunday View
+      await attendanceDomUtils.selectSundayView(targetDate, logger);
+
+      // 4. Wait for table update
+      await waitForHeaders();
+      await uiUtils.sleepWithJitter(1000, 500);
+
+      const memberRows = attendanceDomUtils.getMemberRows();
+      logger.logAction("Processing member rows in Single Class + Single Sunday view", {
+        targetDate,
+        rowCount: memberRows.length,
+      });
+      uiUtils.showLoadingIndicator(`Processing ${memberRows.length} members for ${targetDate}...`, "Press ESC to abort");
+
+      const allWardMembers = [];
+      const presentMembers = new Set();
+      const namesToSearch = namesToMark.map((name) => ({ ...name, processedThisSession: false }));
+      const meetingSplit = options?.meetingSplit || "BOTH";
+
+      for (let rowIndex = 0; rowIndex < memberRows.length; rowIndex++) {
+        if (uiUtils.isAborted()) break;
+        const row = memberRows[rowIndex];
+        const nameAnchor = attendanceDomUtils.getNameAnchor(row);
+        if (!nameAnchor) continue;
+
+        const lcrFullName = nameAnchor.textContent.trim();
+        const lcrNameParsed = dataUtils.parseFullName(lcrFullName);
+
+        const targetButtons = attendanceDomUtils.resolveTargetButtons(row, meetingSplit);
+        const isPresent =
+          targetButtons.length > 0 &&
+          targetButtons.every((btn) => attendanceDomUtils.isButtonPresent(btn));
+
+        allWardMembers.push({
+          fullName: lcrFullName,
+          firstName: lcrNameParsed.firstName,
+          lastName: lcrNameParsed.lastName,
+          isPresent,
+          pageNum: 1,
+        });
+
+        if (isPresent) {
+          presentMembers.add(lcrFullName.toLowerCase());
+        }
+
+        for (const csvNameEntry of namesToSearch) {
+          if (csvNameEntry.processedThisSession) continue;
+
+          const matchResult = dataUtils.fuzzyNameMatch(csvNameEntry, lcrNameParsed);
+
+          if (matchResult.isMatch) {
+            logger.logAction("NAME_MATCH_FOUND", {
+              csvName: `${csvNameEntry.firstName} ${csvNameEntry.lastName}`,
+              lcrName: lcrFullName,
+              method: matchResult.method,
+              date: targetDate,
+            });
+
+            let currentStatusInLog = "Matched in LCR";
+            let anyMarked = false;
+            let allAlreadyPresent = true;
+
+            if (targetButtons.length > 0) {
+              row.scrollIntoView({ behavior: "smooth", block: "center" });
+              await uiUtils.sleepWithJitter(150, 50);
+
+              for (const btn of targetButtons) {
+                const { marked, alreadyPresent } = await attendanceDomUtils.toggleButtonPresent(btn, logger);
+                if (marked) {
+                  anyMarked = true;
+                  allAlreadyPresent = false;
+                  logger.logAction("MEMBER_MARKED_SUCCESSFULLY", { memberName: lcrFullName, date: targetDate });
+                } else if (!alreadyPresent) {
+                  allAlreadyPresent = false;
+                  logger.logAction("MEMBER_MARK_UI_TIMEOUT", { memberName: lcrFullName, date: targetDate });
+                }
+              }
+
+              if (anyMarked) {
+                currentStatusInLog = "Marked as Present in LCR";
+                presentMembers.add(lcrFullName.toLowerCase());
+                allWardMembers[allWardMembers.length - 1].isPresent = true;
+              } else if (allAlreadyPresent) {
+                logger.logAction("MEMBER_ALREADY_PRESENT", { memberName: lcrFullName, date: targetDate });
+                currentStatusInLog = "Already Present in LCR";
+              } else {
+                currentStatusInLog = "Marked (UI update slow/failed)";
+              }
+            }
+
+            const idx = attendanceLog.findIndex(
+              (log) =>
+                log.date === targetDate &&
+                log.firstName === csvNameEntry.firstName &&
+                log.lastName === csvNameEntry.lastName
+            );
+            if (idx !== -1) {
+              attendanceLog[idx].lcrUpdateStatus = currentStatusInLog;
+            }
+
+            csvNameEntry.processedThisSession = true;
+            break;
+          }
+        }
+      }
+
+      await uiUtils.sleepWithJitter(1000, 500);
+
+      return {
+        columnIndex: 0,
+        wardMembers: allWardMembers,
+        presentMembers,
+        isNewLayout: true,
+        meetingSplit,
+        targetClassValue: options?.targetClassValue || null,
+      };
+    }
+
+    // --- Legacy Layout Fallback ---
     await waitForHeaders();
     let columnIndex = attendanceDomUtils.findTargetDateColumnIndex(targetDate, logger);
 
@@ -256,7 +396,7 @@
     return { columnIndex, wardMembers: allWardMembers, presentMembers };
   }
 
-  async function LCR_TOOLS_PROCESS_ATTENDANCE(namesByDate) {
+  async function LCR_TOOLS_PROCESS_ATTENDANCE(namesByDate, options = {}) {
     const sortedDates = Object.keys(namesByDate).sort();
     const totalNames = sortedDates.reduce((sum, d) => sum + namesByDate[d].length, 0);
 
@@ -268,6 +408,7 @@
     logger.logAction("LCR_TOOLS_PROCESS_ATTENDANCE_STARTED", {
       dates: sortedDates,
       totalNames,
+      options,
     });
 
     uiUtils.showLoadingIndicator(`Initializing attendance processing for ${sortedDates.length} date(s)...`);
@@ -303,7 +444,7 @@
           `Processing date ${i + 1} of ${sortedDates.length}: ${date}...`
         );
 
-        const result = await processDateBatch(date, namesByDate[date], attendanceLog, logger);
+        const result = await processDateBatch(date, namesByDate[date], attendanceLog, logger, options);
         dateResults[date] = result;
       }
 

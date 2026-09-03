@@ -6,8 +6,37 @@
 
   const templates = {
     setupModalStructure: `
+      <div style="margin-bottom: 22px; padding: 14px 16px; background: linear-gradient(135deg, #f8fafc 0%, #edf2f7 100%); border: 1.5px solid #cbd5e1; border-left: 4px solid #0066cc; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.05);">
+        <label for="lcr-tools-class-select" style="display:flex; align-items:center; gap:6px; margin-bottom:8px; font-weight:700; color:#1e293b; font-size:1.05em;">
+          <span>1. Select Class / Quorum:</span>
+        </label>
+        <select id="lcr-tools-class-select" style="padding:10px 14px; border:2px solid #0066cc; border-radius:6px; width:100%; font-size: 1.05em; font-weight: 500; color:#0f172a; background-color: #ffffff; box-shadow: 0 2px 4px rgba(0, 102, 204, 0.08); cursor: pointer; outline: none; transition: border-color 0.2s, box-shadow 0.2s;">
+          <option value="">Loading classes from page...</option>
+        </select>
+        <div style="font-size: 0.82em; color: #64748b; margin-top: 6px;">Select a specific class to focus on one group, or keep "All Classes and Quorums".</div>
+      </div>
+
+      <!-- Meeting Split Selection (First Half, Second Half, Both) -->
+      <div id="lcr-tools-meeting-split-container" style="margin-bottom: 20px;">
+        <label style="display:block; margin-bottom:8px; font-weight:bold;">2. Meeting(s) to Mark Present:</label>
+        <div style="display:flex; flex-direction:column; gap:8px; padding:12px 14px; background:#f0f7ff; border:1px solid #b8daff; border-radius:6px;">
+          <label style="display:flex; align-items:center; gap:8px; cursor:pointer; font-size:0.95em;">
+            <input type="radio" name="lcr-tools-meeting-split" value="BOTH" checked>
+            <span><strong>Mark Both:</strong> Sunday School AND Class/Quorum (Elders Quorum, Relief Society, etc.)</span>
+          </label>
+          <label style="display:flex; align-items:center; gap:8px; cursor:pointer; font-size:0.95em;">
+            <input type="radio" name="lcr-tools-meeting-split" value="FIRST_HALF">
+            <span><strong>First Half Only:</strong> Sunday School</span>
+          </label>
+          <label style="display:flex; align-items:center; gap:8px; cursor:pointer; font-size:0.95em;">
+            <input type="radio" name="lcr-tools-meeting-split" value="SECOND_HALF">
+            <span><strong>Second Half Only:</strong> Class / Quorum (Elders Quorum, Relief Society, YW, etc.)</span>
+          </label>
+        </div>
+      </div>
+
       <div style="margin-bottom: 20px;">
-        <label for="lcr-tools-attendance-date" style="display:block; margin-bottom:8px; font-weight:bold;">1. Select Attendance Date (Sunday):</label>
+        <label for="lcr-tools-attendance-date" style="display:block; margin-bottom:8px; font-weight:bold;">3. Select Attendance Date (Sunday):</label>
         <div style="display: flex; align-items: flex-start; gap: 10px;">
           <input type="date" id="lcr-tools-attendance-date" style="padding:8px; border:1px solid #ccc; border-radius:4px; min-width:180px; font-size: 1em;">
           <button id="lcr-tools-download-sample" style="padding:9px 12px; background-color:#6c757d; color:white; border:none; border-radius:4px; cursor:pointer; font-size: 0.95em;">Download Sample CSV</button>
@@ -15,7 +44,7 @@
       </div>
 
       <div style="margin-bottom: 20px;">
-        <label style="display:block; margin-bottom:8px; font-weight:bold;">2. Provide Attendance Data:</label>
+        <label style="display:block; margin-bottom:8px; font-weight:bold;">4. Provide Attendance Data:</label>
         
         <div id="lcr-tools-input-panels">
           <!-- Main Paste Target -->
