@@ -2,8 +2,10 @@ name: Release & Publish
 
 on:
   push:
-    branches:
-      - main
+    tags:
+      - 'v*'
+  release:
+    types: [published]
   workflow_dispatch:
     inputs:
       action:
@@ -39,35 +41,51 @@ jobs:
       - name: Generate extension types
         run: npx wxt prepare
 
+      - name: Detect version and release trigger
+        id: check_version
+        run: |
+          if [ "${{ github.event_name }}" = "release" ]; then
+            TAG="${{ github.event.release.tag_name }}"
+            VERSION="${TAG#v}"
+            echo "VERSION=$VERSION" >> $GITHUB_OUTPUT
+            echo "SHOULD_RELEASE=true" >> $GITHUB_OUTPUT
+            echo "Triggered by GitHub Release: $TAG (version: $VERSION)"
+          elif [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            VERSION=$(node -p "require('./package.json').version")
+            echo "VERSION=$VERSION" >> $GITHUB_OUTPUT
+            echo "SHOULD_RELEASE=true" >> $GITHUB_OUTPUT
+            echo "Manually triggered release for version v$VERSION"
+          elif [ "${{ github.event_name }}" = "push" ]; then
+            TAG="${GITHUB_REF_NAME}"
+            VERSION="${TAG#v}"
+            echo "VERSION=$VERSION" >> $GITHUB_OUTPUT
+
+            # Check if a GitHub release was already created for this tag (e.g. via GitHub Release UI)
+            STATUS_CODE=$(curl -s -o /dev/null -w "%{http_code}" -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
+              "https://api.github.com/repos/${{ github.repository }}/releases/tags/${TAG}")
+
+            if [ "$STATUS_CODE" = "200" ]; then
+              echo "SHOULD_RELEASE=false" >> $GITHUB_OUTPUT
+              echo "GitHub Release for $TAG already exists (handled by release event). Skipping duplicate tag-push workflow."
+            else
+              echo "SHOULD_RELEASE=true" >> $GITHUB_OUTPUT
+              echo "New tag detected: $TAG (version: $VERSION). Proceeding with release."
+            fi
+          fi
+
       - name: Verify formatting, types, and tests
+        if: steps.check_version.outputs.SHOULD_RELEASE == 'true'
         run: |
           npm run format:check
           npm run compile
           npm test
 
-      - name: Detect version and determine if new release
-        id: check_version
-        run: |
-          VERSION=$(node -p "require('./package.json').version")
-          echo "VERSION=$VERSION" >> $GITHUB_OUTPUT
-
-          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
-            echo "IS_NEW=true" >> $GITHUB_OUTPUT
-            echo "Manually triggered release for version v$VERSION"
-          elif git rev-parse "v$VERSION" >/dev/null 2>&1; then
-            echo "IS_NEW=false" >> $GITHUB_OUTPUT
-            echo "Version v$VERSION already tagged. Skipping release and CWS upload."
-          else
-            echo "IS_NEW=true" >> $GITHUB_OUTPUT
-            echo "New version detected: v$VERSION"
-          fi
-
       - name: Build production zip packages
-        if: steps.check_version.outputs.IS_NEW == 'true'
+        if: steps.check_version.outputs.SHOULD_RELEASE == 'true'
         run: npm run zip:all
 
-      - name: Create GitHub Release
-        if: steps.check_version.outputs.IS_NEW == 'true'
+      - name: Create or Update GitHub Release
+        if: steps.check_version.outputs.SHOULD_RELEASE == 'true'
         uses: softprops/action-gh-release@v2
         with:
           tag_name: v${{ steps.check_version.outputs.VERSION }}
@@ -81,7 +99,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Upload & Publish to Chrome Web Store
-        if: steps.check_version.outputs.IS_NEW == 'true' && env.CHROME_CLIENT_ID != '' && env.CHROME_REFRESH_TOKEN != ''
+        if: steps.check_version.outputs.SHOULD_RELEASE == 'true' && env.CHROME_CLIENT_ID != '' && env.CHROME_REFRESH_TOKEN != ''
         uses: mobilefirstllc/cws-publish@latest
         with:
           action: ${{ github.event.inputs.action || 'publish' }}
