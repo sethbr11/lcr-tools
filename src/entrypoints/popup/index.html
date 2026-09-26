@@ -1,0 +1,332 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>LCR Tools</title>
+    <link rel="stylesheet" href="./style.css" />
+    <link rel="stylesheet" href="./passive.css" />
+  </head>
+  <body>
+    <div class="popup-container">
+      <!-- Main Actions View -->
+      <div id="main-view" class="popup-view">
+        <div class="popup-header">
+          <img src="/images/icon-48.png" alt="LCR Tools Icon" class="popup-logo" />
+          <div class="popup-title">
+            <h1>LCR Tools</h1>
+            <p class="popup-subtitle">Leader & Clerk Resources Enhanced</p>
+          </div>
+          <button
+            id="directory-button"
+            class="directory-button"
+            title="Browse all actions"
+            aria-label="Open Action Directory"
+          >
+            <svg viewBox="0 0 24 24">
+              <path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01" />
+            </svg>
+          </button>
+        </div>
+        <div class="popup-content">
+          <div id="menu-items" class="action-list">
+            <div class="loading-state">
+              <div class="loading-spinner"></div>
+              <p>Loading available actions...</p>
+            </div>
+          </div>
+          <div id="passive-actions-section" class="passive-actions-section" style="display: none">
+            <hr class="passive-divider" />
+            <div class="passive-section-header">
+              <span class="passive-section-title">Passive Tools</span>
+              <span class="passive-section-subtitle">Runs automatically in background</span>
+            </div>
+            <div id="passive-items" class="passive-list"></div>
+          </div>
+          <div id="status-message" class="status-banner"></div>
+          <div class="settings-section">
+            <hr class="settings-divider" />
+            <div class="settings-actions">
+              <button id="settings-button" class="settings-button" type="button" aria-label="More">
+                More
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- More View -->
+      <div id="settings-view" class="popup-view" style="display: none">
+        <div class="popup-header">
+          <button
+            id="settings-back-button"
+            class="back-button"
+            title="Back to actions"
+            aria-label="Back to actions"
+          >
+            <svg viewBox="0 0 24 24"><path d="M19 12H5M12 19l-7-7 7-7" /></svg>
+          </button>
+          <img src="/images/icon-48.png" alt="LCR Tools Icon" class="popup-logo" />
+          <div class="popup-title">
+            <h1>More</h1>
+            <p class="popup-subtitle">Preferences and tools</p>
+          </div>
+        </div>
+        <div class="popup-content settings-view-content">
+          <div id="settings-status-message" class="status-banner"></div>
+          <div class="settings-group">
+            <div class="settings-card">
+              <div class="settings-card-header">
+                <span class="settings-label">Attendance Aliases</span>
+                <span class="settings-description" id="aliases-card-description"
+                  >Grouped nickname mappings for rosters on this device.</span
+                >
+              </div>
+              <button
+                id="aliases-button"
+                class="settings-action-button"
+                type="button"
+                title="View and remove saved attendance aliases"
+              >
+                Manage Aliases
+              </button>
+            </div>
+
+            <div class="settings-card">
+              <div class="settings-card-header">
+                <span class="settings-label">API Keys</span>
+                <span class="settings-description" id="api-keys-card-description"
+                  >Keys are stored securely on this device.</span
+                >
+              </div>
+              <button
+                id="api-keys-button"
+                class="settings-action-button"
+                type="button"
+                title="Manage API Keys"
+              >
+                Manage API Keys
+              </button>
+            </div>
+
+            <div class="settings-card" id="lock-session-container" style="display: none">
+              <div class="settings-card-header">
+                <span class="settings-label">Session Security</span>
+                <span class="settings-description">Data is unlocked for this browser session.</span>
+              </div>
+              <button
+                id="lock-session-button"
+                class="settings-action-button"
+                type="button"
+                title="Lock Session"
+              >
+                Lock Session
+              </button>
+            </div>
+
+            <div class="settings-card">
+              <div class="settings-card-header">
+                <span class="settings-label">Photo Cache</span>
+                <span class="settings-description"
+                  >Clear stored member portraits from local cache.</span
+                >
+              </div>
+              <button
+                id="clear-cache-button"
+                class="settings-action-button clear-cache-danger"
+                type="button"
+                title="Clear all stored member portraits from photo cache"
+              >
+                Clear Photo Cache
+              </button>
+            </div>
+
+            <!-- Developer Tools Section -->
+            <div id="dev-tools-section" class="settings-dev-section" style="display: none">
+              <div class="settings-section-header">
+                <span class="settings-section-title">Developer Tools</span>
+              </div>
+
+              <div class="settings-card">
+                <div class="settings-card-header">
+                  <span class="settings-label">Anonymize Active Tab DOM</span>
+                  <span class="settings-description"
+                    >Copy sanitized, 100% PII-free DOM structure to clipboard.</span
+                  >
+                </div>
+                <button
+                  id="dev-anonymize-button"
+                  class="settings-action-button dev-action-btn"
+                  type="button"
+                  title="Copy sanitized, 100% PII-free DOM structure of active tab to clipboard"
+                >
+                  Copy Anonymized DOM
+                </button>
+              </div>
+
+              <div class="settings-card">
+                <div class="settings-card-header">
+                  <span class="settings-label">Simulate Attendance Marking</span>
+                  <span class="settings-description"
+                    >Dry run: test scroll, toggle, and visitors without saving.</span
+                  >
+                </div>
+                <button
+                  id="dev-simulate-attendance-button"
+                  class="settings-action-button dev-action-btn"
+                  type="button"
+                  title="Run attendance marking in simulation mode on active tab"
+                >
+                  Simulate Attendance
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Attendance Aliases View -->
+      <div id="aliases-view" class="popup-view" style="display: none">
+        <div class="popup-header">
+          <button
+            id="aliases-back-button"
+            class="back-button"
+            title="Back to More"
+            aria-label="Back to More"
+          >
+            <svg viewBox="0 0 24 24"><path d="M19 12H5M12 19l-7-7 7-7" /></svg>
+          </button>
+          <img src="/images/icon-48.png" alt="LCR Tools Icon" class="popup-logo" />
+          <div class="popup-title">
+            <h1>Attendance Aliases</h1>
+            <p class="popup-subtitle">Saved on this device</p>
+          </div>
+        </div>
+        <div class="popup-content settings-view-content">
+          <div id="aliases-status-message" class="status-banner"></div>
+          <div class="aliases-search">
+            <label class="aliases-field-label" for="aliases-search">Search</label>
+            <input id="aliases-search" class="aliases-input" type="search" autocomplete="off" />
+          </div>
+          <div id="aliases-list" class="aliases-list"></div>
+          <button
+            id="aliases-clear-button"
+            class="settings-action-button clear-cache-danger"
+            type="button"
+          >
+            Clear All Aliases
+          </button>
+        </div>
+      </div>
+
+      <!-- API Keys View -->
+      <div id="api-keys-view" class="popup-view" style="display: none">
+        <div class="popup-header">
+          <button
+            id="api-keys-back-button"
+            class="back-button"
+            title="Back to More"
+            aria-label="Back to More"
+          >
+            <svg viewBox="0 0 24 24"><path d="M19 12H5M12 19l-7-7 7-7" /></svg>
+          </button>
+          <img src="/images/icon-48.png" alt="LCR Tools Icon" class="popup-logo" />
+          <div class="popup-title">
+            <h1>API Keys</h1>
+            <p class="popup-subtitle">Stored on this device</p>
+          </div>
+        </div>
+        <div class="popup-content settings-view-content">
+          <div id="api-keys-status-message" class="status-banner"></div>
+          <div id="api-keys-list" class="api-keys-list"></div>
+        </div>
+      </div>
+
+      <!-- Security PIN View -->
+      <div id="pin-view" class="popup-view" style="display: none">
+        <div class="popup-header">
+          <button id="pin-back-button" class="back-button" title="Back" aria-label="Back">
+            <svg viewBox="0 0 24 24"><path d="M19 12H5M12 19l-7-7 7-7" /></svg>
+          </button>
+          <img src="/images/icon-48.png" alt="LCR Tools Icon" class="popup-logo" />
+          <div class="popup-title">
+            <h1 id="pin-view-title">Security PIN</h1>
+            <p id="pin-view-description" class="popup-subtitle">Protect stored data</p>
+          </div>
+        </div>
+        <div class="popup-content settings-view-content">
+          <div id="pin-status-message" class="status-banner"></div>
+          <div class="pin-form-container">
+            <label class="aliases-field-label" for="pin-input">PIN (4–8 digits)</label>
+            <input
+              id="pin-input"
+              class="aliases-input"
+              type="password"
+              inputmode="numeric"
+              maxlength="8"
+              autocomplete="off"
+            />
+            <div id="pin-confirm-container" style="display: none">
+              <label class="aliases-field-label" for="pin-confirm-input">Confirm PIN</label>
+              <input
+                id="pin-confirm-input"
+                class="aliases-input"
+                type="password"
+                inputmode="numeric"
+                maxlength="8"
+                autocomplete="off"
+              />
+            </div>
+            <button id="pin-submit-button" class="settings-action-button" type="button">
+              Unlock
+            </button>
+            <button id="pin-reset-button" class="pin-reset-link" type="button">
+              Forgot PIN? Reset Data
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Action Directory View -->
+      <div id="directory-view" class="popup-view" style="display: none">
+        <div class="popup-header">
+          <button
+            id="back-button"
+            class="back-button"
+            title="Back to actions"
+            aria-label="Back to actions"
+          >
+            <svg viewBox="0 0 24 24"><path d="M19 12H5M12 19l-7-7 7-7" /></svg>
+          </button>
+          <img src="/images/icon-48.png" alt="LCR Tools Icon" class="popup-logo" />
+          <div class="popup-title">
+            <h1>Action Directory</h1>
+            <p class="popup-subtitle">Browse all available actions</p>
+          </div>
+        </div>
+        <div class="popup-content directory-content">
+          <div class="directory-controls">
+            <div class="search-container">
+              <svg class="search-icon" viewBox="0 0 24 24" width="16" height="16">
+                <circle cx="11" cy="11" r="8"></circle>
+                <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+              </svg>
+              <input
+                type="text"
+                id="search-input"
+                class="search-input"
+                placeholder="Search actions..."
+              />
+            </div>
+            <select id="category-filter" class="category-filter">
+              <option value="all">All Categories</option>
+            </select>
+          </div>
+          <div id="directory-status-message" class="status-banner"></div>
+          <div id="directory-list" class="directory-list"></div>
+        </div>
+      </div>
+    </div>
+    <script type="module" src="./main.ts"></script>
+  </body>
+</html>

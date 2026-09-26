@@ -1,0 +1,115 @@
+/* ==========================================================================
+   TRIP PLANNING ACCORDION CONTROLS & LOG DRAWER
+   ========================================================================== */
+
+.accordion {
+  display: flex;
+  gap: 10px;
+  width: 100%;
+  flex-wrap: nowrap;
+  padding: 4px;
+  margin-bottom: 16px;
+}
+
+.accordion-item {
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  transition:
+    flex 0.5s ease,
+    min-width 0.5s ease;
+  flex: 1;
+  min-width: 40px;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  cursor: pointer;
+}
+
+.accordion-item.active {
+  flex: 5;
+  cursor: default;
+}
+
+.accordion-header {
+  padding: 12px;
+  background: #f7fafc;
+  border-bottom: 1px solid #e2e8f0;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  white-space: nowrap;
+}
+
+.accordion-header h3 {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 600;
+  color: #2d3748;
+}
+
+.accordion-icon {
+  font-size: 12px;
+  color: #718096;
+}
+
+.accordion-content {
+  padding: 20px;
+  opacity: 0;
+  visibility: hidden;
+  height: 0;
+  overflow: hidden;
+}
+
+.accordion-item.active .accordion-content {
+  opacity: 1;
+  visibility: visible;
+  height: auto;
+  overflow: visible;
+}
+
+.accordion-item:not(.active) {
+  background: #edf2f7;
+  flex: 0 0 48px;
+  min-width: 48px;
+  max-width: 56px;
+}
+
+.accordion-item:not(.active) .accordion-content {
+  display: none;
+  padding: 0;
+}
+
+.accordion-item:not(.active) .accordion-header {
+  writing-mode: vertical-rl;
+  text-orientation: mixed;
+  padding: 20px 10px;
+  justify-content: center;
+  align-items: center;
+  background: transparent;
+  width: 100%;
+  border-bottom: none;
+  flex-grow: 1;
+}
+
+.accordion-item:not(.active) .accordion-header h3 {
+  font-size: 14px;
+}
+
+.spinner {
+  display: inline-block;
+  width: 12px;
+  height: 12px;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-radius: 50%;
+  border-top-color: #fff;
+  animation: trip-spin 1s linear infinite;
+  margin-right: 8px;
+  vertical-align: middle;
+}
+
+@keyframes trip-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}

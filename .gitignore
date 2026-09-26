@@ -1,20 +1,34 @@
-# Node.js
+# Dependencies
 node_modules/
+.pnp/
+.pnp.js
+
+# Build and output artifacts
+.output/
+output/
+.wxt/
+dist/
+build/
+*.zip
+
+# Testing & Coverage
+coverage/
+.nyc_output/
+
+# Logs
+logs/
+*.log
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
-yarn.lock
+pnpm-debug.log*
 
-# Build output
-dist/
-build/
-out/
+# Environment and secrets
+.env
+.env.local
+.env.*.local
 
-# Packaged Chrome Extension files
-*.crx
-*.zip
-
-# Operating System generated files
+# Operating System files
 .DS_Store
 .DS_Store?
 ._*
@@ -23,34 +37,15 @@ out/
 ehthumbs.db
 Thumbs.db
 
-# IDE / Editor specific files
+# IDE and editor settings
 .idea/
-.vscode/
 *.suo
-*.user
-*.sln.docstates
-nbproject/
-*.sublime-project
-*.sublime-workspace
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
 
-# Log files
-*.log
-logs/
-
-# Environment variables file (if any)
-.env
-.env.*
-!/.env.example
-
-# Temporary files
-*.tmp
-*.temp
-*.swp
-*~
-*.bak
-
-# Coverage output
-coverage/
-.nyc_output/
-
+# Temporary development and test output
+*AnonymizerOutput.html
+domAnonymizerOutput.html
 

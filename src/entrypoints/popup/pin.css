@@ -1,0 +1,67 @@
+/* ==========================================================================
+   POPUP SECURITY PIN VIEW
+   ========================================================================== */
+
+#pin-view {
+  height: 600px;
+  max-height: 600px;
+}
+
+#pin-view .popup-content.settings-view-content {
+  flex: 1 1 0;
+  min-height: 0;
+  overflow: hidden;
+  max-height: none;
+}
+
+#pin-status-message {
+  margin-top: 0;
+  margin-bottom: 4px;
+}
+
+#pin-status-message.error {
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  color: #b91c1c;
+}
+
+#pin-status-message.success {
+  background: #f0fdf4;
+  border: 1px solid #bbf7d0;
+  color: #15803d;
+}
+
+.pin-form-container {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  background: #ffffff;
+  border: 1px solid #dee2e6;
+  border-radius: 8px;
+  padding: 16px;
+  margin-top: 8px;
+}
+
+.pin-form-container .aliases-input {
+  letter-spacing: 4px;
+  text-align: center;
+  font-size: 1.2em;
+  font-weight: 700;
+  padding: 8px 12px;
+}
+
+.pin-reset-link {
+  background: none;
+  border: none;
+  color: #dc3545;
+  font-size: 0.8em;
+  text-decoration: underline;
+  cursor: pointer;
+  padding: 4px 8px;
+  text-align: center;
+  margin-top: 4px;
+}
+
+.pin-reset-link:hover {
+  color: #a71d2a;
+}

@@ -1,71 +1,149 @@
-# LCR Tools Chrome Extension
+# LCR Tools Extension
 
-[![CI Testing](https://github.com/sethbr11/lcr-tools/actions/workflows/tests.yml/badge.svg)](https://github.com/sethbr11/lcr-tools/actions/workflows/tests.yml)
-[![Chrome Web Store](https://img.shields.io/chrome-web-store/v/camjilfjkjmgcpmnheoeoomfndedpmbn.svg)](https://chromewebstore.google.com/detail/lcr-tools/camjilfjkjmgcpmnheoeoomfndedpmbn)
-[![Version](https://img.shields.io/badge/version-1.5.0-blue.svg)](package.json)
-[![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
-
-**LCR Tools** makes managing ward and branch records faster, easier, and more powerful. Built for the modern 2026 LCR interface, this extension automates tedious administrative tasks so you can focus more on people and less on paperwork.
-
-## Core Benefits
-
-- **Effortless Attendance:** Upload your Sunday attendance lists via CSV. The tool automatically matches names (even with fuzzy matching) and handles guests with ease.
-- **Save Time on Reports:** Download any table from LCR directly to Excel-friendly CSV files. If there are multiple tables (like on the Organizations page), it bundles them into a single, organized ZIP file for you.
-- **Learn Names & Faces:** Use the interactive **Flashcards** tool to study your ward directory. It even includes a "Photo Cache" to keep things fast, ensuring names and faces load instantly.
-- **Smarter Visit Planning:** Automatically geocode member addresses, group them into natural clusters, and visualize optimized routes on an interactive map. Perfect for new move-in visits or high-council assignments.
-- **Catch Data Gaps:** Quickly identify members missing photos or those who have been assigned multiple callings, helping you keep ward records accurate and up-to-date.
-- **Boundary Audits:** Instantly see which households in your directory actually live outside your official unit boundaries using advanced geometric analysis.
-
-## How to Use
-
-1. **Install:** Add the extension to your Chrome browser.
-2. **Navigate:** Open [Leader and Clerk Resources (LCR)](https://lcr.churchofjesuschrist.org/).
-3. **Launch:** Click the LCR Tools icon in your toolbar. The menu will automatically show you the most helpful actions for the specific page you are viewing.
-4. **Export & Filter:** Use the built-in filters to find exactly who you're looking for across all organizations at once.
-
-## Privacy & Security
-
-Your data stays with you. **LCR Tools** processes all member information locally within your browser. No names, addresses, or sensitive records are ever uploaded to external servers or shared with third parties.
-
-## Contributing
-
-We welcome contributions from the community! Whether you're fixing a bug or adding a new feature, here's how to get started.
-
-### Repository Structure
-
-- `js/actions/`: Contains the logic for specific features (e.g., flashcards, attendance). Each action typically has its own folder.
-- `js/utils/`: Shared utility modules for DOM manipulation, networking, and data processing.
-- `html/`: HTML templates for popovers and modals.
-- `css/`: Styling for the extension UI.
-- `tests/`: Comprehensive unit tests using Jest and JSDOM.
-
-### Adding a New Action
-
-1. **Create a folder** in `js/actions/` for your feature.
-2. **Implement your logic** (use `js/utils/` modules where possible to stay framework-agnostic).
-3. **Register your action** in `js/actions.js` by adding a new entry to the actions array. This tells the extension which LCR pages your action should appear on.
-4. **Add tests** in `tests/actions/` to verify your feature.
-
-### Local Setup
-
-1. Clone the repo and run `npm install`.
-2. Open Chrome and go to `chrome://extensions/`.
-3. Enable **Developer mode** and click **Load unpacked**.
-4. Select the project directory to load the extension.
-
-### Testing & Validation
-
-- **Run all tests:** `npm test`
-- **Coverage report:** `npm run test:coverage`
-- Please ensure all tests pass before submitting a Pull Request.
-
-### Automated Releases
-
-This project uses GitHub Actions for CI/CD. When a PR is merged into `main`, a release is automatically generated.
-
-- **Versioning:** Update the `"version"` in `manifest.json` to trigger a new tagged release.
-- **Release Notes:** Automatically generated from commit history.
+A modern, cross-browser extension for Chrome (Manifest V3), Firefox (Manifest V2), and Safari (Manifest V2) that enhances and streamlines functionality on the Church of Jesus Christ of Latter-day Saints **Leader and Clerk Resources (LCR)** platform.
 
 ---
 
-_Note: This tool is an independent open-source project and is not an official application of The Church of Jesus Christ of Latter-day Saints._
+## Features
+
+- **Attendance Processing**: Automatically parses pasted attendance rosters or CSV files, matches names against ward rosters, checks off attendances for target Sunday dates, and breaks down unmatched names and visitors.
+- **Report Data Export**: Automatically detects tabular data across LCR report pages and exports them as clean CSV files or multi-table ZIP archives.
+- **Trip Route Planning**: Extracts newly moved-in members, prefers Church Directory household coordinates, clusters remaining locations with Turf.js, and visualizes routes on a Leaflet map.
+- **Members with Multiple Callings**: Analyzes organizational rosters to discover members holding simultaneous callings, presenting an interactive review dialog with CSV export.
+- **Ward Boundary Audit**: Evaluates household geolocations against unit boundary polygons, identifying members residing outside ward boundaries.
+- **Missing Photo Report**: Quickly audits member directory cards to identify and export records of members without uploaded directory photographs.
+- **Member Flashcards**: Interactive 3D flip-card memory quiz leveraging cached directory portrait photos to help leaders learn member names and faces.
+- **Dynamic Table Filters**: In-page column-level filtering allowing instant searching and toggling of rows without page reloads.
+
+---
+
+## Tech Stack
+
+- **Framework**: [WXT](https://wxt.dev/) (`v0.21.x`) with Vite bundler
+- **Language**: TypeScript (`v5.8.x`) in Strict Mode (zero-`any` policy)
+- **Mapping & Geospatial**: [Leaflet](https://leafletjs.com/) and [@turf/turf](https://turfjs.org/)
+- **Data Parsing & Archiving**: [PapaParse](https://www.papaparse.com/) and [JSZip](https://stuk.github.io/jszip/)
+- **Testing**: [Vitest](https://vitest.dev/) with JSDOM and `@testing-library/dom`
+- **Formatting**: [Prettier](https://prettier.io/)
+
+---
+
+## Getting Started
+
+### Prerequisites
+
+- [Node.js](https://nodejs.org/) (v18 or higher recommended)
+- `npm`
+
+### Installation
+
+```bash
+cd extension
+npm install
+```
+
+---
+
+## Development
+
+Run development servers with hot-module reloading and automatic extension reloading:
+
+```bash
+# Chrome (Manifest V3)
+npm run dev
+
+# Firefox (Manifest V2)
+npm run dev:firefox
+
+# Safari (Manifest V2)
+npm run dev:safari
+```
+
+---
+
+## Testing & Quality Assurance
+
+All verification commands are enforced in CI and development:
+
+```bash
+# Type check without emitting files
+npm run compile
+
+# Run Vitest unit and functional test suites
+npm test
+
+# Run tests in watch mode
+npm run test:watch
+
+# Generate test coverage report
+npm run test:coverage
+
+# Format all files with Prettier
+npm run format
+
+# Verify Prettier code formatting compliance
+npm run format:check
+
+# Check for package dependency vulnerabilities
+npm audit
+```
+
+---
+
+## Building for Production
+
+Compile production bundles for all target browsers:
+
+```bash
+# Compile bundles for Chrome MV3, Firefox MV2, and Safari MV2
+npm run build:all
+
+# Or compile individually:
+npm run build          # Chrome MV3  -> output/chrome-mv3
+npm run build:firefox  # Firefox MV2 -> output/firefox-mv2
+npm run build:safari   # Safari MV2  -> output/safari-mv2
+
+# Package production builds into distributable zip archives
+npm run zip:all
+```
+
+---
+
+## Loading Unpacked Extension in Browsers
+
+### Google Chrome / Chromium Browsers (Brave, Edge)
+
+1. Open `chrome://extensions` in the URL bar.
+2. Toggle **Developer mode** in the upper right corner.
+3. Click **Load unpacked**.
+4. Select the `output/chrome-mv3` directory.
+
+### Mozilla Firefox
+
+1. Open `about:debugging#/runtime/this-firefox` in the URL bar.
+2. Click **Load Temporary Add-on...**.
+3. Select `output/firefox-mv2/manifest.json`.
+
+### Apple Safari
+
+1. Run `npm run build:safari`.
+2. Convert or package the `output/safari-mv2` build using Xcode or `xcrun safari-web-extension-converter output/safari-mv2`.
+
+---
+
+## Architecture & Code Guidelines
+
+Please consult [AGENTS.md](../AGENTS.md) for strict architectural rules:
+
+- **Action Module Architecture**: 4-file pattern per action (`index.ts`, `types.ts`, `utils.ts`, `<helper>.ts`).
+- **No `any` policy**: Every variable, function parameter, and return value must have an explicit representative type.
+- **Section Dividers & Docstrings**: All functions, types, constants, classes, and regular expressions must have meaningful one-line docstrings.
+- **Central Registry**: Actions are configured in [`src/actions/registry.ts`](src/actions/registry.ts).
+
+---
+
+## Privacy & Disclaimer
+
+All data processing is conducted locally in memory within your browser session. No church member data or personal records are ever tracked, logged remotely, or transmitted to third-party servers.
+
+_Note: LCR Tools is an independent open-source project and is not affiliated with or endorsed by The Church of Jesus Christ of Latter-day Saints._

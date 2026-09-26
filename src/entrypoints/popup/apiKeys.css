@@ -1,0 +1,86 @@
+/* ==========================================================================
+   API KEYS VIEW
+   ========================================================================== */
+
+#api-keys-view {
+  height: 600px;
+  max-height: 600px;
+}
+
+#api-keys-view .popup-content.settings-view-content {
+  flex: 1 1 0;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.api-keys-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  overflow-y: auto;
+  min-height: 0;
+  flex: 1 1 0;
+}
+
+.api-keys-row {
+  background: #ffffff;
+  border: 1px solid #dee2e6;
+  border-radius: 6px;
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.api-keys-label {
+  font-size: 0.9em;
+  font-weight: 600;
+  color: #212529;
+}
+
+.api-keys-description {
+  display: block;
+  margin-top: 4px;
+  font-size: 0.75em;
+  color: #6c757d;
+}
+
+.api-keys-controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+
+.api-keys-input {
+  flex: 1 1 160px;
+  min-width: 0;
+  padding: 8px 10px;
+  border: 1px solid #ced4da;
+  border-radius: 4px;
+  font-size: 0.85em;
+}
+
+.api-keys-toggle,
+.api-keys-save,
+.api-keys-clear {
+  padding: 6px 10px;
+  font-size: 0.8em;
+  font-weight: 500;
+  border-radius: 4px;
+  cursor: pointer;
+  border: 1px solid #ced4da;
+  background: #f8f9fa;
+}
+
+.api-keys-save {
+  background: #00509e;
+  border-color: #00509e;
+  color: #ffffff;
+}
+
+.api-keys-clear {
+  background: #fff8f8;
+  color: #dc3545;
+  border-color: #f5c2c7;
+}

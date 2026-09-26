@@ -1,4 +1,14 @@
 {
+  "2.0.0": [
+    "Cross-Browser Engine Modernization: Complete rebuild on WXT (Manifest V3 for Chrome, Manifest V2 for Firefox and Safari) with strict TypeScript architecture and zero-any safety.",
+    "Integrated Action Directory: Built-in searchable and categorized tools browser within the popup with direct one-click execution and passive tool status badges.",
+    "Passive Actions Framework: Background execution engine for automated page workflows, including Auto-Sync State Dropdown for reliable LCR address persistence.",
+    "Advanced Calling Management: Interactive Calling Groups editor, custom rules configuration, and ignore list management for auditing multiple callings.",
+    "Modernized Boundary Audit: Direct GeoJSON boundary fetching and Turf.js point-in-polygon spatial calculations with tri-state status reporting and formula-injection protected CSV exports.",
+    "Enhanced Trip Planner: International address parsing, Turf spatial clustering, click-to-pin coordinate targeting, and automated Church Directory coordinate lookup.",
+    "Encrypted Storage & Security: Client-side AES-GCM and SHA-256 salted PIN protection for secure API key storage and diagnostic logs.",
+    "Privacy & PII Anonymizer: Automated in-memory DOM anonymizer for safe development without transmitting member records."
+  ],
   "1.5.0": [
     "2026 Second-Hour Split Attendance: Full support for the new LCR schedule allowing attendance entry for Sunday School, Class/Quorum (Elders Quorum/Relief Society), or both simultaneously.",
     "Single Sunday & Single Class Navigation: Modernized navigation flow to operate directly on Single Sunday date bar tabs and dynamic Class/Quorum dropdown filters.",

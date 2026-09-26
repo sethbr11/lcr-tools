@@ -1,0 +1,174 @@
+/* ==========================================================================
+   TRIP PLANNER EXECUTION LOG MODAL
+   ========================================================================== */
+
+.trip-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10000;
+  padding: 20px;
+}
+
+.trip-modal-card {
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+  max-width: 760px;
+  width: 100%;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.trip-modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 20px;
+  border-bottom: 1px solid #e2e8f0;
+  background: #f8fafc;
+}
+
+.trip-modal-title {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 600;
+  color: #1e293b;
+}
+
+.trip-close-btn {
+  background: none;
+  border: none;
+  font-size: 22px;
+  line-height: 1;
+  color: #64748b;
+  cursor: pointer;
+  padding: 0 4px;
+}
+
+.trip-close-btn:hover {
+  color: #0f172a;
+}
+
+.trip-modal-body {
+  padding: 16px 20px;
+}
+
+.trip-table-scroll {
+  max-height: 420px;
+  overflow-y: auto;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+}
+
+.trip-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.trip-table th {
+  padding: 10px 12px;
+  background: #f8fafc;
+  text-align: left;
+  font-size: 12px;
+  font-weight: 600;
+  color: #64748b;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.trip-table td {
+  padding: 8px 12px;
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.trip-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.trip-log-time {
+  white-space: nowrap;
+  font-family: Monaco, 'Courier New', monospace;
+  font-size: 12px;
+  color: #64748b;
+}
+
+.trip-log-message {
+  font-size: 13px;
+  color: #334155;
+  font-family: Monaco, 'Courier New', monospace;
+}
+
+.trip-no-logs {
+  padding: 16px;
+  text-align: center;
+  color: #94a3b8;
+  font-size: 13px;
+}
+
+.trip-modal-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 20px;
+  border-top: 1px solid #e2e8f0;
+  background: #f8fafc;
+}
+
+/* ==========================================================================
+   TRIP PLANNER PIN UNLOCK MODAL
+   ========================================================================== */
+
+.trip-pin-card {
+  max-width: 440px;
+}
+
+.trip-pin-desc {
+  font-size: 13px;
+  color: #475569;
+  margin: 0 0 16px 0;
+  line-height: 1.5;
+}
+
+.trip-pin-input-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.trip-pin-input-group label {
+  font-size: 13px;
+  font-weight: 500;
+  color: #1e293b;
+}
+
+.trip-pin-input {
+  width: 100%;
+  padding: 10px 12px;
+  font-size: 16px;
+  letter-spacing: 4px;
+  text-align: center;
+  border: 1px solid #cbd5e1;
+  border-radius: 6px;
+  outline: none;
+  transition: border-color 0.15s ease;
+  box-sizing: border-box;
+}
+
+.trip-pin-input:focus {
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.15);
+}
+
+.trip-pin-card .status-banner.error {
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  color: #b91c1c;
+  padding: 8px 12px;
+  border-radius: 6px;
+  font-size: 12px;
+  margin-bottom: 12px;
+}

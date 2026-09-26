@@ -1,0 +1,133 @@
+/* ==========================================================================
+   TRIP PLANNING SIDEBAR, CLUSTER LIST, AND FAILURE FIXER
+   ========================================================================== */
+
+.cluster-list,
+.failure-fixer,
+.export-section {
+  background: white;
+  padding: 20px;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  margin-bottom: 16px;
+}
+
+.cluster-list h3,
+.failure-fixer h3,
+.export-section h3 {
+  margin: 0 0 12px;
+  font-size: 16px;
+}
+
+.cluster-item {
+  padding: 12px;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  margin-bottom: 12px;
+}
+
+.cluster-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 8px;
+}
+
+.cluster-color {
+  width: 16px;
+  height: 16px;
+  border-radius: 4px;
+  flex-shrink: 0;
+}
+
+.cluster-title {
+  font-weight: 600;
+  color: #2d3748;
+  flex: 1;
+}
+
+.cluster-distance {
+  font-size: 12px;
+  font-weight: 500;
+  color: #a0aec0;
+  margin-left: auto;
+  white-space: nowrap;
+}
+
+.cluster-members {
+  font-size: 14px;
+  color: #4a5568;
+  margin-left: 28px;
+  display: flex;
+  gap: 10px;
+}
+
+.cluster-members ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  flex: 1;
+}
+
+.cluster-members li {
+  margin-bottom: 4px;
+}
+
+.failure-fixer {
+  background: #fff5f5;
+}
+
+.failure-item {
+  padding: 12px 0;
+  border-bottom: 1px solid #fed7d7;
+  display: grid;
+  gap: 8px;
+}
+
+.failure-item:last-child {
+  border-bottom: none;
+}
+
+.failure-name {
+  font-weight: 600;
+  color: #c53030;
+}
+
+.failure-coord-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.failure-button {
+  background: #c53030;
+  color: white;
+  width: 100%;
+}
+
+.failure-actions-row {
+  display: flex;
+  gap: 8px;
+}
+
+.failure-pick-map-btn {
+  background: #edf2f7;
+  color: #2d3748;
+  border: 1px solid #cbd5e0;
+  padding: 6px 12px;
+  border-radius: 4px;
+  font-size: 12px;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.15s ease;
+}
+
+.failure-pick-map-btn:hover {
+  background: #e2e8f0;
+  border-color: #a0aec0;
+}
+
+.button-group {
+  display: flex;
+  gap: 12px;
+}

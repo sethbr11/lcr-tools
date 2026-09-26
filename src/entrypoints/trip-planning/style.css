@@ -1,0 +1,286 @@
+@import './controls.css';
+@import './sidebar.css';
+@import './modal.css';
+@import 'leaflet/dist/leaflet.css';
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif;
+  margin: 0;
+  padding: 0;
+  background: #f5f7fa;
+  color: #1a202c;
+}
+
+.container {
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 20px;
+}
+
+header {
+  background: white;
+  padding: 20px 24px;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  margin-bottom: 16px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 16px;
+  border-top: 4px solid #00509e;
+}
+
+.header-left h1 {
+  margin: 0;
+  font-size: 24px;
+  color: #00509e;
+}
+
+.header-subtitle {
+  margin: 4px 0 0;
+  font-size: 13px;
+  color: #718096;
+}
+
+.header-right {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.stat-card {
+  background: #f7fafc;
+  padding: 10px 16px;
+  border-radius: 6px;
+  min-width: 110px;
+  text-align: center;
+}
+
+.stat-label {
+  font-size: 10px;
+  color: #718096;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 4px;
+}
+
+.stat-value {
+  font-size: 20px;
+  font-weight: 700;
+  color: #2d3748;
+}
+
+.stat-card-btn {
+  border: 1px solid #e2e8f0;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-family: inherit;
+}
+
+.stat-card-btn:hover:not(:disabled) {
+  background: #edf2f7;
+  border-color: #cbd5e0;
+  transform: translateY(-1px);
+}
+
+.stat-card-btn:active:not(:disabled) {
+  transform: translateY(0);
+}
+
+.stat-card-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.stat-value-action {
+  font-size: 14px;
+  line-height: 24px;
+  font-weight: 600;
+  color: #00509e;
+}
+
+.stat-card-btn:disabled .stat-value-action {
+  color: #a0aec0;
+}
+
+.main-content {
+  display: flex;
+  gap: 20px;
+}
+
+.map-container {
+  flex: 1;
+  min-width: 0;
+}
+
+#map {
+  height: 600px;
+  width: 100%;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+.controls-container {
+  width: 400px;
+  flex-shrink: 0;
+}
+
+.control-row {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.api-key-row {
+  display: none;
+  margin-top: 10px;
+}
+
+.api-key-row input {
+  width: auto;
+  flex: 1;
+}
+
+select,
+input[type='text'],
+input[type='number'],
+input[type='password'] {
+  padding: 8px 12px;
+  border: 1px solid #cbd5e0;
+  border-radius: 6px;
+  font-size: 14px;
+  font-family: inherit;
+  width: 100%;
+}
+
+.ghost-btn,
+.next-btn,
+.lcr-tools-btn,
+.failure-button {
+  padding: 8px 16px;
+  border: none;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.lcr-tools-btn {
+  width: 100%;
+  margin-top: 12px;
+  color: white;
+  background: #00509e;
+}
+
+.lcr-tools-btn:hover {
+  background: #003d7a;
+}
+
+.lcr-tools-btn:disabled {
+  background: #cbd5e0;
+  cursor: not-allowed;
+}
+
+.lcr-tools-btn-secondary {
+  background: #2f855a;
+}
+
+.lcr-tools-btn-secondary:hover {
+  background: #276749;
+}
+
+.lcr-tools-btn-tertiary {
+  background: #dd6b20;
+}
+
+.lcr-tools-btn-tertiary:hover {
+  background: #c05621;
+}
+
+.ghost-btn {
+  width: auto;
+  background: #edf2f7;
+  color: #2d3748;
+}
+
+.next-btn {
+  background: #00509e;
+  color: white;
+  width: auto;
+}
+
+.step-footer {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 16px;
+}
+
+.radio-group {
+  display: flex;
+  gap: 16px;
+  margin-bottom: 12px;
+  flex-wrap: wrap;
+}
+
+.radio-group label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+  font-size: 14px;
+}
+
+.method-controls {
+  padding: 12px;
+  background: #f7fafc;
+  border-radius: 6px;
+}
+
+.progress-wrap {
+  display: none;
+  margin-top: 12px;
+  width: 100%;
+}
+
+.progress-meta {
+  display: flex;
+  justify-content: space-between;
+  font-size: 12px;
+  color: #4a5568;
+  margin-bottom: 4px;
+}
+
+.progress-bar {
+  width: 100%;
+  height: 10px;
+  background: #e2e8f0;
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.progress-fill {
+  height: 100%;
+  width: 0;
+  background: #00509e;
+  transition: width 0.3s;
+}
+
+.input-with-action {
+  display: flex;
+  gap: 8px;
+  width: 100%;
+}
+
+.input-with-action input {
+  flex: 1;
+}
+
+.input-with-action button {
+  white-space: nowrap;
+}

@@ -1,0 +1,225 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Trip Planner - LCR Tools</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <link rel="stylesheet" href="./style.css" />
+  </head>
+  <body>
+    <div class="container">
+      <header>
+        <div class="header-left">
+          <h1>Trip Planner</h1>
+          <p class="header-subtitle">Ministering routes for newly moved-in families</p>
+        </div>
+        <div class="header-right">
+          <div class="stat-card">
+            <div class="stat-label">Total Records</div>
+            <div class="stat-value" id="statTotal">0</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label">Geocoded</div>
+            <div class="stat-value" id="statGeocoded">0/0</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label">Clusters Found</div>
+            <div class="stat-value" id="statClusters">-</div>
+          </div>
+          <button
+            type="button"
+            id="viewLogsBtn"
+            class="stat-card stat-card-btn"
+            title="View execution log"
+          >
+            <div class="stat-label">Execution Log</div>
+            <div class="stat-value stat-value-action">View Logs</div>
+          </button>
+          <button
+            type="button"
+            id="exportCsvBtn"
+            class="stat-card stat-card-btn"
+            disabled
+            title="Download CSV report"
+          >
+            <div class="stat-label">Export</div>
+            <div class="stat-value stat-value-action">Download CSV</div>
+          </button>
+        </div>
+      </header>
+
+      <div class="controls-top accordion">
+        <div class="accordion-item active" id="step1">
+          <div class="accordion-header">
+            <h3>1. Locate</h3>
+            <span class="accordion-icon">▼</span>
+          </div>
+          <div class="accordion-content">
+            <div class="control-section-inner">
+              <div class="control-row">
+                <select id="geocodeProvider">
+                  <option value="nominatim">Nominatim (Free, 1/sec)</option>
+                  <option value="locationiq">LocationIQ (API Key)</option>
+                  <option value="mapbox">Mapbox (API Key)</option>
+                </select>
+              </div>
+              <div class="control-row api-key-row" id="apiKeyRow">
+                <input type="password" id="apiKey" placeholder="API key" autocomplete="off" />
+                <button type="button" id="apiKeyToggle" class="ghost-btn">Show</button>
+                <button
+                  type="button"
+                  id="apiKeyAutofillBtn"
+                  class="ghost-btn"
+                  style="display: none"
+                >
+                  Autofill
+                </button>
+              </div>
+              <button id="geocodeBtn" class="lcr-tools-btn lcr-tools-btn-primary" type="button">
+                Start Geocoding
+              </button>
+              <div id="geocodeProgressContainer" class="progress-wrap">
+                <div class="progress-meta">
+                  <span>Geocoding Progress</span>
+                  <span id="geocodeProgressPercent">0%</span>
+                </div>
+                <div class="progress-bar">
+                  <div class="progress-fill" id="geocodeProgressFill"></div>
+                </div>
+              </div>
+              <div class="step-footer">
+                <button type="button" id="step1Next" class="next-btn">Next</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="accordion-item" id="step2">
+          <div class="accordion-header">
+            <h3>2. Clustering</h3>
+            <span class="accordion-icon">▶</span>
+          </div>
+          <div class="accordion-content">
+            <div class="control-section-inner">
+              <div class="radio-group">
+                <label>
+                  <input type="radio" name="clusterStrategy" value="byCount" checked />
+                  By Number of Groups
+                </label>
+                <label>
+                  <input type="radio" name="clusterStrategy" value="bySize" />
+                  By Group Size
+                </label>
+              </div>
+              <div id="byCountControls" class="method-controls">
+                <div class="control-row">
+                  <label for="clusterCount">Number of Groups:</label>
+                  <input type="number" id="clusterCount" value="1" min="1" max="20" step="1" />
+                </div>
+              </div>
+              <div id="bySizeControls" class="method-controls" style="display: none">
+                <div class="control-row">
+                  <label for="minClusterSize">Min members:</label>
+                  <input type="number" id="minClusterSize" value="5" min="1" step="1" />
+                  <label for="maxClusterSize">Max members:</label>
+                  <input type="number" id="maxClusterSize" value="10" min="2" step="1" />
+                </div>
+              </div>
+              <button
+                id="clusterBtn"
+                class="lcr-tools-btn lcr-tools-btn-secondary"
+                type="button"
+                disabled
+              >
+                Cluster Addresses
+              </button>
+              <div class="step-footer">
+                <button type="button" id="step2Next" class="next-btn">Next</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="accordion-item" id="step3">
+          <div class="accordion-header">
+            <h3>3. Routing</h3>
+            <span class="accordion-icon">▶</span>
+          </div>
+          <div class="accordion-content">
+            <div class="control-section-inner">
+              <div class="control-row">
+                <label>Distance Metric:</label>
+                <div class="radio-group">
+                  <label>
+                    <input type="radio" name="distanceMetric" value="straight" checked />
+                    Straight Line
+                  </label>
+                  <label>
+                    <input
+                      type="radio"
+                      name="distanceMetric"
+                      value="mapbox"
+                      id="metricMapbox"
+                      disabled
+                    />
+                    Road Network (Mapbox)
+                  </label>
+                  <button
+                    type="button"
+                    id="metricMapboxAutofillBtn"
+                    class="ghost-btn"
+                    style="display: none"
+                    title="Unlock stored Mapbox key"
+                  >
+                    Autofill Key
+                  </button>
+                </div>
+              </div>
+              <div class="control-row starting-address-row">
+                <label for="startingAddressInput">Starting Address (optional):</label>
+                <div class="input-with-action">
+                  <input type="text" id="startingAddressInput" placeholder="e.g., 123 Main St" />
+                  <button
+                    type="button"
+                    id="saveStartingAddressBtn"
+                    class="ghost-btn"
+                    title="Save as default starting address"
+                  >
+                    Save Default
+                  </button>
+                </div>
+              </div>
+              <button
+                id="optimizeBtn"
+                type="button"
+                disabled
+                class="lcr-tools-btn lcr-tools-btn-secondary"
+                title="Please cluster addresses first"
+              >
+                Optimize Routes
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="main-content">
+        <div class="map-container">
+          <div id="map"></div>
+        </div>
+        <div class="controls-container">
+          <div id="clusterListContainer" class="cluster-list" style="display: none">
+            <h3>Cluster Details</h3>
+            <div id="clusterList"></div>
+          </div>
+          <div id="failureFixerContainer" class="failure-fixer" style="display: none">
+            <h3>Fix Failed Addresses</h3>
+            <div id="failureList"></div>
+          </div>
+          <pre id="status" style="display: none">Ready.</pre>
+        </div>
+      </div>
+    </div>
+    <script type="module" src="./main.ts"></script>
+  </body>
+</html>
