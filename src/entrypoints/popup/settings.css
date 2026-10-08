@@ -219,6 +219,18 @@
   border-color: #ced4da;
 }
 
+.settings-version-footer {
+  display: flex;
+  justify-content: center;
+  padding: 12px 0 4px;
+}
+
+.settings-version {
+  font-size: 0.75em;
+  color: #adb5bd;
+  font-weight: 500;
+}
+
 /* Toggle Switch */
 .switch {
   position: relative;

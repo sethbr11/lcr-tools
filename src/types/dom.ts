@@ -52,6 +52,8 @@ export const Dom = {
   SETTINGS_BUTTON_ID: 'settings-button',
   /** DOM element ID for the More view back button. */
   SETTINGS_BACK_BUTTON_ID: 'settings-back-button',
+  /** DOM element ID for the extension version display label. */
+  EXTENSION_VERSION_ID: 'extension-version',
   /** DOM element ID for the attendance aliases manager view. */
   ALIASES_VIEW_ID: 'aliases-view',
   /** DOM element ID for the Manage Aliases button on the More page. */

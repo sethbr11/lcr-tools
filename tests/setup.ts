@@ -7,6 +7,7 @@ interface MockChrome {
     getURL: (path: string) => string;
     onMessage: { addListener: () => void };
     sendMessage: () => Promise<void>;
+    getManifest?: () => { version: string };
   };
   tabs: {
     query: () => Promise<Array<{ id: number; url: string }>>;
@@ -35,6 +36,7 @@ const mockChrome: MockChrome = {
     getURL: (path: string) => `chrome-extension://test-extension-id/${path}`,
     onMessage: { addListener: () => {} },
     sendMessage: () => Promise.resolve(),
+    getManifest: () => ({ version: '2.0.1' }),
   },
   tabs: {
     query: () =>
