@@ -29,5 +29,14 @@ describe('Popup Layout and Cross-Browser Sizing Styles', () => {
 
   it('ensures version badge styling is configured in header', () => {
     expect(css.includes('.popup-version-badge')).toBe(true);
+    expect(css.includes('flex-shrink: 0')).toBe(true);
+    expect(css.includes('min-height: 480px')).toBe(true);
+  });
+
+  it('ensures version footer styling is configured in settings and main view', () => {
+    const settingsCssPath = path.resolve(__dirname, '../src/entrypoints/popup/settings.css');
+    const settingsCss = fs.readFileSync(settingsCssPath, 'utf8');
+    expect(settingsCss.includes('.main-version-footer')).toBe(true);
+    expect(settingsCss.includes('.settings-version-footer')).toBe(true);
   });
 });

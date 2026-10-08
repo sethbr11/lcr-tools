@@ -112,10 +112,14 @@ export async function initPopup(): Promise<void> {
   if (versionEl) {
     versionEl.textContent = versionText;
   }
-  const badgeEl = document.getElementById(Dom.POPUP_VERSION_BADGE_ID);
-  if (badgeEl) {
-    badgeEl.textContent = versionText;
+  const mainVersionEl = document.getElementById(Dom.MAIN_VERSION_LABEL_ID);
+  if (mainVersionEl) {
+    mainVersionEl.textContent = versionText;
   }
+  const badges = document.querySelectorAll(`.${Dom.POPUP_VERSION_BADGE_CLASS}`);
+  badges.forEach((badge) => {
+    badge.textContent = versionText;
+  });
 
   // Development-only DOM anonymizer tool
   if (import.meta.env.DEV) {
