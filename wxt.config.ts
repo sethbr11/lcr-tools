@@ -7,9 +7,6 @@ export default defineConfig({
   srcDir: 'src',
   outDir: 'output',
   publicDir: 'src/public',
-  suppressWarnings: {
-    firefoxDataCollection: true,
-  },
   zip: {
     exclude: ['**/*.md', 'images/attendance-*'],
     excludeSources: ['images/attendance-*'],
@@ -63,6 +60,9 @@ export default defineConfig({
             gecko: {
               id: 'lcr-tools@extension',
               strict_min_version: '109.0',
+              data_collection_permissions: {
+                required: ['none'],
+              },
             },
           }
         : undefined,

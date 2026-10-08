@@ -100,3 +100,29 @@ To allow automated publishing on version bumps, set the following repository sec
 | `CHROME_REFRESH_TOKEN` | OAuth2 Refresh Token | Google OAuth 2.0 Playground |
 
 _(The Extension ID `camjilfjkjmgcpmnheoeoomfndedpmbn` is pre-configured in `.github/workflows/release.yml`.)_
+
+### Renewing `CHROME_REFRESH_TOKEN`
+
+If GitHub Actions fails with `FATAL: authentication failed. At least 1 of arguments: client_id, client_secret, refresh_token; is invalid.`, your OAuth2 Refresh Token has expired or been invalidated.
+
+#### 1. Avoid 7-Day Token Expiration (Google Cloud Console)
+
+- In the [Google Cloud Console](https://console.cloud.google.com/), navigate to **APIs & Services** > **OAuth consent screen**.
+- If the **Publishing status** is set to **Testing**, Google expires refresh tokens after **7 days**.
+- Set the publishing status to **In production** to make refresh tokens persistent. (Verification is not required since the Chrome Web Store API is for developer publishing).
+
+#### 2. Generate a New Refresh Token
+
+1. Open the [Google OAuth 2.0 Playground](https://developers.google.com/oauthplayground).
+2. Click the gear icon (**OAuth 2.0 configuration**) in the upper right.
+3. Check **Use your own OAuth credentials** and enter your `OAuth Client ID` and `OAuth Client secret`.
+4. In **Step 1 (Select & authorize APIs)**, enter `https://www.googleapis.com/auth/chromewebstore` in the **Input your own scopes** text box.
+5. Click **Authorize APIs** and authenticate with the Google account that owns the Chrome Web Store developer item.
+6. In **Step 2 (Exchange authorization code for tokens)**, click **Exchange authorization code for tokens**.
+7. Copy the value from the **Refresh token** field.
+
+#### 3. Update the Secret & Retry
+
+1. Go to your repository **Settings** > **Secrets and variables** > **Actions**.
+2. Update the `CHROME_REFRESH_TOKEN` repository secret with the new token.
+3. Go to **Actions** > **Release & Publish** > **Run workflow** (select `main` branch and action `publish`) to retry publishing without creating a new release.

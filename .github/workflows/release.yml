@@ -17,11 +17,19 @@ on:
           - publish
           - upload
 
+concurrency:
+  group: release-${{ github.ref_name || github.event.release.tag_name }}
+  cancel-in-progress: false
+
 jobs:
   build-and-publish:
     runs-on: ubuntu-latest
     permissions:
       contents: write
+    env:
+      CHROME_CLIENT_ID: ${{ secrets.CHROME_CLIENT_ID }}
+      CHROME_CLIENT_SECRET: ${{ secrets.CHROME_CLIENT_SECRET }}
+      CHROME_REFRESH_TOKEN: ${{ secrets.CHROME_REFRESH_TOKEN }}
 
     steps:
       - name: Checkout repository
@@ -99,7 +107,9 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Upload & Publish to Chrome Web Store
-        if: steps.check_version.outputs.SHOULD_RELEASE == 'true' && env.CHROME_CLIENT_ID != '' && env.CHROME_REFRESH_TOKEN != ''
+        id: cws_publish
+        if: steps.check_version.outputs.SHOULD_RELEASE == 'true' && env.CHROME_CLIENT_ID != '' && env.CHROME_CLIENT_SECRET != '' && env.CHROME_REFRESH_TOKEN != ''
+        continue-on-error: true
         uses: mobilefirstllc/cws-publish@latest
         with:
           action: ${{ github.event.inputs.action || 'publish' }}
@@ -108,6 +118,8 @@ jobs:
           refresh_token: ${{ secrets.CHROME_REFRESH_TOKEN }}
           extension_id: 'camjilfjkjmgcpmnheoeoomfndedpmbn'
           zip_file: 'output/lcr-tools-extension-${{ steps.check_version.outputs.VERSION }}-chrome.zip'
-        env:
-          CHROME_CLIENT_ID: ${{ secrets.CHROME_CLIENT_ID }}
-          CHROME_REFRESH_TOKEN: ${{ secrets.CHROME_REFRESH_TOKEN }}
+
+      - name: Verify Chrome Web Store publishing outcome
+        if: steps.check_version.outputs.SHOULD_RELEASE == 'true' && steps.cws_publish.outcome == 'failure'
+        run: |
+          echo "::warning title=Chrome Web Store Publishing Notice::Chrome Web Store upload/publish did not complete successfully. The GitHub Release and cross-browser zip packages were published successfully. If this is an authentication failure, CHROME_REFRESH_TOKEN has likely expired in Google Cloud Console / OAuth Playground and needs renewal."
