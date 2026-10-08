@@ -15,6 +15,7 @@ body {
   margin: 0;
   padding: 0;
   width: 440px;
+  min-height: 480px;
   max-height: 600px;
   background: #ffffff;
   color: #212529;
@@ -28,7 +29,7 @@ body {
   flex-direction: column;
   width: 100%;
   height: 100%;
-  min-height: 180px;
+  min-height: 480px;
   max-height: 600px;
   background: #ffffff;
   border-radius: 0;
@@ -59,11 +60,36 @@ body {
   padding: 8px;
 }
 
+.popup-title {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
 .popup-title h1 {
   margin: 0;
   font-size: 1.4em;
   font-weight: 600;
   color: #ffffff;
+  display: flex;
+  align-items: center;
+  flex-wrap: nowrap;
+}
+
+.popup-version-badge {
+  font-size: 0.5em;
+  font-weight: 600;
+  background: rgba(255, 255, 255, 0.25);
+  color: #ffffff;
+  padding: 2px 8px;
+  border-radius: 12px;
+  margin-left: 8px;
+  display: inline-flex;
+  align-items: center;
+  line-height: normal;
+  letter-spacing: 0.03em;
+  flex-shrink: 0;
+  white-space: nowrap;
+  vertical-align: middle;
 }
 
 .popup-subtitle {
@@ -71,6 +97,9 @@ body {
   font-size: 0.8em;
   color: rgba(255, 255, 255, 0.85);
   font-weight: 400;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 /* New header directory button */
@@ -132,8 +161,36 @@ body {
   flex-direction: column;
   padding: 16px 20px 20px;
   background: #ffffff;
-  overflow: hidden; /* Prevent content overflow */
-  flex-shrink: 0; /* Prevent content area from shrinking */
+  overflow-y: auto;
+  overflow-x: hidden;
+  flex: 1 1 auto;
+  min-height: 0;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: thin;
+  scrollbar-color: #c1c8cd #f1f3f4;
+}
+
+/* Custom scrollbar styling */
+.popup-content::-webkit-scrollbar,
+.action-list::-webkit-scrollbar {
+  width: 6px;
+}
+
+.popup-content::-webkit-scrollbar-track,
+.action-list::-webkit-scrollbar-track {
+  background: #f1f3f4;
+  border-radius: 3px;
+}
+
+.popup-content::-webkit-scrollbar-thumb,
+.action-list::-webkit-scrollbar-thumb {
+  background: #c1c8cd;
+  border-radius: 3px;
+}
+
+.popup-content::-webkit-scrollbar-thumb:hover,
+.action-list::-webkit-scrollbar-thumb:hover {
+  background: #a8b1b8;
 }
 
 /* Action list */
@@ -141,29 +198,7 @@ body {
   display: flex;
   flex-direction: column;
   gap: 8px;
-  max-height: 400px; /* Maximum height for scrollable area */
-  overflow-y: auto; /* Enable vertical scrolling */
-  overflow-x: hidden; /* Hide horizontal scrollbar */
-  padding-right: 4px; /* Space for scrollbar */
-}
-
-/* Custom scrollbar styling */
-.action-list::-webkit-scrollbar {
-  width: 6px;
-}
-
-.action-list::-webkit-scrollbar-track {
-  background: #f1f3f4;
-  border-radius: 3px;
-}
-
-.action-list::-webkit-scrollbar-thumb {
-  background: #c1c8cd;
-  border-radius: 3px;
-}
-
-.action-list::-webkit-scrollbar-thumb:hover {
-  background: #a8b1b8;
+  overflow: visible;
 }
 
 /* Loading state */
@@ -305,18 +340,18 @@ body {
   .popup-container {
     margin: 0; /* Ensure no margin on smaller screens */
     min-height: 160px; /* Slightly smaller minimum height on smaller screens */
-    max-height: 500px; /* Smaller max height on smaller screens */
+    max-height: 600px; /* Allow full extension popup height up to 600px */
   }
 
   .popup-header {
     padding: 16px;
   }
 
-  .popup-content {
-    padding: 12px 16px 16px;
+  .popup-logo {
+    margin-right: 12px;
   }
 
-  .action-list {
-    max-height: 300px; /* Smaller max height for action list */
+  .popup-content {
+    padding: 12px 16px 16px;
   }
 }

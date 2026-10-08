@@ -71,6 +71,7 @@ export async function processClassVisitorCounts(
           lcrUpdateStatus: `Entered visitor count: ${catName} = ${count}`,
         });
       }
+      await Utils.sleep(Constants.VISITOR_INPUT_SETTLE_MS);
     }
   }
 
@@ -82,7 +83,18 @@ export async function processClassVisitorCounts(
     return { success: false, updated: [], error: 'No matching visitor inputs found on page.' };
   }
 
-  // Step 4: Click the LCR Save button
+  // Step 4: Settle delay and pre-save verification so React commits state and enables Save
+  await Utils.sleep(Constants.VISITOR_SAVE_PREPARE_MS);
+  for (const [category, count] of Object.entries(counts)) {
+    if (typeof count !== 'number' || count < 0) continue;
+    const catName = category as Types.VisitorCategory;
+    const input = findVisitorInput(catName, targetDate);
+    if (input && input.value !== String(count)) {
+      setNativeInputValue(input, count);
+    }
+  }
+
+  // Step 5: Click the LCR Save button
   const saved = await clickSaveButton();
   if (logs) {
     Utils.pushAttendanceLog(logs, {
@@ -109,7 +121,7 @@ export async function processClassVisitorCounts(
 }
 
 /**
- * Dispatches simulated input and change events using native value setter for React inputs.
+ * Dispatches simulated focus, input, change, and blur events using native value setter for React inputs.
  * Supports numbers and string values (passing empty string clears the input).
  *
  * @param input - Target HTMLInputElement.
@@ -120,14 +132,27 @@ export function setNativeInputValue(input: HTMLInputElement, value: number | str
   const targetValStr = typeof value === 'string' ? value : String(value);
   if (currentVal === targetValStr) return;
 
+  if (typeof input.focus === 'function') input.focus();
+
+  const tracker = (input as unknown as { _valueTracker?: { setValue: (v: string) => void } })
+    ._valueTracker;
+  if (tracker && typeof tracker.setValue === 'function') {
+    tracker.setValue(currentVal);
+  }
+
   const prototype = window.HTMLInputElement?.prototype || Object.getPrototypeOf(input);
   const descriptor = Object.getOwnPropertyDescriptor(prototype, 'value');
 
-  if (descriptor?.set) descriptor.set.call(input, targetValStr);
-  else input.value = targetValStr;
+  if (descriptor?.set) {
+    descriptor.set.call(input, targetValStr);
+  } else {
+    input.value = targetValStr;
+  }
 
-  input.dispatchEvent(new Event('input', { bubbles: true }));
-  input.dispatchEvent(new Event('change', { bubbles: true }));
+  input.dispatchEvent(new Event('input', { bubbles: true, composed: true }));
+  input.dispatchEvent(new Event('change', { bubbles: true, composed: true }));
+
+  if (typeof input.blur === 'function') input.blur();
 }
 
 /**
@@ -156,15 +181,15 @@ export async function clickSaveButton(
 
   if (!found || !clicked) return false;
 
+  await Utils.sleep(Constants.VISITOR_SAVE_TRIGGER_MS);
+
   const spinnerPresent = !!document.querySelector(Dom.PROGRESS_SPINNER);
   if (!spinnerPresent) return true;
 
   await Utils.waitForCondition(
     () => {
       const spinner = document.querySelector(Dom.PROGRESS_SPINNER);
-      if (spinner) return false;
-      const saveBtn = document.querySelector<HTMLButtonElement>(Dom.SAVE_BUTTON);
-      return !!saveBtn && !saveBtn.disabled;
+      return !spinner;
     },
     Constants.SAVE_COMPLETE_TIMEOUT_MS,
     Constants.SAVE_COMPLETE_POLL_MS
@@ -182,31 +207,35 @@ function findVisitorInput(
   category: Types.VisitorCategory,
   targetDate: string
 ): HTMLInputElement | null {
-  const slug = getCategorySlug(category);
+  const slugs = getCategorySlugs(category);
 
   // Strategy 1: Direct name matching name="<uuid>::slug::<targetDate>"
   const inputs = Array.from(document.querySelectorAll<HTMLInputElement>(Dom.NUMBER_INPUT));
   for (const input of inputs) {
-    const name = input.getAttribute('name') || '';
-    if (name.endsWith(`::${targetDate}`) && name.toLowerCase().includes(`::${slug}::`)) {
+    const name = (input.getAttribute('name') || '').toLowerCase();
+    if (name.endsWith(`::${targetDate}`) && slugs.some((s) => name.includes(`::${s}::`))) {
       return input;
     }
   }
 
   // Strategy 2: Targeting inside specific row ID (e.g. men_2026-09_ALL)
   const targetYearMonth = targetDate.slice(0, 7);
-  const rowId = `${slug}_${targetYearMonth}_ALL`;
-  const row = document.getElementById(rowId);
-  if (row) {
-    const colInput = findInputInRowByDate(row, targetDate);
-    if (colInput) return colInput;
+  for (const s of slugs) {
+    const row =
+      document.getElementById(`${s}_${targetYearMonth}_ALL`) ||
+      document.getElementById(`${s.replace('_', '-')}_${targetYearMonth}_ALL`);
+    if (row) {
+      const colInput = findInputInRowByDate(row, targetDate);
+      if (colInput) return colInput;
+    }
   }
 
   // Strategy 3: Targeting by row label text (Young Men/Women before Men/Women)
+  const primarySlug = slugs[0];
   const tableRows = Array.from(document.querySelectorAll<HTMLTableRowElement>(Dom.TABLE_BODY_ROWS));
   for (const r of tableRows) {
     const headerCell = r.cells[0]?.textContent || '';
-    if (headerMatchesVisitorSlug(headerCell, slug)) {
+    if (headerMatchesVisitorSlug(headerCell, primarySlug)) {
       const colInput = findInputInRowByDate(r, targetDate);
       if (colInput) return colInput;
     }
@@ -219,14 +248,15 @@ function findVisitorInput(
 function findInputInRowByDate(row: HTMLElement, targetDate: string): HTMLInputElement | null {
   const [year, month, day] = targetDate.split('-').map(Number);
   const dateObj = new Date(year, month - 1, day);
-  const dayStr = String(day).padStart(2, '0');
+  const dayPadded = String(day).padStart(2, '0');
   const monthAbbr = dateObj.toLocaleString('en-US', { month: 'short' });
-  const label = `${dayStr} ${monthAbbr}`.toLowerCase();
+  const labelNoPad = `${day} ${monthAbbr}`.toLowerCase();
+  const labelPadded = `${dayPadded} ${monthAbbr}`.toLowerCase();
 
   const cells = Array.from(row.querySelectorAll('td'));
   for (const cell of cells) {
     const text = (cell.textContent || '').toLowerCase();
-    if (text.includes(label)) {
+    if (text.includes(labelNoPad) || text.includes(labelPadded)) {
       const input = cell.querySelector<HTMLInputElement>(Dom.NUMBER_INPUT);
       if (input) return input;
     }
@@ -237,21 +267,21 @@ function findInputInRowByDate(row: HTMLElement, targetDate: string): HTMLInputEl
   return input;
 }
 
-/** Maps display category to slug used in LCR DOM. */
-function getCategorySlug(category: Types.VisitorCategory): string {
+/** Maps display category to slug variants used in LCR DOM. */
+function getCategorySlugs(category: Types.VisitorCategory): string[] {
   switch (category) {
     case 'Men':
-      return 'men';
+      return ['men'];
     case 'Women':
-      return 'women';
+      return ['women'];
     case 'Young Men':
-      return 'young_men';
+      return ['young_men', 'young-men', 'youngmen'];
     case 'Young Women':
-      return 'young_women';
+      return ['young_women', 'young-women', 'youngwomen'];
     case 'Children':
-      return 'children';
+      return ['children', 'child', 'primary'];
     default:
-      return 'men';
+      return ['men'];
   }
 }
 

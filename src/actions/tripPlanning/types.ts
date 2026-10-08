@@ -272,7 +272,7 @@ export const Constants = {
   /** Ratio of records requiring a ZIP code before flagging missing ZIP format. */
   ZIP_RATIO_THRESHOLD: 0.6,
   /** Fallback extension version string for User-Agent when runtime version is unavailable. */
-  FALLBACK_VERSION: '1.5.0',
+  FALLBACK_VERSION: '2.0.1',
   /** Miles per kilometer conversion factor. */
   MILES_PER_KM: 0.621371,
   /** Button label for repairing an un-geocoded address. */

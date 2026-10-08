@@ -3,6 +3,7 @@ import {
   createStandardModal,
   downloadCsv,
   isPointInsidePolygon,
+  resolveCurrentUnitNumber,
   showToast,
 } from './utils';
 import { Constants, Dom, Regex, Types } from './types';
@@ -19,14 +20,8 @@ import type { MultiPolygon, Polygon } from 'geojson';
  * @returns Promise resolving to array of audited household records.
  */
 export async function extractDirectoryHouseholds(): Promise<Types.AuditedHousehold[]> {
-  // 1. Resolve unit number from URL pathname or Next.js state
-  let unitNumber: string | null = null;
-  const match = window.location.pathname.match(Regex.UNIT_NUMBER);
-  if (match) {
-    unitNumber = match[0];
-  } else if (typeof window !== 'undefined' && window.__NEXT_DATA__?.query?.unit) {
-    unitNumber = String(window.__NEXT_DATA__.query.unit);
-  }
+  // 1. Resolve unit number from URL pathname, query, DOM, or Next.js state
+  const unitNumber = resolveCurrentUnitNumber();
 
   // 2. Fetch live boundary and household data from Church Directory APIs
   if (unitNumber) {

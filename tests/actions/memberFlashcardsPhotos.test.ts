@@ -156,4 +156,60 @@ describe('memberFlashcards - photo-only deck and directory probing', () => {
       configurable: true,
     });
   });
+
+  it('should load flashcards on Church Directory with a 4-digit unit in pathname', async () => {
+    vi.spyOn(storageUtils, 'getCacheSettings').mockResolvedValue({
+      enabled: false,
+      expirationDays: 7,
+    });
+    vi.spyOn(storageUtils, 'getPhotoCache').mockResolvedValue({});
+    vi.spyOn(storageUtils, 'updatePhotoCache').mockResolvedValue();
+
+    const originalLocation = window.location;
+    Object.defineProperty(window, 'location', {
+      value: new URL('https://directory.churchofjesuschrist.org/1234') as unknown as Location,
+      writable: true,
+      configurable: true,
+    });
+
+    const mockHouseholds = [
+      {
+        members: [
+          {
+            uuid: 'member-dir-4digit',
+            displayName: 'Sarah Jenkins',
+            givenName: 'Sarah',
+            surname: 'Jenkins',
+          },
+        ],
+      },
+    ];
+
+    let householdUrlRequested = '';
+    vi.spyOn(globalThis, 'fetch').mockImplementation(async (input) => {
+      const url = String(input);
+      if (url.includes('households')) {
+        householdUrlRequested = url;
+        return { ok: true, json: async () => mockHouseholds } as Response;
+      }
+      return {
+        ok: true,
+        status: 200,
+        headers: {
+          get: (name: string) => (name.toLowerCase() === 'content-type' ? 'image/jpeg' : null),
+        },
+      } as unknown as Response;
+    });
+
+    const result = await runMemberFlashcards();
+    expect(result.success).toBe(true);
+    expect(householdUrlRequested).toContain('unit=1234');
+    expect(result.data?.count).toBe(1);
+
+    Object.defineProperty(window, 'location', {
+      value: originalLocation,
+      writable: true,
+      configurable: true,
+    });
+  });
 });

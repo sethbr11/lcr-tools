@@ -105,6 +105,22 @@ export async function initPopup(): Promise<void> {
     });
   }
 
+  // Populate active extension version from runtime manifest
+  const manifest = browser.runtime?.getManifest?.();
+  const versionText = manifest?.version ? `v${manifest.version}` : 'v2.0.1';
+  const versionEl = document.getElementById(Dom.EXTENSION_VERSION_ID);
+  if (versionEl) {
+    versionEl.textContent = versionText;
+  }
+  const mainVersionEl = document.getElementById(Dom.MAIN_VERSION_LABEL_ID);
+  if (mainVersionEl) {
+    mainVersionEl.textContent = versionText;
+  }
+  const badges = document.querySelectorAll(`.${Dom.POPUP_VERSION_BADGE_CLASS}`);
+  badges.forEach((badge) => {
+    badge.textContent = versionText;
+  });
+
   // Development-only DOM anonymizer tool
   if (import.meta.env.DEV) {
     setupDevDomAnonymizer(currentTabId);

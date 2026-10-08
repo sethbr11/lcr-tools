@@ -207,6 +207,58 @@ describe('membersOutsideBoundary - functional user expectations', () => {
     expect(modal?.textContent).toContain('UNMAPPED');
   });
 
+  it('should resolve and audit 4-digit unit from pathname', async () => {
+    const loc = new URL('https://directory.churchofjesuschrist.org/1234') as unknown as Location;
+    Object.defineProperty(window, 'location', {
+      value: loc,
+      writable: true,
+      configurable: true,
+    });
+
+    let requestedBoundaryUrl = '';
+    let requestedHouseholdsUrl = '';
+    vi.spyOn(globalThis, 'fetch').mockImplementation(async (input) => {
+      const url = String(input);
+      if (url.includes('boundary')) {
+        requestedBoundaryUrl = url;
+        return {
+          ok: true,
+          json: async () => ({
+            type: 'Polygon',
+            coordinates: [
+              [
+                [-111.7, 40.2],
+                [-111.6, 40.2],
+                [-111.6, 40.3],
+                [-111.7, 40.3],
+                [-111.7, 40.2],
+              ],
+            ],
+          }),
+        } as Response;
+      }
+      if (url.includes('households')) {
+        requestedHouseholdsUrl = url;
+        return {
+          ok: true,
+          json: async () => [
+            {
+              name: 'Taylor Family',
+              address: '100 Main St',
+              coordinates: { latitude: 40.25, longitude: -111.65 },
+            },
+          ],
+        } as Response;
+      }
+      return { ok: false } as Response;
+    });
+
+    const result = await runMembersOutsideBoundary({ skipReload: true });
+    expect(result.success).toBe(true);
+    expect(requestedBoundaryUrl).toContain('/1234/boundary');
+    expect(requestedHouseholdsUrl).toContain('unit=1234');
+  });
+
   it('should not automatically trigger or render modal on module import or normal page load', async () => {
     // Session flag is not set (normal page load)
     expect(sessionStorage.getItem(Constants.AUDIT_PENDING_KEY)).toBeNull();
