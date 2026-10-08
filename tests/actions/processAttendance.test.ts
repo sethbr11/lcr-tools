@@ -255,8 +255,14 @@ describe('processAttendance - functional user expectations', () => {
     expect(doneBtn.textContent).toBe('Continue');
     doneBtn.click();
 
-    await new Promise((r) => setTimeout(r, 80));
-    (document.querySelector(`#${Dom.COMPLETION_DONE_ID}`) as HTMLButtonElement)?.click();
+    await vi.waitFor(
+      () => {
+        const finishBtn = document.querySelector<HTMLButtonElement>(`#${Dom.COMPLETION_DONE_ID}`);
+        expect(finishBtn).not.toBeNull();
+        finishBtn?.click();
+      },
+      { timeout: 3000 }
+    );
 
     const result = await actionPromise;
     expect(result.success).toBe(true);

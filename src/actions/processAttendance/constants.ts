@@ -42,6 +42,12 @@ export const Constants = {
   SAVE_COMPLETE_TIMEOUT_MS: 2000,
   /** Polling interval in milliseconds while waiting for visitor save completion. */
   SAVE_COMPLETE_POLL_MS: 100,
+  /** Settle delay in milliseconds between applying sequential visitor category inputs. */
+  VISITOR_INPUT_SETTLE_MS: 150,
+  /** Settle delay in milliseconds after all visitor inputs are populated before clicking save. */
+  VISITOR_SAVE_PREPARE_MS: 200,
+  /** Delay in milliseconds after clicking save on visitors tab before inspecting spinner state. */
+  VISITOR_SAVE_TRIGGER_MS: 250,
   /** Default timeout in milliseconds for generic waitForCondition polling. */
   WAIT_CONDITION_DEFAULT_TIMEOUT_MS: 2000,
   /** Default polling interval in milliseconds for generic waitForCondition polling. */
