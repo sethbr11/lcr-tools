@@ -203,4 +203,58 @@ describe('noPhotoList - Church Directory photo scan', () => {
       configurable: true,
     });
   });
+
+  it('should scan members on Church Directory with 4-digit unit in pathname', async () => {
+    const downloadCsvSpy = vi.spyOn(fileUtils, 'downloadCsv').mockImplementation(() => {});
+    vi.spyOn(storageUtils, 'getPhotoCache').mockResolvedValue({});
+    vi.spyOn(storageUtils, 'updatePhotoCache').mockResolvedValue();
+
+    const originalLocation = window.location;
+    Object.defineProperty(window, 'location', {
+      value: new URL('https://directory.churchofjesuschrist.org/1234') as unknown as Location,
+      writable: true,
+      configurable: true,
+    });
+
+    const mockHouseholds = [
+      {
+        members: [
+          {
+            uuid: 'member-dir-missing-4digit',
+            displayName: 'Taylor Swift',
+            givenName: 'Taylor',
+            surname: 'Swift',
+          },
+        ],
+      },
+    ];
+
+    let requestedEndpoint = '';
+    vi.spyOn(globalThis, 'fetch').mockImplementation(async (input) => {
+      const url = String(input);
+      if (url.includes('households')) {
+        requestedEndpoint = url;
+        return { ok: true, json: async () => mockHouseholds } as Response;
+      }
+      return { ok: false, status: 404 } as Response;
+    });
+
+    const actionPromise = runNoPhotoList();
+    await vi.waitFor(() => {
+      expect(document.querySelector('.lcr-tools-confirm-modal')).not.toBeNull();
+    });
+    document.querySelector<HTMLButtonElement>('#lcr-tools-confirm-btn')?.click();
+    const result = await actionPromise;
+
+    expect(result.success).toBe(true);
+    expect(requestedEndpoint).toContain('unit=1234');
+    expect(result.data?.missingCount).toBe(1);
+    expect(downloadCsvSpy).toHaveBeenCalled();
+
+    Object.defineProperty(window, 'location', {
+      value: originalLocation,
+      writable: true,
+      configurable: true,
+    });
+  });
 });

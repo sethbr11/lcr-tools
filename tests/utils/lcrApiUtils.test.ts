@@ -3,6 +3,8 @@ import {
   fetchMemberCard,
   processInBatches,
   getMemberInfoFromRow,
+  parseUnitNumberFromText,
+  resolveCurrentUnitNumber,
 } from '@/utils/church/lcrApiUtils';
 import { setAborted } from '@/utils/coreUtils';
 
@@ -118,6 +120,93 @@ describe('lcrApiUtils', () => {
       const row = document.createElement('tr');
       row.innerHTML = `<td><span>Static Header</span></td>`;
       expect(getMemberInfoFromRow(row)).toBeNull();
+    });
+  });
+
+  describe('parseUnitNumberFromText', () => {
+    it('should parse 4-digit unit number from trailing parentheses', () => {
+      expect(parseUnitNumberFromText('Synthetic 1st Ward (1234)')).toBe('1234');
+    });
+
+    it('should parse 5-digit unit number from trailing parentheses', () => {
+      expect(parseUnitNumberFromText('Synthetic 2nd Ward (12345)')).toBe('12345');
+    });
+
+    it('should parse 4-digit unit number from intermediate parentheses', () => {
+      expect(parseUnitNumberFromText('Ward (1234) - Additional Information')).toBe('1234');
+    });
+
+    it('should parse 4-digit unit number without parentheses as fallback', () => {
+      expect(parseUnitNumberFromText('Unit 1234')).toBe('1234');
+      expect(parseUnitNumberFromText('1234')).toBe('1234');
+    });
+
+    it('should return null for empty or non-numeric strings', () => {
+      expect(parseUnitNumberFromText('')).toBeNull();
+      expect(parseUnitNumberFromText('Synthetic Stake')).toBeNull();
+    });
+  });
+
+  describe('resolveCurrentUnitNumber', () => {
+    it('should resolve 4-digit unit number from static LCR header DOM element', () => {
+      document.body.innerHTML = `
+        <div id="static-current-unit-text"><span>Synthetic 1st Ward (1234)</span></div>
+      `;
+      expect(resolveCurrentUnitNumber(document)).toBe('1234');
+    });
+
+    it('should resolve 4-digit unit number from interactive switcher header element', () => {
+      document.body.innerHTML = `
+        <div id="current-unit-text"><span>Synthetic 2nd Branch (5678)</span></div>
+      `;
+      expect(resolveCurrentUnitNumber(document)).toBe('5678');
+    });
+
+    it('should resolve 4-digit unit number from stake parent element', () => {
+      document.body.innerHTML = `
+        <div id="mltp-unit-info-parent"><span>Synthetic Stake (9999)</span></div>
+      `;
+      expect(resolveCurrentUnitNumber(document)).toBe('9999');
+    });
+
+    it('should resolve 4-digit unit number from Church Directory pathname', () => {
+      expect(
+        resolveCurrentUnitNumber(document, 'https://directory.churchofjesuschrist.org/1234')
+      ).toBe('1234');
+      expect(
+        resolveCurrentUnitNumber(document, 'https://directory.churchofjesuschrist.org/unit/1234')
+      ).toBe('1234');
+    });
+
+    it('should resolve 4-digit unit number from URL query parameters', () => {
+      expect(
+        resolveCurrentUnitNumber(document, 'https://directory.churchofjesuschrist.org/?unit=1234')
+      ).toBe('1234');
+      expect(
+        resolveCurrentUnitNumber(
+          document,
+          'https://lcr.churchofjesuschrist.org/mlt/report/members-moved-in?unitNumber=1234'
+        )
+      ).toBe('1234');
+    });
+
+    it('should resolve 4-digit unit number from Next.js state or pageProps', () => {
+      window.__NEXT_DATA__ = {
+        query: { unit: '1234' },
+      };
+      expect(resolveCurrentUnitNumber()).toBe('1234');
+
+      delete window.__NEXT_DATA__.query;
+      window.__NEXT_DATA__.props = {
+        pageProps: { unitNumber: '5678' },
+      };
+      expect(resolveCurrentUnitNumber()).toBe('5678');
+
+      delete window.__NEXT_DATA__;
+    });
+
+    it('should return null when no unit number is found', () => {
+      expect(resolveCurrentUnitNumber(document, 'https://example.com/other')).toBeNull();
     });
   });
 });

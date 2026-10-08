@@ -104,6 +104,9 @@ export function parseUnitNumberFromText(text: string): string | null {
   const parenMatch = clean.match(Regex.PAREN_UNIT_NUMBER);
   if (parenMatch?.[1]) return parenMatch[1];
 
+  const unitMatch = clean.match(Regex.UNIT_NUMBER);
+  if (unitMatch?.[0]) return unitMatch[0];
+
   return null;
 }
 
@@ -149,7 +152,7 @@ export function resolveCurrentUnitNumber(doc?: Document, href?: string): string 
     if (paramMatch?.[1]) return paramMatch[1];
 
     try {
-      const url = new URL(currentHref);
+      const url = new URL(currentHref, 'https://directory.churchofjesuschrist.org');
       const pathMatch = url.pathname.match(Regex.UNIT_NUMBER);
       if (pathMatch?.[0]) return pathMatch[0];
     } catch {
@@ -158,8 +161,13 @@ export function resolveCurrentUnitNumber(doc?: Document, href?: string): string 
   }
 
   // 5. Next.js state (Church Directory pages)
-  if (typeof window !== 'undefined' && window.__NEXT_DATA__?.query?.unit) {
-    return String(window.__NEXT_DATA__.query.unit);
+  if (typeof window !== 'undefined') {
+    if (window.__NEXT_DATA__?.query?.unit) {
+      return String(window.__NEXT_DATA__.query.unit);
+    }
+    const pageProps = window.__NEXT_DATA__?.props?.pageProps as Record<string, unknown> | undefined;
+    if (pageProps?.unit) return String(pageProps.unit);
+    if (pageProps?.unitNumber) return String(pageProps.unitNumber);
   }
 
   return null;

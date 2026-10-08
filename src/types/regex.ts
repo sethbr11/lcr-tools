@@ -67,8 +67,8 @@ export const Regex = {
   LEADER_ACTION_TEXT: /Move to.*|Created with.*/i,
   /** Context: Matching newline character sequences across platforms. */
   NEWLINE: /\r?\n/,
-  /** Context: Extracting 5 or more digit unit number from path or string. */
-  UNIT_NUMBER: /\b\d{5,}\b/,
+  /** Context: Extracting 4 to 8 digit Church unit number from path or string. */
+  UNIT_NUMBER: /\b\d{4,8}\b/,
   /** Context: Extracting 4 to 8 digit Church unit number from trailing parentheses (e.g. '(12345)'). */
   TRAILING_UNIT_NUMBER: /\((\d{4,8})\)\s*$/,
   /** Context: Extracting 4 to 8 digit Church unit number from any parentheses in unit text. */

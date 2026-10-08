@@ -1,4 +1,9 @@
-import { fetchMemberCard, getMemberInfoFromRow, processInBatches } from './lcrApiUtils';
+import {
+  fetchMemberCard,
+  getMemberInfoFromRow,
+  processInBatches,
+  resolveCurrentUnitNumber,
+} from './lcrApiUtils';
 import { getPhotoCache, updatePhotoCache } from '../security/storageUtils';
 import { showLoadingIndicator } from '../ui/uiUtils';
 import { Constants, Dom, Regex, Types } from '../types';
@@ -300,19 +305,7 @@ function parseHouseholdsToCandidates(
 
 /** Extracts unit number from pathname, search parameters, or NEXT_DATA. */
 function resolveDirectoryUnitNumber(): string | null {
-  if (typeof window === 'undefined') return null;
-
-  const match = window.location.pathname.match(Regex.UNIT_NUMBER);
-  if (match) return match[0];
-
-  const paramMatch = window.location.search.match(Regex.NUMERIC_PARAM);
-  if (paramMatch) return paramMatch[1];
-
-  if (window.__NEXT_DATA__?.query?.unit) {
-    return String(window.__NEXT_DATA__.query.unit);
-  }
-
-  return null;
+  return resolveCurrentUnitNumber();
 }
 
 /** Builds a photo-status record from an LCR table row and optional cache names. */
