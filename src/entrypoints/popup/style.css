@@ -64,6 +64,21 @@ body {
   font-size: 1.4em;
   font-weight: 600;
   color: #ffffff;
+  display: flex;
+  align-items: center;
+}
+
+.popup-version-badge {
+  font-size: 0.5em;
+  font-weight: 500;
+  background: rgba(255, 255, 255, 0.2);
+  color: rgba(255, 255, 255, 0.95);
+  padding: 2px 7px;
+  border-radius: 12px;
+  margin-left: 8px;
+  display: inline-block;
+  line-height: normal;
+  letter-spacing: 0.02em;
 }
 
 .popup-subtitle {

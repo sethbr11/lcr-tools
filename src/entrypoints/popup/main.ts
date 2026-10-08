@@ -106,10 +106,15 @@ export async function initPopup(): Promise<void> {
   }
 
   // Populate active extension version from runtime manifest
-  const versionEl = document.getElementById(Dom.EXTENSION_VERSION_ID);
   const manifest = browser.runtime?.getManifest?.();
-  if (versionEl && manifest?.version) {
-    versionEl.textContent = `v${manifest.version}`;
+  const versionText = manifest?.version ? `v${manifest.version}` : 'v2.0.1';
+  const versionEl = document.getElementById(Dom.EXTENSION_VERSION_ID);
+  if (versionEl) {
+    versionEl.textContent = versionText;
+  }
+  const badgeEl = document.getElementById(Dom.POPUP_VERSION_BADGE_ID);
+  if (badgeEl) {
+    badgeEl.textContent = versionText;
   }
 
   // Development-only DOM anonymizer tool

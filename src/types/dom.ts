@@ -54,6 +54,8 @@ export const Dom = {
   SETTINGS_BACK_BUTTON_ID: 'settings-back-button',
   /** DOM element ID for the extension version display label. */
   EXTENSION_VERSION_ID: 'extension-version',
+  /** DOM element ID for the extension version badge in the popup header. */
+  POPUP_VERSION_BADGE_ID: 'popup-version-badge',
   /** DOM element ID for the attendance aliases manager view. */
   ALIASES_VIEW_ID: 'aliases-view',
   /** DOM element ID for the Manage Aliases button on the More page. */

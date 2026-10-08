@@ -26,4 +26,8 @@ describe('Popup Layout and Cross-Browser Sizing Styles', () => {
     expect(css.includes('.popup-content::-webkit-scrollbar')).toBe(true);
     expect(css.includes('scrollbar-width: thin')).toBe(true);
   });
+
+  it('ensures version badge styling is configured in header', () => {
+    expect(css.includes('.popup-version-badge')).toBe(true);
+  });
 });
