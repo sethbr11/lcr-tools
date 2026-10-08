@@ -26,7 +26,7 @@ export default defineConfig({
   },
   manifest: ({ browser, mode }) => ({
     name: mode === 'development' ? 'LCR Tools (Local)' : 'LCR Tools',
-    version: '2.0.0',
+    version: '2.0.1',
     description: 'An extension to help make LCR easier to use.',
     permissions: ['scripting', 'storage'],
     host_permissions: [

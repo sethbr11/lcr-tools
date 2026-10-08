@@ -2,8 +2,8 @@
 
 > **Extension ID:** `camjilfjkjmgcpmnheoeoomfndedpmbn`  
 > **Store URL:** [Chrome Web Store Listing](https://chromewebstore.google.com/detail/lcr-tools/camjilfjkjmgcpmnheoeoomfndedpmbn)  
-> **Current Version:** 2.0.0  
-> **Last Updated:** September 2026
+> **Current Version:** 2.0.1  
+> **Last Updated:** October 2026
 
 ---
 
@@ -39,6 +39,11 @@ Data Privacy & Security:
 Please report issues, suggestions, or feedback to seth@brockefni.com.
 
 Recent Updates:
+(2.0.1)
+- Popup Window Sizing Fix: Resolved issue where Firefox and Safari extension windows were cut off at the bottom by removing restrictive container height constraints and allowing natural sizing up to 600px.
+- Vertical Scrolling Support: Added smooth momentum vertical scrolling and custom scrollbars to the popup content container, ensuring all actions, passive tools, and settings remain accessible regardless of window constraints.
+- Cross-Browser Header Alignment: Standardized popup subtitle wrapping across Chrome, Firefox, and Safari to preserve consistent header proportions across browser engines.
+
 (2.0.0)
 - Cross-Browser Engine Modernization: Complete rebuild on WXT (Manifest V3 for Chrome, Manifest V2 for Firefox and Safari) with strict TypeScript architecture and zero-any safety.
 - Integrated Action Directory: Built-in searchable and categorized tools browser within the popup with direct one-click execution and passive tool status badges.
@@ -55,14 +60,6 @@ Recent Updates:
 - Automated Multi-Organization Visitor Processing: Visitor counts automatically route to their mapped organization views (Men -> Elders Quorum, Women -> Relief Society, Youth -> Aaronic Priesthood/Young Women, Children -> Primary) and save per organization.
 - Smart Organization Reset: Restores the view back to All Classes and Quorums after visitor processing completes.
 - Enhanced Modal Usability: Redesigned class selection with high-contrast indicator cards, modal-wide paste detection, and locked top scroll position on launch.
-
-(1.4.2)
-- Church Directory & Map Integration: Member Flashcards is now fully supported on the Ward Directory & Map page (directory.churchofjesuschrist.org) in addition to LCR member lists.
-- Instant Directory Photo Extraction: Intercepts Next.js directory network payloads directly, loading all member photos immediately without slow DOM navigation.
-- Individual Member Filtering: Automatically filters out non-individual households (couples, families) to focus flashcards strictly on individual ward members.
-- CSP-Compliant Silhouette Fallback: Replaced missing photo placeholders with an inline SVG silhouette, eliminating Content Security Policy errors on missing images.
-- Photo Cache Expiration: Enforced a 24-hour expiration rule on cached photo tokens to ensure member photos stay current and avoid broken links.
-- Performance & Log Cleanup: Streamlined background operations and removed verbose prototyping logs.
 
 ---
 Note: This tool is an independent open-source project and is not an official application of The Church of Jesus Christ of Latter-day Saints.

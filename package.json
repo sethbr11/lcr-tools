@@ -1,6 +1,6 @@
 {
   "name": "lcr-tools-extension",
-  "version": "2.0.0",
+  "version": "2.0.1",
   "description": "A cross-browser extension to enhance and streamline LCR (Leader and Clerk Resources).",
   "type": "module",
   "scripts": {

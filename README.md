@@ -2,7 +2,7 @@
 
 [![CI Testing](https://github.com/sethbr11/lcr-tools/actions/workflows/tests.yml/badge.svg)](https://github.com/sethbr11/lcr-tools/actions/workflows/tests.yml)
 [![Chrome Web Store](https://img.shields.io/chrome-web-store/v/camjilfjkjmgcpmnheoeoomfndedpmbn.svg)](https://chromewebstore.google.com/detail/lcr-tools/camjilfjkjmgcpmnheoeoomfndedpmbn)
-[![Version](https://img.shields.io/badge/version-2.0.0-blue.svg)](package.json)
+[![Version](https://img.shields.io/badge/version-2.0.1-blue.svg)](package.json)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 
 A modern, cross-browser extension for Chrome (Manifest V3), Firefox (Manifest V2), and Safari (Manifest V2) that enhances and streamlines functionality on the Church of Jesus Christ of Latter-day Saints **Leader and Clerk Resources (LCR)** platform.
