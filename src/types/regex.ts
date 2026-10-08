@@ -67,12 +67,18 @@ export const Regex = {
   LEADER_ACTION_TEXT: /Move to.*|Created with.*/i,
   /** Context: Matching newline character sequences across platforms. */
   NEWLINE: /\r?\n/,
-  /** Context: Extracting 4 to 8 digit Church unit number from path or string. */
-  UNIT_NUMBER: /\b\d{4,8}\b/,
-  /** Context: Extracting 4 to 8 digit Church unit number from trailing parentheses (e.g. '(12345)'). */
-  TRAILING_UNIT_NUMBER: /\((\d{4,8})\)\s*$/,
-  /** Context: Extracting 4 to 8 digit Church unit number from any parentheses in unit text. */
-  PAREN_UNIT_NUMBER: /\((\d{4,8})\)/,
+  /** Context: Extracting 2 to 8 digit Church unit number from path or string. */
+  UNIT_NUMBER: /\b\d{2,8}\b/,
+  /** Context: Extracting 2 to 8 digit Church unit number from trailing parentheses (e.g. '(12345)'). */
+  TRAILING_UNIT_NUMBER: /\((\d{2,8})\)\s*$/,
+  /** Context: Extracting 2 to 8 digit Church unit number from any parentheses in unit text. */
+  PAREN_UNIT_NUMBER: /\((\d{2,8})\)/,
+  /** Context: Extracting 2 to 8 digit Church unit number from dedicated URL path segment (e.g. '/12345' or '/unit/12345'). */
+  UNIT_PATH_SEGMENT: /(?:^|\/)(?:unit\/)?(\d{2,8})(?:\/|$)/,
+  /** Context: Extracting 2 to 8 digit Church unit number from labeled prefix (e.g. 'Unit 1234' or '#1234'). */
+  LABELED_UNIT_NUMBER: /(?:unit|#)\s*(\d{2,8})\b/i,
+  /** Context: Validating standalone 2 to 8 digit numeric string. */
+  PURE_UNIT_DIGITS: /^\d{2,8}$/,
   /** Context: Matching newline character sequences globally across platforms. */
   NEWLINE_GLOBAL: /\r?\n/g,
   /** Context: Global comma characters for numeric and list sanitization. */

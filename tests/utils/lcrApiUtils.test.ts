@@ -124,6 +124,14 @@ describe('lcrApiUtils', () => {
   });
 
   describe('parseUnitNumberFromText', () => {
+    it('should parse 2-digit unit number from trailing parentheses', () => {
+      expect(parseUnitNumberFromText('Synthetic 1st Ward (42)')).toBe('42');
+    });
+
+    it('should parse 3-digit unit number from trailing parentheses', () => {
+      expect(parseUnitNumberFromText('Synthetic 1st Ward (123)')).toBe('123');
+    });
+
     it('should parse 4-digit unit number from trailing parentheses', () => {
       expect(parseUnitNumberFromText('Synthetic 1st Ward (1234)')).toBe('1234');
     });
@@ -132,56 +140,106 @@ describe('lcrApiUtils', () => {
       expect(parseUnitNumberFromText('Synthetic 2nd Ward (12345)')).toBe('12345');
     });
 
-    it('should parse 4-digit unit number from intermediate parentheses', () => {
+    it('should parse 6-digit and 7-digit unit numbers from trailing parentheses', () => {
+      expect(parseUnitNumberFromText('Synthetic 3rd Ward (123456)')).toBe('123456');
+      expect(parseUnitNumberFromText('Synthetic 4th Ward (1234567)')).toBe('1234567');
+    });
+
+    it('should parse unit number when preceded by age bracket', () => {
+      expect(parseUnitNumberFromText('Synthetic YSA 262nd Ward (18-25) (42)')).toBe('42');
+      expect(parseUnitNumberFromText('Synthetic YSA 262nd Ward (18-25) (12345)')).toBe('12345');
+    });
+
+    it('should not mistake age range in parentheses for a unit number', () => {
+      expect(parseUnitNumberFromText('Synthetic YSA 262nd Ward (18-25)')).toBeNull();
+    });
+
+    it('should parse unit number from intermediate parentheses', () => {
+      expect(parseUnitNumberFromText('Ward (42) - Additional Information')).toBe('42');
       expect(parseUnitNumberFromText('Ward (1234) - Additional Information')).toBe('1234');
     });
 
-    it('should parse 4-digit unit number without parentheses as fallback', () => {
+    it('should parse labeled unit numbers without parentheses', () => {
+      expect(parseUnitNumberFromText('Unit 42')).toBe('42');
       expect(parseUnitNumberFromText('Unit 1234')).toBe('1234');
-      expect(parseUnitNumberFromText('1234')).toBe('1234');
+      expect(parseUnitNumberFromText('#1234567')).toBe('1234567');
     });
 
-    it('should return null for empty or non-numeric strings', () => {
+    it('should parse standalone 2 to 7 digit numeric strings', () => {
+      expect(parseUnitNumberFromText('42')).toBe('42');
+      expect(parseUnitNumberFromText('123')).toBe('123');
+      expect(parseUnitNumberFromText('1234')).toBe('1234');
+      expect(parseUnitNumberFromText('1234567')).toBe('1234567');
+    });
+
+    it('should return null for empty, single-digit, or non-numeric strings', () => {
       expect(parseUnitNumberFromText('')).toBeNull();
+      expect(parseUnitNumberFromText('7')).toBeNull();
       expect(parseUnitNumberFromText('Synthetic Stake')).toBeNull();
     });
   });
 
   describe('resolveCurrentUnitNumber', () => {
-    it('should resolve 4-digit unit number from static LCR header DOM element', () => {
+    it('should resolve 2-digit to 7-digit unit numbers from static LCR header DOM element', () => {
       document.body.innerHTML = `
-        <div id="static-current-unit-text"><span>Synthetic 1st Ward (1234)</span></div>
+        <div id="static-current-unit-text"><span>Synthetic 1st Ward (42)</span></div>
       `;
-      expect(resolveCurrentUnitNumber(document)).toBe('1234');
+      expect(resolveCurrentUnitNumber(document)).toBe('42');
+
+      document.body.innerHTML = `
+        <div id="static-current-unit-text"><span>Synthetic 1st Ward (1234567)</span></div>
+      `;
+      expect(resolveCurrentUnitNumber(document)).toBe('1234567');
     });
 
-    it('should resolve 4-digit unit number from interactive switcher header element', () => {
+    it('should resolve unit number from interactive switcher header element', () => {
       document.body.innerHTML = `
         <div id="current-unit-text"><span>Synthetic 2nd Branch (5678)</span></div>
       `;
       expect(resolveCurrentUnitNumber(document)).toBe('5678');
     });
 
-    it('should resolve 4-digit unit number from stake parent element', () => {
+    it('should resolve unit number from stake parent element', () => {
       document.body.innerHTML = `
-        <div id="mltp-unit-info-parent"><span>Synthetic Stake (9999)</span></div>
+        <div id="mltp-unit-info-parent"><span>Synthetic Stake (99)</span></div>
       `;
-      expect(resolveCurrentUnitNumber(document)).toBe('9999');
+      expect(resolveCurrentUnitNumber(document)).toBe('99');
     });
 
-    it('should resolve 4-digit unit number from Church Directory pathname', () => {
+    it('should resolve 2-digit to 7-digit unit numbers from Church Directory pathname', () => {
+      expect(
+        resolveCurrentUnitNumber(document, 'https://directory.churchofjesuschrist.org/42')
+      ).toBe('42');
+      expect(
+        resolveCurrentUnitNumber(document, 'https://directory.churchofjesuschrist.org/123')
+      ).toBe('123');
       expect(
         resolveCurrentUnitNumber(document, 'https://directory.churchofjesuschrist.org/1234')
       ).toBe('1234');
       expect(
-        resolveCurrentUnitNumber(document, 'https://directory.churchofjesuschrist.org/unit/1234')
-      ).toBe('1234');
+        resolveCurrentUnitNumber(document, 'https://directory.churchofjesuschrist.org/1234567')
+      ).toBe('1234567');
+      expect(
+        resolveCurrentUnitNumber(document, 'https://directory.churchofjesuschrist.org/unit/42')
+      ).toBe('42');
+      expect(
+        resolveCurrentUnitNumber(
+          document,
+          'https://directory.churchofjesuschrist.org/42/households'
+        )
+      ).toBe('42');
     });
 
-    it('should resolve 4-digit unit number from URL query parameters', () => {
+    it('should resolve unit numbers from URL query parameters', () => {
       expect(
-        resolveCurrentUnitNumber(document, 'https://directory.churchofjesuschrist.org/?unit=1234')
-      ).toBe('1234');
+        resolveCurrentUnitNumber(document, 'https://directory.churchofjesuschrist.org/?unit=42')
+      ).toBe('42');
+      expect(
+        resolveCurrentUnitNumber(
+          document,
+          'https://directory.churchofjesuschrist.org/?unit=1234567'
+        )
+      ).toBe('1234567');
       expect(
         resolveCurrentUnitNumber(
           document,
@@ -190,23 +248,29 @@ describe('lcrApiUtils', () => {
       ).toBe('1234');
     });
 
-    it('should resolve 4-digit unit number from Next.js state or pageProps', () => {
+    it('should resolve unit number from Next.js state or pageProps', () => {
       window.__NEXT_DATA__ = {
-        query: { unit: '1234' },
+        query: { unit: '42' },
       };
-      expect(resolveCurrentUnitNumber()).toBe('1234');
+      expect(resolveCurrentUnitNumber()).toBe('42');
 
       delete window.__NEXT_DATA__.query;
       window.__NEXT_DATA__.props = {
-        pageProps: { unitNumber: '5678' },
+        pageProps: { unitNumber: '1234567' },
       };
-      expect(resolveCurrentUnitNumber()).toBe('5678');
+      expect(resolveCurrentUnitNumber()).toBe('1234567');
 
       delete window.__NEXT_DATA__;
     });
 
-    it('should return null when no unit number is found', () => {
+    it('should return null for non-unit paths and invalid strings', () => {
       expect(resolveCurrentUnitNumber(document, 'https://example.com/other')).toBeNull();
+      expect(
+        resolveCurrentUnitNumber(
+          document,
+          'https://directory.churchofjesuschrist.org/api/v4/households'
+        )
+      ).toBeNull();
     });
   });
 });

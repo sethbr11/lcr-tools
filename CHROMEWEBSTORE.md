@@ -43,7 +43,7 @@ Recent Updates:
 - Popup Window Sizing Fix: Resolved issue where Firefox and Safari extension windows were cut off at the bottom by removing restrictive container height constraints and allowing natural sizing up to 600px.
 - Vertical Scrolling Support: Added smooth momentum vertical scrolling and custom scrollbars to the popup content container, ensuring all actions, passive tools, and settings remain accessible regardless of window constraints.
 - Cross-Browser Header Alignment: Standardized popup subtitle wrapping across Chrome, Firefox, and Safari to preserve consistent header proportions across browser engines.
-- Four-Digit Unit Support: Fixed Church Directory & Map integration to recognize 4-digit unit numbers in URLs, route parameters, and page state, restoring Member Flashcards and No-Photo List for older wards and branches.
+- Universal Unit Number Support: Fixed Church Directory & Map integration to recognize unit numbers across all historical and standard lengths (2 to 7 digits) in URLs, route parameters, and page state, ensuring Member Flashcards, No-Photo List, and Ward Boundary Audit work for every unit.
 
 (2.0.0)
 - Cross-Browser Engine Modernization: Complete rebuild on WXT (Manifest V3 for Chrome, Manifest V2 for Firefox and Safari) with strict TypeScript architecture and zero-any safety.

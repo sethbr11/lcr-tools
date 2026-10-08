@@ -104,8 +104,11 @@ export function parseUnitNumberFromText(text: string): string | null {
   const parenMatch = clean.match(Regex.PAREN_UNIT_NUMBER);
   if (parenMatch?.[1]) return parenMatch[1];
 
-  const unitMatch = clean.match(Regex.UNIT_NUMBER);
-  if (unitMatch?.[0]) return unitMatch[0];
+  const labeledMatch = clean.match(Regex.LABELED_UNIT_NUMBER);
+  if (labeledMatch?.[1]) return labeledMatch[1];
+
+  const pureMatch = clean.match(Regex.PURE_UNIT_DIGITS);
+  if (pureMatch?.[0]) return pureMatch[0];
 
   return null;
 }
@@ -146,15 +149,15 @@ export function resolveCurrentUnitNumber(doc?: Document, href?: string): string 
     }
   }
 
-  // 4. URL query parameters or numeric path segment
+  // 4. URL query parameters or dedicated numeric path segment
   if (currentHref) {
     const paramMatch = currentHref.match(Regex.NUMERIC_PARAM);
     if (paramMatch?.[1]) return paramMatch[1];
 
     try {
       const url = new URL(currentHref, 'https://directory.churchofjesuschrist.org');
-      const pathMatch = url.pathname.match(Regex.UNIT_NUMBER);
-      if (pathMatch?.[0]) return pathMatch[0];
+      const pathMatch = url.pathname.match(Regex.UNIT_PATH_SEGMENT);
+      if (pathMatch?.[1]) return pathMatch[1];
     } catch {
       // Ignore invalid URL format
     }
