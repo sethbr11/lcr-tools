@@ -44,6 +44,7 @@ Recent Updates:
 - Vertical Scrolling Support: Added smooth momentum vertical scrolling and custom scrollbars to the popup content container, ensuring all actions, passive tools, and settings remain accessible regardless of window constraints.
 - Cross-Browser Header Alignment: Standardized popup subtitle wrapping across Chrome, Firefox, and Safari to preserve consistent header proportions across browser engines.
 - Universal Unit Number Support: Fixed Church Directory & Map integration to recognize unit numbers across all historical and standard lengths (2 to 7 digits) in URLs, route parameters, and page state, ensuring Member Flashcards, No-Photo List, and Ward Boundary Audit work for every unit.
+- Adult Sunday School Multi-Category Visitor Fix: Fixed an issue where entering visitor counts for classes with multiple attendee types (such as Men and Women in Adult Sunday School) only saved the last row by adding explicit input focus, blur, and state settlement intervals.
 
 (2.0.0)
 - Cross-Browser Engine Modernization: Complete rebuild on WXT (Manifest V3 for Chrome, Manifest V2 for Firefox and Safari) with strict TypeScript architecture and zero-any safety.
