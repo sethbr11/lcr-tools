@@ -1,6 +1,7 @@
 import { Constants, Dom, Types } from '@/types';
 import { clearApiKey, getStoredApiKeys, saveApiKey } from '@/utils/security/apiKeyStorageUtils';
 import { escapeHtml } from '@/utils/coreUtils';
+import { setHtml } from '@/utils';
 import { showStatusMessage } from './popupActionHelper';
 import { openPinProtectedView } from './popupPinHelper';
 
@@ -54,7 +55,9 @@ export async function renderApiKeysList(_currentTabUrl?: string): Promise<void> 
     const row = document.createElement('div');
     row.className = Dom.API_KEYS_ROW_CLASS;
     row.setAttribute(Dom.API_KEYS_ID_ATTR, entry.id);
-    row.innerHTML = `
+    setHtml(
+      row,
+      `
       <div class="${Dom.API_KEYS_COPY_CLASS}">
         <span class="${Dom.API_KEYS_LABEL_CLASS}">${escapeHtml(entry.label)}</span>
         <span class="${Dom.API_KEYS_DESCRIPTION_CLASS}">${escapeHtml(entry.description)}</span>
@@ -71,7 +74,8 @@ export async function renderApiKeysList(_currentTabUrl?: string): Promise<void> 
         <button class="${Dom.API_KEYS_SAVE_CLASS}" type="button">${Constants.API_KEYS_SAVE_LABEL}</button>
         <button class="${Dom.API_KEYS_CLEAR_CLASS}" type="button">${Constants.API_KEYS_CLEAR_LABEL}</button>
       </div>
-    `;
+    `
+    );
     bindApiKeyRow(row, entry.id);
     list.appendChild(row);
   }

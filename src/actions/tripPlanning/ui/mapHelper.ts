@@ -1,6 +1,6 @@
 import L from 'leaflet';
 import * as turf from '@turf/turf';
-import { escapeHtml } from '../utils';
+import { escapeHtml, setHtml } from '../utils';
 import { Constants, Dom, Types } from '../types';
 import { getClusterColors } from './stateHelper';
 
@@ -184,7 +184,9 @@ export function updateClusterList(
           ? matchedRoute.distance
           : null;
 
-    item.innerHTML = `
+    setHtml(
+      item,
+      `
       <div class="${Dom.CLUSTER_HEADER_CLASS}">
         <div class="${Dom.CLUSTER_COLOR_CLASS}" style="background:${color};"></div>
         <div class="${Dom.CLUSTER_TITLE_CLASS}">${escapeHtml(key)} (${group.members.length} members)</div>
@@ -200,7 +202,8 @@ export function updateClusterList(
           .map((member) => `<li>${escapeHtml(member.name)}</li>`)
           .join('')}</ul>
       </div>
-    `;
+    `
+    );
     container.appendChild(item);
   }
 }

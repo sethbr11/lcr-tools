@@ -26,9 +26,9 @@
   },
   "dependencies": {
     "@turf/turf": "^7.2.0",
+    "fflate": "^0.8.3",
     "html2canvas": "^1.4.1",
     "jspdf": "^4.2.1",
-    "jszip": "^3.10.1",
     "leaflet": "^1.9.4",
     "papaparse": "^5.5.2"
   },

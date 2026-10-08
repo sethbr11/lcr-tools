@@ -1,4 +1,10 @@
-import { confirmDataStewardshipDownload, downloadFile, escapeHtml, showToast } from '../utils';
+import {
+  confirmDataStewardshipDownload,
+  downloadFile,
+  escapeHtml,
+  setHtml,
+  showToast,
+} from '../utils';
 import { Constants, Dom, Types } from '../types';
 import { getTripLogs } from './stateHelper';
 
@@ -27,7 +33,9 @@ export function showTripLogsModal(): void {
     )
     .join('');
 
-  overlay.innerHTML = `
+  setHtml(
+    overlay,
+    `
     <div class="trip-modal-card">
       <div class="trip-modal-header">
         <h2 class="trip-modal-title">${Constants.LOGS_MODAL_TITLE}</h2>
@@ -53,7 +61,8 @@ export function showTripLogsModal(): void {
         <button type="button" class="lcr-tools-btn lcr-tools-btn-primary" id="${Dom.LOGS_MODAL_DONE_ID}" style="width: auto; margin: 0;">Done</button>
       </div>
     </div>
-  `;
+  `
+  );
 
   document.body.appendChild(overlay);
 

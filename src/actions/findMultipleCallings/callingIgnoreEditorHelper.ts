@@ -1,4 +1,4 @@
-import { callingAssignmentKey, escapeHtml, formatCallingLabel } from './utils';
+import { callingAssignmentKey, escapeHtml, formatCallingLabel, setHtml } from './utils';
 import { Constants, Dom, Types } from './types';
 import { Templates } from './templates';
 import { hideFixedSearchDropdown, showFixedSearchDropdown } from './callingSearchDropdownHelper';
@@ -29,7 +29,7 @@ export function bindIgnoredCallingsEditor(
 function renderIgnoreList(draft: Types.IgnoredCalling[], catalog: Types.CallingAssignment[]): void {
   const list = document.getElementById(Dom.IGNORE_LIST_ID);
   if (!list) return;
-  list.innerHTML = Templates.ignoredList(draft);
+  setHtml(list, Templates.ignoredList(draft));
   bindIgnoreRows(draft, catalog);
 }
 
@@ -58,12 +58,15 @@ function bindIgnoreSearch(draft: Types.IgnoredCalling[], catalog: Types.CallingA
       .slice(0, Constants.CALLING_SEARCH_MAX_RESULTS);
 
     if (matches.length === 0) {
-      dropdown.innerHTML = `<li style="padding: 6px 10px; color: #888; font-size: 13px;">${escapeHtml(Constants.NO_MATCHING_CALLINGS)}</li>`;
+      setHtml(
+        dropdown,
+        `<li style="padding: 6px 10px; color: #888; font-size: 13px;">${escapeHtml(Constants.NO_MATCHING_CALLINGS)}</li>`
+      );
       showFixedSearchDropdown(dropdown, input);
       return;
     }
 
-    dropdown.innerHTML = matches.map(Templates.searchItem).join('');
+    setHtml(dropdown, matches.map(Templates.searchItem).join(''));
     showFixedSearchDropdown(dropdown, input);
     dropdown.querySelectorAll<HTMLElement>(`.${Dom.GROUP_SEARCH_ITEM}`).forEach((item) => {
       item.addEventListener('click', () => {

@@ -7,6 +7,57 @@ export default defineConfig({
   srcDir: 'src',
   outDir: 'output',
   publicDir: 'src/public',
+  vite: () => ({
+    plugins: [
+      {
+        name: 'amo-sanitize-leaflet',
+        transform(code, id) {
+          if (!id.includes('leaflet')) return null;
+          const helper = `
+function __amoSanitize(el, h) {
+  el.replaceChildren();
+  if (h) {
+    var doc = new DOMParser().parseFromString(h, 'text/html');
+    Array.from(doc.body.childNodes).forEach(function(c) {
+      el.appendChild(c.cloneNode(true));
+    });
+  }
+}
+`;
+          const sanitized =
+            helper +
+            code
+              .replace(
+                "div.innerHTML = '<svg/>';",
+                "div.replaceChildren(document.createElementNS('http://www.w3.org/2000/svg', 'svg'));"
+              )
+              .replace('div.innerHTML = \'<v:shape adj="1"/>\';', 'div.replaceChildren();')
+              .replace(
+                'radioFragment.innerHTML = radioHtml;',
+                '__amoSanitize(radioFragment, radioHtml);'
+              )
+              .replace("name.innerHTML = ' ' + obj.name;", "name.textContent = ' ' + obj.name;")
+              .replace('link.innerHTML = html;', '__amoSanitize(link, html);')
+              .replace('scale.innerHTML = text;', 'scale.textContent = text;')
+              .replace(
+                'this._container.innerHTML = prefixAndAttribs.join(\' <span aria-hidden="true">|</span> \');',
+                "__amoSanitize(this._container, prefixAndAttribs.join(' | '));"
+              )
+              .replace('node.innerHTML = content;', '__amoSanitize(node, content);')
+              .replace(
+                'closeButton.innerHTML = \'<span aria-hidden="true">&#215;</span>\';',
+                "closeButton.textContent = '×';"
+              )
+              .replace(
+                "div.innerHTML = options.html !== false ? options.html : '';",
+                "__amoSanitize(div, options.html !== false ? options.html : '');"
+              );
+
+          return { code: sanitized, map: null };
+        },
+      },
+    ],
+  }),
   zip: {
     exclude: ['**/*.md', 'images/attendance-*'],
     excludeSources: ['images/attendance-*'],
@@ -59,10 +110,13 @@ export default defineConfig({
         ? {
             gecko: {
               id: 'lcr-tools@extension',
-              strict_min_version: '109.0',
+              strict_min_version: '140.0',
               data_collection_permissions: {
                 required: ['none'],
               },
+            },
+            gecko_android: {
+              strict_min_version: '142.0',
             },
           }
         : undefined,

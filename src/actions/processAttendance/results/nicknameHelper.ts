@@ -55,7 +55,7 @@ export async function displayManageNicknamesModal(onUpdated?: () => void): Promi
   const overlay = document.createElement('div');
   overlay.id = Dom.NICKNAMES_MODAL_ID;
   overlay.className = 'lcrx-modal-backdrop';
-  overlay.innerHTML = getManageNicknamesModalHtml();
+  Utils.setHtml(overlay, getManageNicknamesModalHtml());
   document.body.appendChild(overlay);
 
   const listContainer = overlay.querySelector<HTMLElement>(`#${Dom.NICKNAMES_LIST_ID}`);
@@ -70,22 +70,25 @@ export async function displayManageNicknamesModal(onUpdated?: () => void): Promi
     const groups = groupNicknamesByPerson(Object.values(nicknames));
 
     if (groups.length === 0) {
-      listContainer.innerHTML = getNicknameEmptyListHtml();
+      Utils.setHtml(listContainer, getNicknameEmptyListHtml());
       return;
     }
 
-    listContainer.innerHTML = groups
-      .map((group) => {
-        const canonicalEscaped = Utils.escapeHtml(group.canonicalName);
-        const rowsHtml = group.aliases
-          .map((item: Types.NicknameMapping) => {
-            const aliasEscaped = Utils.escapeHtml(item.alias);
-            return getNicknameAliasRowHtml(aliasEscaped, aliasEscaped);
-          })
-          .join('');
-        return getNicknameGroupHtml(canonicalEscaped, rowsHtml);
-      })
-      .join('');
+    Utils.setHtml(
+      listContainer,
+      groups
+        .map((group) => {
+          const canonicalEscaped = Utils.escapeHtml(group.canonicalName);
+          const rowsHtml = group.aliases
+            .map((item: Types.NicknameMapping) => {
+              const aliasEscaped = Utils.escapeHtml(item.alias);
+              return getNicknameAliasRowHtml(aliasEscaped, aliasEscaped);
+            })
+            .join('');
+          return getNicknameGroupHtml(canonicalEscaped, rowsHtml);
+        })
+        .join('')
+    );
 
     listContainer
       .querySelectorAll<HTMLButtonElement>(`.${Dom.NICKNAME_DELETE_BTN}`)

@@ -1,4 +1,4 @@
-import JSZip from 'jszip';
+import { zipSync, strToU8 } from 'fflate';
 import { Regex, Types } from '@/types';
 import { formatCSVCell } from './coreUtils';
 import { showToast } from './ui/uiUtils';
@@ -72,16 +72,17 @@ export async function downloadCsvZip(
     return;
   }
 
-  const zip = new JSZip();
+  const zipData: Record<string, Uint8Array> = {};
   const usedNames = new Set<string>();
 
   for (const file of files) {
     const uniqueName = resolveUniqueFilename(file.filename || 'report.csv', usedNames);
     usedNames.add(uniqueName);
-    zip.file(uniqueName, file.csvContent);
+    zipData[uniqueName] = strToU8(file.csvContent);
   }
 
-  const blob = await zip.generateAsync({ type: 'blob' });
+  const zipped = zipSync(zipData);
+  const blob = new Blob([zipped as Uint8Array<ArrayBuffer>], { type: 'application/zip' });
   downloadFile(blob, zipName, 'application/zip', showNotification);
 }
 

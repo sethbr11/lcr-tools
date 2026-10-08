@@ -20,7 +20,7 @@ export function displayEditView(
   document.getElementById(Dom.EDIT_VIEW_CONTAINER_ID)?.remove();
 
   const container = document.createElement('div');
-  container.innerHTML = getEditViewHtml();
+  Utils.setHtml(container, getEditViewHtml());
   const overlay = container.firstElementChild as HTMLElement;
   document.body.appendChild(overlay);
 
@@ -30,11 +30,11 @@ export function displayEditView(
   const currentList = [...rows];
 
   const renderRows = () => {
-    tbody.innerHTML = '';
+    tbody.replaceChildren();
     currentList.forEach((r, idx) => {
       const tr = document.createElement('tr');
       // prettier-ignore
-      tr.innerHTML = getEditTableRowHtml(Utils.escapeHtml(r.normalizedDateStr || ''), Utils.escapeHtml(r.firstName), Utils.escapeHtml(r.lastName), idx);
+      Utils.setHtml(tr, getEditTableRowHtml(Utils.escapeHtml(r.normalizedDateStr || ''), Utils.escapeHtml(r.firstName), Utils.escapeHtml(r.lastName), idx));
       tbody.appendChild(tr);
     });
   };

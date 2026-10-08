@@ -5,6 +5,7 @@ import {
   hideLoadingIndicator,
   loadAllPaginatedTableRows,
   parseMonthDay,
+  setHtml,
   showLoadingIndicator,
   showToast,
 } from './utils';
@@ -170,7 +171,7 @@ export function setupTableSelector(
       const updated = buildTableFilterControls(allTables);
       const controlsContainer = document.getElementById(Dom.FILTER_CONTROLS_ID);
       if (controlsContainer) {
-        controlsContainer.innerHTML = updated.controlsHtml;
+        setHtml(controlsContainer, updated.controlsHtml);
       }
       setupTableFilterHandlers(getTarget, updated.rules);
       window.__LCR_TABLE_FILTERS_STATE__ = updated.rules;
@@ -189,7 +190,7 @@ export function setupTableSelector(
         const updated = buildTableFilterControls(tableEl);
         const controlsContainer = document.getElementById(Dom.FILTER_CONTROLS_ID);
         if (controlsContainer) {
-          controlsContainer.innerHTML = updated.controlsHtml;
+          setHtml(controlsContainer, updated.controlsHtml);
         }
         setupTableFilterHandlers(getTarget, updated.rules);
         window.__LCR_TABLE_FILTERS_STATE__ = updated.rules;

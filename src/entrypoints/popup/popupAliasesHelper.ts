@@ -1,5 +1,11 @@
 import { Constants, Dom, Types } from '@/types';
-import { clearAllNicknames, escapeHtml, getSavedNicknames, removeNicknameMapping } from '@/utils';
+import {
+  clearAllNicknames,
+  escapeHtml,
+  getSavedNicknames,
+  removeNicknameMapping,
+  setHtml,
+} from '@/utils';
 import { showStatusMessage } from './popupActionHelper';
 import { openPinProtectedView } from './popupPinHelper';
 
@@ -66,17 +72,23 @@ export async function renderAliasesList(tabUrl: string): Promise<void> {
   const groups = groupAliasesByPerson(Object.values(nicknames));
 
   if (groups.length === 0) {
-    list.innerHTML = `<p class="${Dom.ALIASES_EMPTY_CLASS}">${escapeHtml(Constants.ALIASES_EMPTY)}</p>`;
+    setHtml(
+      list,
+      `<p class="${Dom.ALIASES_EMPTY_CLASS}">${escapeHtml(Constants.ALIASES_EMPTY)}</p>`
+    );
     return;
   }
 
   const visible = groups.filter((group) => matchesAliasGroupSearch(group, getAliasSearchQuery()));
   if (visible.length === 0) {
-    list.innerHTML = `<p class="${Dom.ALIASES_EMPTY_CLASS}">${escapeHtml(Constants.ALIASES_NO_MATCH)}</p>`;
+    setHtml(
+      list,
+      `<p class="${Dom.ALIASES_EMPTY_CLASS}">${escapeHtml(Constants.ALIASES_NO_MATCH)}</p>`
+    );
     return;
   }
 
-  list.innerHTML = visible.map((group) => buildAliasGroupHtml(group)).join('');
+  setHtml(list, visible.map((group) => buildAliasGroupHtml(group)).join(''));
   bindAliasRowActions(list, tabUrl);
 }
 

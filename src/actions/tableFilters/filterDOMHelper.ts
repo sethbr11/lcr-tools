@@ -1,4 +1,4 @@
-import { getCellValue, getRelevantHeaderCells } from './utils';
+import { getCellValue, getRelevantHeaderCells, setHtml } from './utils';
 import { evaluateRuleMatch, isRuleActive } from './filterRuleEvaluator';
 import { Dom, Regex, Types } from './types';
 
@@ -264,7 +264,10 @@ export function updateTableFooterCount(
   }
 
   const origCount = countEl.getAttribute(Dom.ORIGINAL_FOOTER_COUNT_ATTR) || String(total);
-  countEl.innerHTML = `<span style="color: #00509e; font-weight: 700;">Count: ${visible}</span> of ${origCount} (filtered)`;
+  setHtml(
+    countEl,
+    `<span style="color: #00509e; font-weight: 700;">Count: ${visible}</span> of ${origCount} (filtered)`
+  );
 }
 
 /** Updates counter text inside filter status message container. */

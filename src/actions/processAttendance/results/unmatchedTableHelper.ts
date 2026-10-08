@@ -47,7 +47,7 @@ export function renderUnmatchedTable(
   visitorAssigned: Types.UnmatchedRecord[],
   onVisitorCountChanged: () => void
 ): Types.RefreshUnmatchedNicknames {
-  tbody.innerHTML = '';
+  tbody.replaceChildren();
   const skippedList: Types.SkippedUnmatchedItem[] = [];
   let nicknames = savedNicknames;
   const { floatingDropdown, setActiveSelection } = mountMemberSearchDropdown(overlay, wardMembers);
@@ -190,7 +190,7 @@ function bindUnmatchedRow(
     : '';
 
   // prettier-ignore
-  tr.innerHTML = getUnmatchedTableRowHtml(idx, rec.date, Utils.escapeHtml(rec.fullName), nicknameBoxHtml, suggestedMember ? 'none' : 'block', visitorActionHtml);
+  Utils.setHtml(tr, getUnmatchedTableRowHtml(idx, rec.date, Utils.escapeHtml(rec.fullName), nicknameBoxHtml, suggestedMember ? 'none' : 'block', visitorActionHtml));
 
   const queuedCtx: Types.QueuedRowContext = { tr, rec, overlay, logs, rebindRow };
 
@@ -237,9 +237,10 @@ function bindUnmatchedRow(
       return;
     }
 
-    floatingDropdown.innerHTML = matches
-      .map((m) => getMemberDropdownItemHtml(Utils.escapeHtml(m.fullName)))
-      .join('');
+    Utils.setHtml(
+      floatingDropdown,
+      matches.map((m) => getMemberDropdownItemHtml(Utils.escapeHtml(m.fullName))).join('')
+    );
     Utils.positionDropdown(floatingDropdown, searchInput, matches.length);
 
     setActiveSelection(async (member: Types.WardMember) => {

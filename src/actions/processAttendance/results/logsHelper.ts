@@ -41,7 +41,7 @@ export function displayLogsModal(
     })
     .join('');
 
-  overlay.innerHTML = getLogsModalHtml(Utils.escapeHtml(targetClass), targetDate, rowsHtml);
+  Utils.setHtml(overlay, getLogsModalHtml(Utils.escapeHtml(targetClass), targetDate, rowsHtml));
   document.body.appendChild(overlay);
 
   const close = () => {

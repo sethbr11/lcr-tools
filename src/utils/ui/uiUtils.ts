@@ -1,6 +1,7 @@
 import { Dom, Constants, Types } from '@/types';
 import { setAborted } from '../coreUtils';
 import { Templates } from './templates';
+import { setHtml } from './htmlUtils';
 
 /* ==========================================================================
    EXPORTED FUNCTIONS
@@ -147,7 +148,7 @@ export function showConfirmationModal(options: Types.ConfirmationOptions): Promi
     });
 
     const templateOptions = { title, message, cancelText, confirmText, confirmColor };
-    modal.innerHTML = Templates.confirmationModal(templateOptions);
+    setHtml(modal, Templates.confirmationModal(templateOptions));
 
     backdrop.appendChild(modal);
     document.body.appendChild(backdrop);
@@ -223,7 +224,7 @@ function createOverlayElement(message: string, subheader: string): void {
   const overlay = document.createElement('div');
   overlay.id = Dom.LOADER_OVERLAY_ID;
   overlay.className = Dom.LOADING_OVERLAY;
-  overlay.innerHTML = Templates.loadingOverlay(message, subheader);
+  setHtml(overlay, Templates.loadingOverlay(message, subheader));
   document.body.appendChild(overlay);
 }
 

@@ -1,4 +1,11 @@
-import { createSideModal, escapeHtml, getPageTables, isTableFilterable, showToast } from './utils';
+import {
+  createSideModal,
+  escapeHtml,
+  getPageTables,
+  isTableFilterable,
+  setHtml,
+  showToast,
+} from './utils';
 import { applyFilterRules } from './filterDOMHelper';
 import { buildTableFilterControls } from './filterControlsHelper';
 import {
@@ -153,7 +160,7 @@ export async function runTableFilters(): Promise<Types.ActionResult<Types.TableF
         rules = updated.rules;
         const controlsContainer = document.getElementById(Dom.FILTER_CONTROLS_ID);
         if (controlsContainer) {
-          controlsContainer.innerHTML = updated.controlsHtml;
+          setHtml(controlsContainer, updated.controlsHtml);
         }
         setupTableFilterHandlers(getTarget, rules);
         window.__LCR_TABLE_FILTERS_STATE__ = rules;

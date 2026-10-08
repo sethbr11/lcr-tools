@@ -1,7 +1,7 @@
 import { browser } from 'wxt/browser';
 import { ACTION_REGISTRY, getActionsForUrl } from '@/actions/registry';
 import { Dom, Types } from '@/types';
-import { clearPhotoCache } from '@/utils';
+import { clearPhotoCache, setHtml } from '@/utils';
 import { executeAction, showStatusMessage, setupDevDomAnonymizer } from './popupActionHelper';
 import { renderAliasesList, setupAliasesManager } from './popupAliasesHelper';
 import { renderApiKeysList, setupApiKeysManager } from './popupApiKeysHelper';
@@ -46,21 +46,27 @@ export async function initPopup(): Promise<void> {
     if (menuContainer) {
       if (actions.length === 0) {
         if (passiveCount === 0) {
-          menuContainer.innerHTML = `
+          setHtml(
+            menuContainer,
+            `
             <div class="no-actions-message">
               <p style="margin: 0 0 8px 0; font-weight: 600;">No tools available for this page</p>
               <p style="margin: 0; font-size: 12px; font-style: normal;">Navigate to an LCR report or open the Directory to see all tools.</p>
             </div>
-          `;
+          `
+          );
         } else {
-          menuContainer.innerHTML = `
+          setHtml(
+            menuContainer,
+            `
             <div class="no-actions-message" style="padding: 16px 20px;">
               <p style="margin: 0; font-size: 12px; font-style: normal;">No active click-to-run tools for this page.</p>
             </div>
-          `;
+          `
+          );
         }
       } else {
-        menuContainer.innerHTML = '';
+        menuContainer.replaceChildren();
         for (const action of actions) {
           const btn = document.createElement('button');
           btn.className = 'menu-item';
@@ -75,14 +81,14 @@ export async function initPopup(): Promise<void> {
   } catch (error) {
     console.error('LCR Tools: Failed to initialize popup:', error);
     if (menuContainer) {
-      menuContainer.innerHTML = '<p class="error-message">Error loading actions.</p>';
+      setHtml(menuContainer, '<p class="error-message">Error loading actions.</p>');
     }
   }
 
   // Populate category filter options dynamically from unique registry categories
   if (categoryFilter) {
     const categories = Array.from(new Set(ACTION_REGISTRY.map((a) => a.category))).sort();
-    categoryFilter.innerHTML = '<option value="all">All Categories</option>';
+    setHtml(categoryFilter, '<option value="all">All Categories</option>');
     for (const cat of categories) {
       const opt = document.createElement('option');
       opt.value = cat;

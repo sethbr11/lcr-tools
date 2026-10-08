@@ -42,7 +42,7 @@ export function promptAttendanceSetup(
 
     let isSimulation = initialIsSimulation ?? false;
     const container = document.createElement('div');
-    container.innerHTML = getSetupModalHtml(classOptions, defaultDateStr, isSimulation);
+    Utils.setHtml(container, getSetupModalHtml(classOptions, defaultDateStr, isSimulation));
     const overlay = container.firstElementChild as HTMLElement;
     document.body.appendChild(overlay);
 
@@ -128,7 +128,7 @@ export function promptAttendanceSetup(
             .join('');
 
           // prettier-ignore
-          visitorSplitBox.innerHTML = getVisitorCalcSplitHtml(diff, rawHeadcount, attendeeCount, itemsHtml);
+          Utils.setHtml(visitorSplitBox, getVisitorCalcSplitHtml(diff, rawHeadcount, attendeeCount, itemsHtml));
 
           // Wire + / - buttons
           visitorSplitBox.querySelectorAll<HTMLButtonElement>(Dom.CALC_DEC).forEach((btn) => {
@@ -167,13 +167,13 @@ export function promptAttendanceSetup(
           const singleCat = categories[0] || 'Men';
           visitorCounts = { [singleCat]: diff };
           // prettier-ignore
-          visitorSplitBox.innerHTML = getVisitorCalcSingleHtml(diff, rawHeadcount, attendeeCount, singleCat);
+          Utils.setHtml(visitorSplitBox, getVisitorCalcSingleHtml(diff, rawHeadcount, attendeeCount, singleCat));
         }
         visitorSplitBox.style.display = 'flex';
       } else if (rawHeadcount > 0 && rawHeadcount <= attendeeCount) {
         visitorCounts = {};
         categories.forEach((c) => (visitorCounts[c] = 0));
-        visitorSplitBox.innerHTML = getVisitorCalcZeroHtml(attendeeCount, rawHeadcount);
+        Utils.setHtml(visitorSplitBox, getVisitorCalcZeroHtml(attendeeCount, rawHeadcount));
         visitorSplitBox.style.display = 'flex';
       } else {
         visitorCounts = {};

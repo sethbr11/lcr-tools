@@ -2,7 +2,7 @@ import Papa from 'papaparse';
 // prettier-ignore
 import { autoScrollToLoadContent, confirmDataStewardshipDownload, downloadCsv, downloadCsvZip,
   formatCSVCell, generateFilename, goToNextPage, hideLoadingIndicator, isAborted, isLastPage,
-  navigateToFirstPage, scrollToTop, showLoadingIndicator, showToast, tableToCSV,
+  navigateToFirstPage, scrollToTop, setHtml, showLoadingIndicator, showToast, tableToCSV,
   Templates } from './utils';
 import { Constants, Dom, Regex, Types } from './types';
 
@@ -171,14 +171,17 @@ export function promptSaveFilenameModal(
       fontFamily: 'system-ui, -apple-system, sans-serif',
     });
 
-    backdrop.innerHTML = Templates.filenamePromptDialog({
-      title: Constants.FILENAME_MODAL_TITLE,
-      prompt: Constants.FILENAME_MODAL_PROMPT,
-      defaultValue: defaultFilename,
-      hint: isZip ? Constants.FILENAME_MODAL_ZIP_HINT : Constants.FILENAME_MODAL_CSV_HINT,
-      cancelText: Constants.FILENAME_CANCEL_BTN_TEXT,
-      confirmText: Constants.FILENAME_CONFIRM_BTN_TEXT,
-    });
+    setHtml(
+      backdrop,
+      Templates.filenamePromptDialog({
+        title: Constants.FILENAME_MODAL_TITLE,
+        prompt: Constants.FILENAME_MODAL_PROMPT,
+        defaultValue: defaultFilename,
+        hint: isZip ? Constants.FILENAME_MODAL_ZIP_HINT : Constants.FILENAME_MODAL_CSV_HINT,
+        cancelText: Constants.FILENAME_CANCEL_BTN_TEXT,
+        confirmText: Constants.FILENAME_CONFIRM_BTN_TEXT,
+      })
+    );
 
     document.body.appendChild(backdrop);
 

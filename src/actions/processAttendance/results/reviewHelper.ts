@@ -1,5 +1,5 @@
 import { ensureAttendanceStylesInjected, getUnmatchedReviewModalHtml } from '../templates';
-import { getSavedNicknames } from '../utils';
+import { getSavedNicknames, setHtml } from '../utils';
 import { Dom, Regex, Types } from '../types';
 import { displayLogsModal } from './logsHelper';
 import { displayManageNicknamesModal } from './nicknameHelper';
@@ -39,7 +39,7 @@ export async function displayUnmatchedReviewModal(
   document.getElementById(Dom.REVIEW_OVERLAY_ID)?.remove();
 
   const container = document.createElement('div');
-  container.innerHTML = getUnmatchedReviewModalHtml(metrics, targetClass, targetDate, isSimulation);
+  setHtml(container, getUnmatchedReviewModalHtml(metrics, targetClass, targetDate, isSimulation));
   const overlay = container.firstElementChild as HTMLElement;
   document.body.appendChild(overlay);
 
@@ -61,7 +61,7 @@ export async function displayUnmatchedReviewModal(
   const updateVisitorChips = () => {
     const chipsContainer = overlay.querySelector<HTMLElement>(`#${Dom.VISITOR_CHIPS_ID}`);
     if (!chipsContainer) return;
-    chipsContainer.innerHTML = '';
+    chipsContainer.replaceChildren();
 
     categories.forEach((cat) => {
       const count = visitorCounts[cat] || 0;

@@ -1,6 +1,7 @@
 import { browser } from 'wxt/browser';
 import {
   getStoredApiKeys,
+  setHtml,
   setUnlockedPin,
   showToast,
   validatePinFormat,
@@ -26,7 +27,9 @@ export function showTripPinModal(
   overlay.id = Dom.PIN_MODAL_OVERLAY_ID;
   overlay.className = 'trip-modal-backdrop';
 
-  overlay.innerHTML = `
+  setHtml(
+    overlay,
+    `
     <div class="trip-modal-card trip-pin-card">
       <div class="trip-modal-header">
         <h2 class="trip-modal-title">${Constants.TRIP_PIN_MODAL_TITLE}</h2>
@@ -52,7 +55,8 @@ export function showTripPinModal(
         <button type="button" class="lcr-tools-btn lcr-tools-btn-primary" id="${Dom.PIN_MODAL_SUBMIT_ID}" style="width: auto; margin: 0;">${Constants.TRIP_PIN_MODAL_SUBMIT}</button>
       </div>
     </div>
-  `;
+  `
+  );
 
   document.body.appendChild(overlay);
 

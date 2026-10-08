@@ -33,7 +33,7 @@ export function showFixedSearchDropdown(dropdown: HTMLElement, input: HTMLInputE
  */
 export function hideFixedSearchDropdown(dropdown: HTMLElement, home: HTMLElement): void {
   dropdown.style.display = Dom.DISPLAY_NONE;
-  dropdown.innerHTML = '';
+  dropdown.replaceChildren();
   dropdown.style.position = '';
   dropdown.style.left = '';
   dropdown.style.top = '';

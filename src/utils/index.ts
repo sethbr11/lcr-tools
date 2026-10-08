@@ -22,5 +22,6 @@ export * from './ui/maintenanceUtils';
 export * from './ui/modalUtils';
 export * from './ui/templates';
 export * from './ui/uiUtils';
+export * from './ui/htmlUtils';
 
 export * from './table/tableUtils';

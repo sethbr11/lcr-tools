@@ -1,5 +1,5 @@
 // prettier-ignore
-import { callingAssignmentKey, closeModal, createStandardModal, escapeHtml, formatCallingLabel } from './utils';
+import { callingAssignmentKey, closeModal, createStandardModal, escapeHtml, formatCallingLabel, setHtml } from './utils';
 import { getCallingGroups, saveCallingGroups } from './callingGroupStorageHelper';
 import { getIgnoredCallings, saveIgnoredCallings } from './callingIgnoreStorageHelper';
 import { bindIgnoredCallingsEditor } from './callingIgnoreEditorHelper';
@@ -71,7 +71,7 @@ function renderGroupList(draft: Types.CallingGroup[], catalog: Types.CallingAssi
   clearPortaledSearchDropdowns();
   const list = document.getElementById(Dom.GROUPS_LIST_ID);
   if (!list) return;
-  list.innerHTML = draft.map(Templates.groupCard).join('');
+  setHtml(list, draft.map(Templates.groupCard).join(''));
   bindEditorEvents(draft, catalog);
 }
 
@@ -147,12 +147,15 @@ function bindCallingSearch(
       .slice(0, Constants.CALLING_SEARCH_MAX_RESULTS);
 
     if (matches.length === 0) {
-      dropdown.innerHTML = `<li style="padding: 6px 10px; color: #888; font-size: 13px;">${escapeHtml(Constants.NO_MATCHING_CALLINGS)}</li>`;
+      setHtml(
+        dropdown,
+        `<li style="padding: 6px 10px; color: #888; font-size: 13px;">${escapeHtml(Constants.NO_MATCHING_CALLINGS)}</li>`
+      );
       showFixedSearchDropdown(dropdown, input);
       return;
     }
 
-    dropdown.innerHTML = matches.map(Templates.searchItem).join('');
+    setHtml(dropdown, matches.map(Templates.searchItem).join(''));
     showFixedSearchDropdown(dropdown, input);
     dropdown.querySelectorAll<HTMLElement>(`.${Dom.GROUP_SEARCH_ITEM}`).forEach((item) => {
       item.addEventListener('click', () => {
@@ -178,7 +181,7 @@ function bindCallingSearch(
 function replaceChips(card: HTMLElement, group: Types.CallingGroup): void {
   const chips = card.querySelector(`.${Dom.GROUP_CHIPS}`);
   if (!chips) return;
-  chips.innerHTML = Templates.groupChips(group.members);
+  setHtml(chips, Templates.groupChips(group.members));
   bindChipRemoval(card, group);
 }
 

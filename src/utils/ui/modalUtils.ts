@@ -1,5 +1,6 @@
 import { Dom, Types } from '@/types';
 import { Templates } from './templates';
+import { setHtml } from './htmlUtils';
 import { removeElement } from './uiUtils';
 
 /* ==========================================================================
@@ -77,7 +78,7 @@ export function createStandardModal(options: Types.StandardModalOptions): HTMLEl
   });
 
   if (typeof content === 'string') {
-    body.innerHTML = content;
+    setHtml(body, content);
   } else if (content instanceof HTMLElement) {
     body.appendChild(content);
   }
@@ -155,7 +156,7 @@ export function createSideModal(options: Types.SideModalOptions): HTMLElement {
   body.style.flex = '1';
   body.style.overflowY = 'auto';
   if (typeof content === 'string') {
-    body.innerHTML = content;
+    setHtml(body, content);
   } else if (content instanceof HTMLElement) {
     body.appendChild(content);
   }
@@ -262,7 +263,7 @@ function createModalHeader(title: string, onDismiss: () => void): HTMLElement {
 function createAlertsSection(alerts: Types.ModalAlert[]): HTMLElement {
   const container = document.createElement('div');
   container.style.marginBottom = '12px';
-  container.innerHTML = alerts.map((alert) => Templates.modalAlert(alert)).join('');
+  setHtml(container, alerts.map((alert) => Templates.modalAlert(alert)).join(''));
   return container;
 }
 
