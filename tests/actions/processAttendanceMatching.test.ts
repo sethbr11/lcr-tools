@@ -55,6 +55,20 @@ describe('processAttendance - exact-only auto-matching', () => {
       expect(findExactMemberMatches('John Smith', ['Smith, John', 'Smith, John'])).toHaveLength(2);
     });
 
+    it('ignores middle names and initials on either side', () => {
+      const roll = ['Smith, John Michael', 'Brown, Mary Ann', 'Lee, Ann'];
+      expect(findExactMemberMatches('John Smith', roll)).toEqual(['Smith, John Michael']);
+      expect(findExactMemberMatches('John M. Smith', roll)).toEqual(['Smith, John Michael']);
+      expect(findExactMemberMatches('Smith, John', roll)).toEqual(['Smith, John Michael']);
+      expect(findExactMemberMatches('Mary Brown', roll)).toEqual(['Brown, Mary Ann']);
+      expect(findExactMemberMatches('Ann Lee', roll)).toEqual(['Lee, Ann']);
+    });
+
+    it('treats members who differ only by middle name as duplicates (never auto-marked)', () => {
+      const roll = ['Smith, John Paul', 'Smith, John David'];
+      expect(findExactMemberMatches('John Smith', roll)).toHaveLength(2);
+    });
+
     it('suggests a one-typo surname with a matching first name', () => {
       expect(suggestMemberMatch('Jane Johnsen', ['Johnson, Jane'])).toBe('Johnson, Jane');
       expect(suggestMemberMatch('Jane Lee', ['Lea, Jane'])).toBeNull();

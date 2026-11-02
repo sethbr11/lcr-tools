@@ -26,8 +26,8 @@ const FUZZY_PREFIX_MIN_LENGTH = 3;
 
 /**
  * Finds every candidate whose name is an exact match for the target after normalization.
- * Case, extra whitespace, and punctuation (other than the "Last, First" comma) are ignored,
- * and "First Last" matches "Last, First" when both parsed components are equal.
+ * Case, extra whitespace, punctuation (other than the "Last, First" comma), and middle names are
+ * ignored, and "First Last" matches "Last, First" when the first given name and last name are equal.
  *
  * @param target - Attendee name to resolve.
  * @param candidates - List of ward member full names.
@@ -243,11 +243,16 @@ function normalizeNameText(name: string): string {
     .join(', ');
 }
 
-/** Parses a name into first and last components, each normalized for comparison. */
+/**
+ * Parses a name into first and last components, each normalized for comparison.
+ * Only the first given name is kept: LCR stores "Last, First Middle", but attendance rosters
+ * rarely include middle names, so middle names and initials are ignored on both sides.
+ */
 function normalizedNameParts(name: string): ReturnType<typeof parseFullName> {
   const parts = parseFullName(name ?? '');
+  const givenNames = normalizeNameText(parts.firstName).replace(Regex.COMMA_GLOBAL, '');
   return {
-    firstName: normalizeNameText(parts.firstName).replace(Regex.COMMA_GLOBAL, ''),
+    firstName: givenNames.split(' ')[0] ?? '',
     lastName: normalizeNameText(parts.lastName).replace(Regex.COMMA_GLOBAL, ''),
   };
 }
