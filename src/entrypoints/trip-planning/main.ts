@@ -1,7 +1,7 @@
 import { browser } from 'wxt/browser';
 import { isSessionUnlocked } from '@/utils/security/cryptoUtils';
 import { getStoredApiKeys } from '@/utils/security/apiKeyStorageUtils';
-import { showToast } from '@/actions/tripPlanning/utils';
+import { showConfirmationModal, showToast } from '@/actions/tripPlanning/utils';
 import { Constants, Dom, Types } from '@/actions/tripPlanning/types';
 import { showTripPinModal } from '@/actions/tripPlanning/ui/pinModalHelper';
 import { clusterAddresses } from '@/actions/tripPlanning/routing/clusteringHelper';
@@ -166,8 +166,12 @@ async function handleGeocode(): Promise<void> {
       '{count}',
       String(pendingCount)
     ).replace('{provider}', providerName);
-    // eslint-disable-next-line no-alert
-    const confirmed = window.confirm(confirmMessage);
+    const confirmed = await showConfirmationModal({
+      title: 'Send addresses for geocoding?',
+      message: confirmMessage,
+      confirmText: 'Continue',
+      cancelText: 'Cancel',
+    });
     if (!confirmed) {
       logTripStatus('Geocoding cancelled by user.');
       return;

@@ -196,7 +196,7 @@ function bindUnmatchedRow(
       : '';
 
   // prettier-ignore
-  Utils.setHtml(tr, getUnmatchedTableRowHtml(idx, rec.date, Utils.escapeHtml(rec.fullName), suggestionBoxHtml, suggestedMember ? 'none' : 'block', visitorActionHtml));
+  Utils.setHtml(tr, getUnmatchedTableRowHtml(idx, Utils.escapeHtml(rec.date), Utils.escapeHtml(rec.fullName), suggestionBoxHtml, suggestedMember ? 'none' : 'block', visitorActionHtml));
 
   const queuedCtx: Types.QueuedRowContext = { tr, rec, overlay, logs, rebindRow };
 
