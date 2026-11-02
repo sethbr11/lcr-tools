@@ -1,6 +1,6 @@
 import { zipSync, strToU8 } from 'fflate';
 import { Regex, Types } from '@/types';
-import { formatCSVCell } from './coreUtils';
+import { formatCSVCell, formatDate } from './coreUtils';
 import { showToast } from './ui/uiUtils';
 
 /* ==========================================================================
@@ -94,22 +94,17 @@ export async function downloadCsvZip(
  * @returns Clean, formatted filename.
  */
 export function generateFilename(extension: string = 'csv', suffix?: string): string {
-  let baseName = document.title || 'lcr_export';
-  baseName = baseName
-    .replace(Regex.CHURCH_LCR_TITLE, '')
-    .replace(Regex.LCR_ACRONYM, '')
-    .replace(Regex.CHURCH_FULL_NAME, '')
-    .replace(Regex.FILENAME_SANITIZE, '')
-    .trim()
-    .replace(Regex.MULTIPLE_SPACES, '_')
-    .toLowerCase();
+  const title = normalizeFilenamePart(document.title || '') || 'lcr_export';
+  const normalizedSuffix = normalizeFilenamePart(suffix || '');
+  const isRedundant =
+    !normalizedSuffix ||
+    normalizedSuffix === title ||
+    `_${title}_`.includes(`_${normalizedSuffix}_`);
 
-  if (!baseName) baseName = 'lcr_report';
+  const dateTag = formatDate(new Date(), 'YYYY-MM-DD');
+  const suffixPart = isRedundant ? '' : `_${normalizedSuffix}`;
 
-  const dateTag = new Date().toISOString().slice(0, 10);
-  const suffixPart = suffix ? `_${suffix}` : '';
-
-  return `${baseName}${suffixPart}_${dateTag}.${extension}`;
+  return `${title}${suffixPart}_${dateTag}.${extension}`;
 }
 
 /**
@@ -153,4 +148,18 @@ function resolveUniqueFilename(name: string, used: Set<string>): string {
     counter++;
   }
   return `${base}_${counter}${ext}`;
+}
+
+/** Strips branding, sanitizes, and snake_cases text for use in a filename. */
+function normalizeFilenamePart(text: string): string {
+  return text
+    .replace(Regex.CHURCH_LCR_TITLE, '')
+    .replace(Regex.LCR_ACRONYM, '')
+    .replace(Regex.CHURCH_FULL_NAME, '')
+    .replace(Regex.FILENAME_SANITIZE, '')
+    .trim()
+    .replace(Regex.MULTIPLE_SPACES, '_')
+    .toLowerCase()
+    .replace(/[_-]{2,}/g, '_')
+    .replace(/^[_-]+|[_-]+$/g, '');
 }
