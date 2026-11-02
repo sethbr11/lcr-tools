@@ -96,6 +96,44 @@ describe('tripPlanning - functional user expectations', () => {
     );
   });
 
+  it('asks for a fresh click when the browser blocks opening the planner from the page', async () => {
+    const container = document.createElement('div');
+    container.innerHTML = `
+      <table>
+        <thead><tr><th>Name</th><th>Address</th></tr></thead>
+        <tbody><tr><td>Smith, John</td><td>100 N Main St, Salt Lake City, UT</td></tr></tbody>
+      </table>
+    `;
+    document.body.appendChild(container);
+    vi.spyOn(chrome.storage.local, 'set').mockResolvedValue(undefined as never);
+    vi.spyOn(globalThis, 'fetch').mockResolvedValue({
+      ok: false,
+      json: async () => [],
+    } as Response);
+    // Content scripts have no tabs API; the first window.open is blocked by the popup blocker
+    const tabs = chrome.tabs;
+    Object.defineProperty(chrome, 'tabs', { value: undefined, configurable: true });
+    const openSpy = vi
+      .spyOn(window, 'open')
+      .mockReturnValueOnce(null)
+      .mockReturnValue({} as Window);
+
+    try {
+      const actionPromise = runTripPlanning();
+      (document.querySelector('#lcr-tools-confirm-btn') as HTMLButtonElement).click();
+      await vi.waitFor(() =>
+        expect(document.body.textContent).toContain('Your browser blocked the new tab')
+      );
+      (document.querySelector('#lcr-tools-confirm-btn') as HTMLButtonElement).click();
+      const result = await actionPromise;
+
+      expect(result.success).toBe(true);
+      expect(openSpy).toHaveBeenCalledTimes(2);
+    } finally {
+      Object.defineProperty(chrome, 'tabs', { value: tabs, configurable: true });
+    }
+  });
+
   it('extractMembersForTripPlanning should skip rows without addresses', () => {
     const table = document.createElement('table');
     table.innerHTML = `

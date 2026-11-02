@@ -216,6 +216,10 @@ export const Constants = {
   GEOCODE_CACHE_KEY: 'geocode_cache',
   /** Relative URL path for the standalone trip planning tool tab. */
   PAGE_PATH: '/trip-planning.html',
+  /** Title of the prompt shown when the browser blocked opening the planner tab. */
+  READY_TITLE: 'Trip Planner is ready',
+  /** Message of the prompt shown when the browser blocked opening the planner tab. */
+  READY_MESSAGE: 'Your browser blocked the new tab. Click Open to view the Trip Planner.',
   /** Confirmation modal title shown before opening the planner. */
   CONFIRM_TITLE: 'Trip Planner',
   /** Confirmation modal body shown before opening the planner. */
