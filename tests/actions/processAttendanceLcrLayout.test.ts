@@ -1,8 +1,9 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { synchronizeAttendancePage } from '@/actions/processAttendance/lcr/syncHelper';
 import {
+  clickAttendanceButton,
   findAttendanceButton,
-  markMemberPresent,
+  isMemberMarkedPresent,
   setAttendanceTarget,
 } from '@/actions/processAttendance/lcr/markHelper';
 import { Types } from '@/actions/processAttendance/types';
@@ -225,9 +226,8 @@ describe('processAttendance - November 2026 LCR layout', () => {
         row,
       };
 
-      const outcome = await markMemberPresent(member, false);
-
-      expect(outcome).toBe('marked');
+      expect(clickAttendanceButton(member)).toBe('clicked');
+      expect(isMemberMarkedPresent(member)).toBe(true);
       const pressed = Array.from(row.querySelectorAll('button[aria-pressed="true"]')).map(
         (b) => (b as HTMLElement).dataset.class
       );

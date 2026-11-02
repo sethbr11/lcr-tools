@@ -1,6 +1,6 @@
 import { zipSync, strToU8 } from 'fflate';
 import { Regex, Types } from '@/types';
-import { formatCSVCell, formatDate } from './coreUtils';
+import { formatDate } from './coreUtils';
 import { showToast } from './ui/uiUtils';
 
 /* ==========================================================================
@@ -105,16 +105,6 @@ export function generateFilename(extension: string = 'csv', suffix?: string): st
   const suffixPart = isRedundant ? '' : `_${normalizedSuffix}`;
 
   return `${title}${suffixPart}_${dateTag}.${extension}`;
-}
-
-/**
- * Re-export CSV cell formatting function from coreUtils for backwards compatibility.
- *
- * @param value - Cell value to escape.
- * @returns Escaped CSV cell string.
- */
-export function formatCsvCell(value: unknown): string {
-  return formatCSVCell(value);
 }
 
 /**

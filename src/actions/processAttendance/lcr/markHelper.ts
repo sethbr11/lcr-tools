@@ -1,4 +1,3 @@
-import * as Utils from '../utils';
 import { Constants, Dom, Regex, Types } from '../types';
 
 /** Sunday and class the run is marking; null until sync confirms them. */
@@ -44,42 +43,6 @@ export function findAttendanceButton(row: HTMLElement): HTMLButtonElement | null
   const inClass = onDate.filter((entry) => entry.match[2].trim().toLowerCase() === wantedClass);
   if (inClass.length === 1) return inClass[0].btn;
   return onDate.length === 1 ? onDate[0].btn : null;
-}
-
-/**
- * Marks attendance for a specific ward member row in LCR.
- * Scrolls the member row into view without a settle sleep, then waits for button state.
- *
- * @param member - Target ward member structure.
- * @param shouldScroll - Whether to smoothly scroll to the member row before marking.
- * @returns MarkPresentOutcome of marked, already, or error.
- */
-export async function markMemberPresent(
-  member: Types.WardMember,
-  shouldScroll: boolean = true
-): Promise<Types.MarkPresentOutcome> {
-  if (!member.row || Utils.isAborted()) return 'error';
-
-  if (shouldScroll && typeof member.row.scrollIntoView === 'function') {
-    member.row.scrollIntoView({ behavior: 'smooth', block: 'center' });
-  }
-
-  if (Utils.isAborted()) return 'error';
-
-  const btn = findAttendanceButton(member.row);
-  if (!btn) return 'error';
-
-  if (isButtonPresent(btn)) return 'already';
-
-  btn.click();
-
-  const updatedState = await waitForAttendanceButtonState(btn, true);
-  if (updatedState && !Utils.isAborted()) {
-    member.isPresent = true;
-    return 'marked';
-  }
-
-  return 'error';
 }
 
 /**
@@ -162,15 +125,3 @@ export function isButtonPresent(btn: HTMLElement): boolean {
 /* ==========================================================================
    HELPER FUNCTIONS
    ========================================================================== */
-
-/** Polls until the attendance button is idle and matches the expected present state. */
-async function waitForAttendanceButtonState(
-  btn: HTMLButtonElement,
-  expectPresent: boolean
-): Promise<boolean> {
-  return Utils.waitForCondition(
-    () => Utils.isAborted() || (!isButtonBusy(btn) && isButtonPresent(btn) === expectPresent),
-    Constants.MARK_PRESENT_TIMEOUT_MS,
-    Constants.MARK_PRESENT_POLL_MS
-  );
-}

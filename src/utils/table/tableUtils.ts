@@ -160,27 +160,6 @@ export function parseHeaderDate(dateStr: string): Date | null {
   return new Date(year, monthIndex, md.day);
 }
 
-/**
- * Parses month-day string into full Date object using current/nearest year.
- *
- * @param dateStr - Month-day string representation.
- * @returns Parsed Date object or null if string cannot be parsed.
- */
-export function parseMonthDayToDate(dateStr: string): Date | null {
-  const md = parseMonthDay(dateStr);
-  if (!md) return null;
-
-  const now = new Date();
-  let year = now.getFullYear();
-  const currentMonth = now.getMonth();
-  const monthIndex = md.month - 1;
-
-  if (monthIndex === 11 && currentMonth === 0) year--;
-  else if (monthIndex === 0 && currentMonth === 11) year++;
-
-  return new Date(year, monthIndex, md.day);
-}
-
 /* ==========================================================================
    HELPER FUNCTIONS
    ========================================================================== */

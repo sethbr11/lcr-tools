@@ -1,11 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import {
-  downloadCsv,
-  downloadCsvZip,
-  generateFilename,
-  formatCsvCell,
-  blobToDataUrl,
-} from '@/utils/fileUtils';
+import { downloadCsv, downloadCsvZip, generateFilename, blobToDataUrl } from '@/utils/fileUtils';
 import * as uiUtils from '@/utils/ui/uiUtils';
 
 describe('fileUtils', () => {
@@ -108,13 +102,6 @@ describe('fileUtils', () => {
         expect.stringContaining('No files to zip'),
         expect.objectContaining({ type: 'warning' })
       );
-    });
-  });
-
-  describe('formatCsvCell', () => {
-    it('should quote values with commas or quotes', () => {
-      expect(formatCsvCell('Hello, World')).toBe('"Hello, World"');
-      expect(formatCsvCell('Simple')).toBe('Simple');
     });
   });
 

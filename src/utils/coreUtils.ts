@@ -301,65 +301,6 @@ export function resetAborted(): void {
   isProcessingAborted = false;
 }
 
-/**
- * Compatibility checker verifying presence of global window objects.
- *
- * @param windowVar - Property name on global window object.
- * @returns True if property is defined and truthy.
- */
-export function returnIfLoaded(windowVar: string): boolean {
-  return (
-    typeof window !== 'undefined' && !!(window as unknown as Record<string, unknown>)[windowVar]
-  );
-}
-
-/**
- * Verifies that specified global variables exist, throwing if any are missing.
- *
- * @param windowVars - List of required global variable names.
- */
-export function ensureLoaded(...windowVars: string[]): void {
-  for (const v of windowVars) {
-    if (!returnIfLoaded(v)) {
-      const msg = `${v}.js must be loaded before this file.`;
-      console.error(msg);
-      throw new Error(msg);
-    }
-  }
-}
-
-/**
- * Inspects whether a global variable is loaded with optional diagnostic logging.
- *
- * @param windowVar - Property name on global window object.
- * @param log - Whether to log the result to console.
- * @returns True if property exists.
- */
-export function checkIfLoaded(windowVar: string, log: boolean = false): boolean {
-  const loaded = returnIfLoaded(windowVar);
-  if (log) console.log(`LCR Tools: ${windowVar} is ${loaded ? '' : 'not '}loaded.`);
-  return loaded;
-}
-
-/**
- * Calls a utility method if loaded, falling back to a default value if unavailable.
- *
- * @param utilName - Window utility property name.
- * @param func - Function to execute when utility is present.
- * @param fallback - Default value returned when utility is absent.
- * @returns Execution result or fallback value.
- */
-export function safeCall<T, R>(utilName: string, func: (util: T) => R, fallback: R): R {
-  if (returnIfLoaded(utilName)) {
-    try {
-      return func((window as unknown as Record<string, unknown>)[utilName] as T);
-    } catch {
-      return fallback;
-    }
-  }
-  return fallback;
-}
-
 /* ==========================================================================
    HELPER FUNCTIONS
    ========================================================================== */

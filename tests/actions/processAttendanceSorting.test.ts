@@ -47,17 +47,14 @@ describe('processAttendance - alphabetical sorting and live scrolling', () => {
     });
   });
 
-  describe('markMemberPresent scrolling behavior', () => {
-    it('should smoothly scroll to member row and center it before marking', async () => {
+  describe('clickAttendanceButton scrolling behavior', () => {
+    it('should smoothly scroll to the member row and center it before clicking', () => {
       const tr = document.createElement('tr');
       const btn = document.createElement('button');
       btn.className = 'attendanceButton';
       btn.setAttribute('aria-pressed', 'false');
-      btn.addEventListener('click', () => {
-        btn.setAttribute('aria-pressed', 'true');
-      });
       tr.appendChild(btn);
-
+      const clickSpy = vi.spyOn(btn, 'click');
       const scrollSpy = vi.fn();
       tr.scrollIntoView = scrollSpy;
 
@@ -70,39 +67,9 @@ describe('processAttendance - alphabetical sorting and live scrolling', () => {
         row: tr,
       };
 
-      const outcome = await MarkHelper.markMemberPresent(member);
-
+      expect(MarkHelper.clickAttendanceButton(member)).toBe('clicked');
       expect(scrollSpy).toHaveBeenCalledWith({ behavior: 'smooth', block: 'center' });
-      expect(outcome).toBe('marked');
-      expect(member.isPresent).toBe(true);
-    });
-
-    it('should allow suppressing scroll behavior when shouldScroll is false', async () => {
-      const tr = document.createElement('tr');
-      const btn = document.createElement('button');
-      btn.className = 'attendanceButton';
-      btn.setAttribute('aria-pressed', 'false');
-      btn.addEventListener('click', () => {
-        btn.setAttribute('aria-pressed', 'true');
-      });
-      tr.appendChild(btn);
-
-      const scrollSpy = vi.fn();
-      tr.scrollIntoView = scrollSpy;
-
-      const member: Types.WardMember = {
-        fullName: 'Smith, John',
-        firstName: 'John',
-        lastName: 'Smith',
-        isPresent: false,
-        pageNum: 1,
-        row: tr,
-      };
-
-      const outcome = await MarkHelper.markMemberPresent(member, false);
-
-      expect(scrollSpy).not.toHaveBeenCalled();
-      expect(outcome).toBe('marked');
+      expect(clickSpy).toHaveBeenCalledTimes(1);
     });
   });
 
