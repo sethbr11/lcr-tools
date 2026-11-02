@@ -70,6 +70,30 @@ describe('findMultipleCallings - functional user expectations', () => {
     expect(modal?.textContent).not.toContain(Constants.EXPORT_CSV_BTN);
   });
 
+  it('counts a calling listed in two tables only once for the member', async () => {
+    Object.defineProperty(window, 'location', {
+      value: new URL('https://lcr.churchofjesuschrist.org/orgs/callings-by-organization'),
+      writable: true,
+      configurable: true,
+    });
+
+    const table = `
+      <table>
+        <thead><tr><th>Member Name</th><th>Calling</th><th>Organization</th></tr></thead>
+        <tbody>
+          <tr><td>Brother Adams</td><td>Elders Quorum President</td><td>Elders Quorum</td></tr>
+        </tbody>
+      </table>`;
+    const container = document.createElement('div');
+    container.innerHTML = `<h3>Elders Quorum</h3>${table}<h3>Elders Quorum (all)</h3>${table}`;
+    document.body.appendChild(container);
+
+    const result = await runFindMultipleCallings();
+
+    expect(result.success).toBe(true);
+    expect(result.data?.count).toBe(0);
+  });
+
   it('should detect members holding multiple callings, display report modal, and export CSV', async () => {
     const downloadCsvSpy = vi.spyOn(fileUtils, 'downloadCsv').mockImplementation(() => {});
 

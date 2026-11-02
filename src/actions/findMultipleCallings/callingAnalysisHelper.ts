@@ -112,11 +112,14 @@ function collectAssignmentsFromTables(
       const assignment = parseAssignmentRow(rows[i], memberNameCol, callingCol, orgCol, tableInfo.name);
       if (!assignment) continue;
 
+      // The same calling can be listed in more than one table; count it once per member
+      const key = callingAssignmentKey(assignment);
       const existing = memberMap.get(assignment.memberName) || [];
-      existing.push({ calling: assignment.calling, organization: assignment.organization });
+      if (!existing.some((calling) => callingAssignmentKey(calling) === key)) {
+        existing.push({ calling: assignment.calling, organization: assignment.organization });
+      }
       memberMap.set(assignment.memberName, existing);
 
-      const key = callingAssignmentKey(assignment);
       if (!catalogMap.has(key)) {
         catalogMap.set(key, { calling: assignment.calling, organization: assignment.organization });
       }
