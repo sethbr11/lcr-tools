@@ -271,16 +271,9 @@ input[type='password'] {
   transition: width 0.3s;
 }
 
-.input-with-action {
-  display: flex;
-  gap: 8px;
-  width: 100%;
-}
-
-.input-with-action input {
-  flex: 1;
-}
-
-.input-with-action button {
-  white-space: nowrap;
+.step-hint {
+  margin: 0 0 12px;
+  font-size: 13px;
+  line-height: 1.5;
+  color: #4a5568;
 }

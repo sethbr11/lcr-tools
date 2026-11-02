@@ -54,10 +54,6 @@ export const Dom = {
   METRIC_MAPBOX_ID: 'metricMapbox',
   /** Road-network distance metric autofill button ID. */
   METRIC_MAPBOX_AUTOFILL_BTN_ID: 'metricMapboxAutofillBtn',
-  /** Optional starting address input ID. */
-  STARTING_ADDRESS_ID: 'startingAddressInput',
-  /** Save default starting address button ID. */
-  SAVE_STARTING_ADDRESS_BTN_ID: 'saveStartingAddressBtn',
   /** Download CSV button ID. */
   EXPORT_CSV_BTN_ID: 'exportCsvBtn',
   /** Execution log preformatted element ID. */

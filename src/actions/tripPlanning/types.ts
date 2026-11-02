@@ -327,12 +327,10 @@ export const Constants = {
   LOADING_TITLE: 'Preparing Trip Planner...',
   /** Supporting subtitle displayed on the modal loader while extracting records. */
   LOADING_SUBHEADER: 'Extracting member records and checking Church Directory coordinates...',
-  /** Storage key used to persist the default trip starting address. */
+  /** Storage key for the last starting address saved on a group, offered when editing another. */
   STORAGE_STARTING_ADDRESS_KEY: 'trip_planner_starting_address',
   /** Execution log download filename. */
   LOG_FILENAME: 'trip_planner_execution_log.txt',
-  /** Toast message shown when default starting address is saved to local storage. */
-  STARTING_ADDRESS_SAVED_TOAST: 'Starting address saved as default!',
   /** Title text shown in the execution logs modal header. */
   LOGS_MODAL_TITLE: 'Trip Planner • Execution Log',
   /** Placeholder text shown when the execution log is empty. */

@@ -187,6 +187,9 @@ export function updateClusterList(
     return left.localeCompare(right, undefined, { numeric: true });
   });
 
+  const clusterIds = Array.from(groups.values())
+    .map((group) => group.id)
+    .filter((id) => id !== -1);
   for (const key of keys) {
     const group = groups.get(key);
     if (!group) continue;
@@ -226,7 +229,7 @@ export function updateClusterList(
       </div>
     `
     );
-    if (!isOutlier) renderClusterStartControl(item, group.id);
+    if (!isOutlier) renderClusterStartControl(item, group.id, clusterIds);
     container.appendChild(item);
   }
 }

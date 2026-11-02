@@ -57,7 +57,6 @@ export async function initTripPlanner(): Promise<void> {
   });
   bindPlannerActions();
   await updateProviderControls(storedKeys);
-  await loadStoredStartingAddress();
   await loadStoredMembers();
 }
 
@@ -117,9 +116,6 @@ function bindPlannerActions(): void {
   document.getElementById(Dom.VIEW_LOGS_BTN_ID)?.addEventListener('click', () => {
     showTripLogsModal();
   });
-  document.getElementById(Dom.SAVE_STARTING_ADDRESS_BTN_ID)?.addEventListener('click', () => {
-    void handleSaveStartingAddress();
-  });
   document.getElementById(Dom.GEOCODE_PROVIDER_ID)?.addEventListener('change', () => {
     void updateProviderControls(storedKeys);
   });
@@ -129,33 +125,6 @@ function bindPlannerActions(): void {
   document.getElementById(Dom.METRIC_MAPBOX_AUTOFILL_BTN_ID)?.addEventListener('click', () => {
     void handleAutofillApiKey(Constants.API_KEY_ID_MAPBOX);
   });
-}
-
-/** Loads saved default starting address from extension storage if available. */
-async function loadStoredStartingAddress(): Promise<void> {
-  try {
-    if (!browser?.storage?.local) return;
-    const stored = await browser.storage.local.get(Constants.STORAGE_STARTING_ADDRESS_KEY);
-    const address = stored[Constants.STORAGE_STARTING_ADDRESS_KEY];
-    if (typeof address === 'string' && address.trim()) {
-      const input = document.getElementById(Dom.STARTING_ADDRESS_ID) as HTMLInputElement | null;
-      if (input && !input.value) {
-        input.value = address.trim();
-      }
-    }
-  } catch (error) {
-    console.error('LCR Tools: Failed to load stored starting address:', error);
-  }
-}
-
-/** Persists current starting address input into extension storage as default. */
-async function handleSaveStartingAddress(): Promise<void> {
-  const input = document.getElementById(Dom.STARTING_ADDRESS_ID) as HTMLInputElement | null;
-  const address = input?.value.trim() || '';
-  if (browser?.storage?.local) {
-    await browser.storage.local.set({ [Constants.STORAGE_STARTING_ADDRESS_KEY]: address });
-  }
-  showToast(Constants.STARTING_ADDRESS_SAVED_TOAST, { type: 'success' });
 }
 
 /** Runs fallback geocoding for members still missing coordinates. */
@@ -256,13 +225,12 @@ async function handleOptimize(): Promise<void> {
     const mapboxKey = storedKeys.mapbox || (provider === 'mapbox' ? getPlannerApiKey() : '');
     const geocodeKey =
       provider === 'nominatim' ? '' : getPlannerApiKey() || storedKeys[provider] || '';
-    const startInput = document.getElementById(Dom.STARTING_ADDRESS_ID) as HTMLInputElement | null;
     const routes = await optimizeRoutes(
       metric,
       mapboxKey,
       provider,
       geocodeKey,
-      startInput?.value.trim() || '',
+      '',
       getClusterStartAddresses()
     );
     if (!routes) return;
