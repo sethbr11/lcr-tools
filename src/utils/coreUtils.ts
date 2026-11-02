@@ -66,7 +66,14 @@ export function parseLCRDate(dateStr: string | null | undefined): Date | null {
   const trimmed = dateStr.trim();
   if (!trimmed) return null;
 
-  // First attempt native date parsing (supports ISO formats)
+  // Date-only ISO strings (date inputs) must be local dates: new Date('2026-11-01') is UTC
+  // midnight, which is the previous evening in US timezones
+  if (Regex.ISO_DATE_FORMAT.test(trimmed)) {
+    const [year, month, day] = trimmed.split('-').map(Number);
+    return new Date(year, month - 1, day);
+  }
+
+  // Then native date parsing (full ISO timestamps and formats like '1 Nov 2026')
   const nativeParsed = new Date(trimmed);
   if (!isNaN(nativeParsed.getTime())) return nativeParsed;
 

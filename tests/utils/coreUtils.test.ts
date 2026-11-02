@@ -185,4 +185,20 @@ describe('coreUtils', () => {
       expect(elapsed).toBeGreaterThanOrEqual(40);
     });
   });
+
+  describe('parseDate with date-only ISO strings', () => {
+    it('reads YYYY-MM-DD as a local date, matching LCR dates on the same day', () => {
+      // A US timezone shows the bug: UTC midnight is the previous evening locally
+      const originalTz = process.env.TZ;
+      process.env.TZ = 'America/Denver';
+      const fromInput = parseDate('2026-11-01');
+      const fromLcr = parseDate('1 Nov 2026');
+      if (originalTz === undefined) delete process.env.TZ;
+      else process.env.TZ = originalTz;
+      expect(fromInput?.getFullYear()).toBe(2026);
+      expect(fromInput?.getMonth()).toBe(10);
+      expect(fromInput?.getDate()).toBe(1);
+      expect(fromInput?.getTime()).toBe(fromLcr?.getTime());
+    });
+  });
 });
