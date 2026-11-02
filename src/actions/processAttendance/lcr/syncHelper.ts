@@ -173,18 +173,30 @@ export function getMonthNotFoundMessage(targetDate: string): string {
 async function selectDropdownOptionByValue(targetValue: string): Promise<boolean> {
   if (!targetValue) return true;
 
-  const allSelects = Array.from(document.querySelectorAll<HTMLSelectElement>(Dom.SELECT_CONTROL));
-  const matchedSelect = allSelects.find((s) =>
-    Array.from(s.options || []).some((opt) => opt.value === targetValue)
+  // LCR fills dropdown options asynchronously, so wait for one that offers the value
+  let matchedSelect: HTMLSelectElement | undefined;
+  await Utils.waitForCondition(
+    () => {
+      const allSelects = Array.from(
+        document.querySelectorAll<HTMLSelectElement>(Dom.SELECT_CONTROL)
+      );
+      matchedSelect = allSelects.find((s) =>
+        Array.from(s.options || []).some((opt) => opt.value === targetValue)
+      );
+      return !!matchedSelect;
+    },
+    Constants.DROPDOWN_SETTLE_TIMEOUT_MS,
+    Constants.DROPDOWN_SETTLE_POLL_MS
   );
-  if (!matchedSelect) return false;
-  if (matchedSelect.value === targetValue) return true;
+  const select = matchedSelect as HTMLSelectElement | undefined;
+  if (!select) return false;
+  if (select.value === targetValue) return true;
 
-  matchedSelect.value = targetValue;
-  matchedSelect.dispatchEvent(new Event('change', { bubbles: true }));
+  select.value = targetValue;
+  select.dispatchEvent(new Event('change', { bubbles: true }));
 
   return Utils.waitForCondition(
-    () => matchedSelect.value === targetValue,
+    () => select.value === targetValue,
     Constants.DROPDOWN_SETTLE_TIMEOUT_MS,
     Constants.DROPDOWN_SETTLE_POLL_MS
   );
@@ -199,21 +211,25 @@ async function ensureClassSelected(targetClassValue: string): Promise<boolean> {
 async function selectSundayView(targetDate: string): Promise<boolean> {
   const labels = [true, false].map((padDay) => getSundayLabel(targetDate, padDay).toLowerCase());
 
+  // Wide layouts show a button bar; narrow layouts a <select> of YYYY-MM-DD options. Wait for either.
   let targetBtn: HTMLButtonElement | undefined;
+  let hasSundaySelect = false;
   await Utils.waitForCondition(
     () => {
       const buttons = Array.from(
         document.querySelectorAll<HTMLButtonElement>(Dom.SUNDAY_TAB_BUTTONS)
       );
       targetBtn = buttons.find((b) => labels.includes(normalizeButtonLabel(b.textContent)));
-      return !!targetBtn;
+      hasSundaySelect = Array.from(
+        document.querySelectorAll<HTMLSelectElement>(Dom.SELECT_CONTROL)
+      ).some((s) => Array.from(s.options || []).some((opt) => opt.value === targetDate));
+      return !!targetBtn || hasSundaySelect;
     },
     Constants.SUNDAY_BUTTON_TIMEOUT_MS,
     Constants.SUNDAY_BUTTON_POLL_MS
   );
 
-  // Narrow layouts show a <select> of YYYY-MM-DD options instead of the button bar
-  if (!targetBtn) return selectDropdownOptionByValue(targetDate);
+  if (!targetBtn) return hasSundaySelect && selectDropdownOptionByValue(targetDate);
   if (isSundayButtonSelected(targetBtn)) return true;
 
   targetBtn.click();

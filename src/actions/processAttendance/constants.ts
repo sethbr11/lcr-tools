@@ -19,19 +19,19 @@ export const Constants = {
     notPresent: 'M12 3.5a8.5',
   },
   /** Timeout in milliseconds to wait for the ward members roll table to load after date or tab switch. */
-  ATTENDANCE_ROLL_LOAD_TIMEOUT_MS: 3500,
+  ATTENDANCE_ROLL_LOAD_TIMEOUT_MS: 10000,
   /** Polling interval in milliseconds when waiting for the attendance roll table to render. */
   ATTENDANCE_ROLL_POLL_INTERVAL_MS: 150,
   /** Timeout in milliseconds waiting for an attendance tab to report aria-selected true. */
-  TAB_SWITCH_TIMEOUT_MS: 2000,
+  TAB_SWITCH_TIMEOUT_MS: 6000,
   /** Polling interval in milliseconds while waiting for a tab aria-selected state. */
   TAB_SWITCH_POLL_MS: 50,
   /** Timeout in milliseconds waiting for a select dropdown value to settle after change. */
-  DROPDOWN_SETTLE_TIMEOUT_MS: 2000,
+  DROPDOWN_SETTLE_TIMEOUT_MS: 6000,
   /** Polling interval in milliseconds while waiting for a select value to match. */
   DROPDOWN_SETTLE_POLL_MS: 100,
   /** Timeout in milliseconds waiting for the target Sunday button to appear and activate. */
-  SUNDAY_BUTTON_TIMEOUT_MS: 4000,
+  SUNDAY_BUTTON_TIMEOUT_MS: 10000,
   /** Polling interval in milliseconds while waiting for Sunday button presence or selection. */
   SUNDAY_BUTTON_POLL_MS: 150,
   /** Timeout in milliseconds waiting for an attendance button to finish saving and show present. */

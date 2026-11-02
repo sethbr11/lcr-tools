@@ -93,31 +93,45 @@ export async function runProcessAttendance(
       };
     };
 
-    // Step 3: Synchronize LCR state
-    Utils.showLoadingIndicator('Preparing LCR attendance roll...', 'Press ESC to cancel');
-    // prettier-ignore
-    const syncStatus = await Sync.synchronizeAttendancePage({ targetDate, targetClassValue, targetClassText }, logs);
-    if (syncStatus.status === 'aborted' || Utils.isAborted()) {
-      return showAbortCompletion(0, 0, attendees.length);
-    }
-    if (syncStatus.status === 'failed') {
-      Utils.hideLoadingIndicator();
-      Utils.showLcrMaintenanceModal('Process Attendance', syncStatus.message);
-      return { success: false, error: syncStatus.message };
-    }
-    Mark.setAttendanceTarget(targetDate, targetClassText);
-
-    // Step 4: Wait for ward members roll to render
-    // prettier-ignore
-    Utils.showLoadingIndicator('Loading attendance roll...', 'Waiting for ward members (Press ESC to cancel)');
-    const wardMembers = await Roll.waitAndLoadWardMembers();
-    if (Utils.isAborted()) return showAbortCompletion(0, 0, attendees.length);
-
-    if (wardMembers.length === 0) {
-      Utils.hideLoadingIndicator();
+    // Steps 3–4: Synchronize LCR state and load the roll; nothing is written yet, so a slow
+    // page can be retried without re-pasting the roster.
+    let wardMembers: Types.WardMember[] = [];
+    for (;;) {
+      Utils.showLoadingIndicator('Preparing LCR attendance roll...', 'Press ESC to cancel');
       // prettier-ignore
-      Utils.showLcrMaintenanceModal('Process Attendance', 'No ward members could be discovered on the active roll. Table row or member card selectors may have changed.');
-      return { success: false, error: 'LCR setup mismatch - no members found' };
+      const syncStatus = await Sync.synchronizeAttendancePage({ targetDate, targetClassValue, targetClassText }, logs);
+      if (syncStatus.status === 'aborted' || Utils.isAborted()) {
+        return showAbortCompletion(0, 0, attendees.length);
+      }
+
+      let failure = syncStatus.status === 'failed' ? syncStatus.message : null;
+      if (!failure) {
+        Mark.setAttendanceTarget(targetDate, targetClassText);
+        // prettier-ignore
+        Utils.showLoadingIndicator('Loading attendance roll...', 'Waiting for ward members (Press ESC to cancel)');
+        wardMembers = await Roll.waitAndLoadWardMembers();
+        if (Utils.isAborted()) return showAbortCompletion(0, 0, attendees.length);
+        if (wardMembers.length === 0) failure = 'No ward members appeared on the attendance roll.';
+      }
+      if (!failure) break;
+
+      Utils.hideLoadingIndicator();
+      const retry = await Utils.showConfirmationModal({
+        title: "LCR isn't ready yet",
+        message: `${failure} The page may still be loading. Nothing has been marked yet. If this keeps happening, LCR's layout may have changed.`,
+        confirmText: 'Try again',
+        cancelText: 'Cancel',
+      });
+      if (!retry) {
+        Utils.showToast('Process Attendance cancelled. Nothing was marked.', { type: 'warning' });
+        return { success: false, error: failure };
+      }
+      Utils.pushAttendanceLog(logs, {
+        date: targetDate,
+        action: 'NAVIGATE',
+        target: 'Retry',
+        lcrUpdateStatus: `Retrying page setup after: ${failure}`,
+      });
     }
 
     // Step 5: Auto-match attendees against ward roll

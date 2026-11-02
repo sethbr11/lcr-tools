@@ -7,6 +7,21 @@ import {
 } from '@/actions/processAttendance/lcr/visitorsHelper';
 import { Dom } from '@/actions/processAttendance/types';
 
+// LCR waits are long in production; shrink them so "not found" paths fail fast in tests.
+vi.mock('@/actions/processAttendance/constants', async (importOriginal) => {
+  const mod = await importOriginal<typeof import('@/actions/processAttendance/constants')>();
+  return {
+    ...mod,
+    Constants: {
+      ...mod.Constants,
+      ATTENDANCE_ROLL_LOAD_TIMEOUT_MS: 300,
+      TAB_SWITCH_TIMEOUT_MS: 300,
+      DROPDOWN_SETTLE_TIMEOUT_MS: 300,
+      SUNDAY_BUTTON_TIMEOUT_MS: 300,
+    },
+  };
+});
+
 describe('attendanceVisitorHelper - Visitors tab automation', () => {
   beforeEach(() => {
     document.body.innerHTML = `

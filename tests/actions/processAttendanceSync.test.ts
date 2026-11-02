@@ -3,6 +3,21 @@ import { runProcessAttendance } from '@/actions/processAttendance';
 import { synchronizeAttendancePage } from '@/actions/processAttendance/lcr/syncHelper';
 import { Dom, Types } from '@/actions/processAttendance/types';
 
+// LCR waits are long in production; shrink them so "not found" paths fail fast in tests.
+vi.mock('@/actions/processAttendance/constants', async (importOriginal) => {
+  const mod = await importOriginal<typeof import('@/actions/processAttendance/constants')>();
+  return {
+    ...mod,
+    Constants: {
+      ...mod.Constants,
+      ATTENDANCE_ROLL_LOAD_TIMEOUT_MS: 300,
+      TAB_SWITCH_TIMEOUT_MS: 300,
+      DROPDOWN_SETTLE_TIMEOUT_MS: 300,
+      SUNDAY_BUTTON_TIMEOUT_MS: 300,
+    },
+  };
+});
+
 const visitorMocks = vi.hoisted(() => ({ processClassVisitorCounts: vi.fn() }));
 const reviewMocks = vi.hoisted(() => ({ displayUnmatchedReviewModal: vi.fn() }));
 
@@ -152,6 +167,15 @@ describe('processAttendance - LCR page synchronization guards', () => {
 
     const actionPromise = runProcessAttendance();
     pasteRosterAndProcess('2026-09-13\tJohn\tSmith');
+
+    // The failure is offered as a retry prompt; cancel it
+    const findCancel = () =>
+      Array.from(document.querySelectorAll<HTMLButtonElement>('button')).find(
+        (b) => b.textContent?.trim() === 'Cancel'
+      );
+    await vi.waitFor(() => expect(findCancel()).toBeDefined(), { timeout: 3000 });
+    expect(document.body.textContent).toContain('Sunday 13 Sep');
+    findCancel()?.click();
     const result = await actionPromise;
 
     expect(result).toEqual({
@@ -160,9 +184,6 @@ describe('processAttendance - LCR page synchronization guards', () => {
     });
     expect(attendanceClick).not.toHaveBeenCalled();
     expect(document.getElementById('btn-john')?.getAttribute('aria-pressed')).toBe('false');
-    expect(document.querySelector(`#${Dom.MAINTENANCE_MODAL_ID}`)?.textContent).toContain(
-      'Sunday 13 Sep'
-    );
     expect(reviewMocks.displayUnmatchedReviewModal).not.toHaveBeenCalled();
   }, 10000);
 
