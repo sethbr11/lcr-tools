@@ -285,8 +285,8 @@ function createTileLayer(mapboxToken: string): L.TileLayer {
       zoomOffset: Constants.MAP_ZOOM_OFFSET,
     });
   }
-  return L.tileLayer(Constants.CARTO_TILE_URL, {
-    attribution: Constants.CARTO_ATTRIBUTION,
+  return L.tileLayer(Constants.OSM_TILE_URL, {
+    attribution: Constants.OSM_ATTRIBUTION,
     maxZoom: Constants.MAP_MAX_ZOOM,
   });
 }

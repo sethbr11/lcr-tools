@@ -1,4 +1,4 @@
-import { Types } from '../types';
+import { Constants, Types } from '../types';
 
 /** Logical map size in CSS pixels; the canvas is drawn at 2x for print sharpness. */
 const MAP_WIDTH = 800;
@@ -11,6 +11,7 @@ const MIN_ZOOM = 3;
 const MAX_ZOOM = 17;
 const STOP_RADIUS = 11;
 const MAPBOX_ATTRIBUTION = '© Mapbox © OpenStreetMap';
+const OSM_ATTRIBUTION = '© OpenStreetMap contributors';
 /** Mapbox Streets raster tiles at 256px (retina), matching the on-screen map when a key is set. */
 const MAPBOX_STATIC_TILE_URL =
   'https://api.mapbox.com/styles/v1/mapbox/streets-v12/tiles/256/{z}/{x}/{y}@2x?access_token={accessToken}';
@@ -31,7 +32,7 @@ export interface ClusterMapInput {
   drawRoute: boolean;
   /** Cluster color as a CSS hex string. */
   color: string;
-  /** Mapbox token; when set, Mapbox Streets tiles are drawn under the route, else a plain background. */
+  /** Mapbox token; when set, Mapbox Streets tiles are used like the on-screen map, else OpenStreetMap. */
   mapboxToken?: string;
 }
 
@@ -41,8 +42,8 @@ export interface ClusterMapInput {
 
 /**
  * Renders a cluster's map (basemap tiles, route, numbered stops) to a PNG data URL for the PDF.
- * Without a Mapbox key, or for tiles that fail to load, a plain background is left so the stops
- * and route still print.
+ * Uses Mapbox tiles when a key is set, otherwise OpenStreetMap (matching the on-screen map). Tiles
+ * that fail to load leave a plain background, so the stops and route still print.
  *
  * @param input - Stops, optional start and road path, and cluster color.
  * @returns JPEG data URL, or null when canvas drawing is unavailable.
@@ -62,8 +63,7 @@ export async function renderClusterMap(input: ClusterMapInput): Promise<string |
   }
 
   const view = chooseClusterView(input);
-  // CARTO's free basemap now returns "API KEY REQUIRED" tiles, so only Mapbox tiles are drawn
-  if (input.mapboxToken) await drawTiles(ctx, view, input.mapboxToken);
+  await drawTiles(ctx, view, input.mapboxToken);
 
   const toScreen = (point: Types.CoordinatePoint): [number, number] => {
     const [x, y] = projectToWorld(point.lat, point.lng, view.zoom);
@@ -78,7 +78,7 @@ export async function renderClusterMap(input: ClusterMapInput): Promise<string |
   }
   if (input.startPoint) drawStart(ctx, toScreen(input.startPoint));
   input.stops.forEach((stop, index) => drawStop(ctx, toScreen(stop), index + 1, input.color));
-  if (input.mapboxToken) drawAttribution(ctx, MAPBOX_ATTRIBUTION);
+  drawAttribution(ctx, input.mapboxToken ? MAPBOX_ATTRIBUTION : OSM_ATTRIBUTION);
 
   return canvas.toDataURL('image/jpeg', MAP_JPEG_QUALITY);
 }
@@ -167,7 +167,7 @@ export function chooseClusterView(input: ClusterMapInput): {
 async function drawTiles(
   ctx: CanvasRenderingContext2D,
   view: { zoom: number; originX: number; originY: number },
-  mapboxToken: string
+  mapboxToken?: string
 ): Promise<void> {
   const tileCount = 2 ** view.zoom;
   const firstX = Math.floor(view.originX / TILE_SIZE);
@@ -179,7 +179,10 @@ async function drawTiles(
   for (let tx = firstX; tx <= lastX; tx += 1) {
     for (let ty = firstY; ty <= lastY; ty += 1) {
       const wrappedX = ((tx % tileCount) + tileCount) % tileCount;
-      const url = MAPBOX_STATIC_TILE_URL.replace('{accessToken}', encodeURIComponent(mapboxToken))
+      const template = mapboxToken
+        ? MAPBOX_STATIC_TILE_URL.replace('{accessToken}', encodeURIComponent(mapboxToken))
+        : Constants.OSM_TILE_URL;
+      const url = template
         .replace('{z}', String(view.zoom))
         .replace('{x}', String(wrappedX))
         .replace('{y}', String(ty));
