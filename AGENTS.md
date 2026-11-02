@@ -7,7 +7,6 @@ This document serves as the single source of truth for AI agents and developers 
 ## 1. Project Overview & Tech Stack
 
 - **Location**: `extension/` (cross-browser extension workspace).
-- **Legacy Reference**: `chrome/` (retained for reference; do not develop in `chrome/`).
 - **Framework**: **WXT** (`v0.21.x`) with **Vite** bundler for unified cross-browser output (`Chrome MV3`, `Firefox MV2`, `Safari MV2`).
 - **Language**: **TypeScript** (Strict mode with `noImplicitAny`, `strictNullChecks`, `noUnusedLocals`, `noUnusedParameters`).
 - **Test Runner**: **Vitest** with JSDOM and `@testing-library/dom`.
