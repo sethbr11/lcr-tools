@@ -20,8 +20,10 @@ export namespace Types {
   export type VisitorCounts = Partial<Record<VisitorCategory, number>>;
   /** Supported visitor categories. */
   export type VisitorCategory = 'Men' | 'Women' | 'Young Men' | 'Young Women' | 'Children';
+  /** LCR attendance page control that synchronization could not confirm. */
+  export type SyncAttendancePageStep = 'members-tab' | 'month' | 'class' | 'sunday';
   /** Outcome of synchronizing LCR attendance page controls. */
-  export type SyncAttendancePageStatus = 'ok' | 'aborted';
+  export type SyncAttendancePageStatus = SyncAttendancePageSettled | SyncAttendancePageFailed;
   /** Outcome of attempting to mark a ward member present on the roll. */
   export type MarkPresentOutcome = 'marked' | 'already' | 'error';
   /** Stored nickname to canonical ward member name mapping. */
@@ -171,6 +173,22 @@ export namespace Types {
     targetClassText: string | null;
   }
 
+  /** Sync outcome when every control was confirmed (`ok`) or the user pressed Escape (`aborted`). */
+  export interface SyncAttendancePageSettled {
+    /** Discriminant marking a fully confirmed or user-aborted sync. */
+    status: 'ok' | 'aborted';
+  }
+
+  /** Sync outcome when an LCR control could not be confirmed, so nothing may be written. */
+  export interface SyncAttendancePageFailed {
+    /** Discriminant marking a failed sync. */
+    status: 'failed';
+    /** Sync step that could not be confirmed. */
+    step: SyncAttendancePageStep;
+    /** User-readable explanation of the failed step. */
+    message: string;
+  }
+
   /** Result payload returned by attendance processing action execution. */
   export interface ProcessAttendanceResult {
     /** Total attendee records processed. */
@@ -191,6 +209,16 @@ export namespace Types {
     updated: string[];
     /** Error message if applying visitor counts failed. */
     error?: string;
+  }
+
+  /** Visitor category whose LCR input was located before any value is typed. */
+  export interface ResolvedVisitorInput {
+    /** Visitor category being written. */
+    category: VisitorCategory;
+    /** Count to type into the input. */
+    count: number;
+    /** LCR number input for the category on the target Sunday. */
+    input: HTMLInputElement;
   }
 
   /** Setup configuration and parsed attendees returned by initial input prompt. */
@@ -287,6 +315,8 @@ export namespace Types {
     visitorsSaved: number;
     /** Whether the run stopped early because the user pressed Escape. */
     aborted: boolean;
+    /** Error message when the visitor count save to LCR failed. */
+    visitorError?: string;
   }
 
   /** Mounted floating member-search dropdown used by the unmatched review table. */

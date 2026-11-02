@@ -19,6 +19,7 @@ describe('processAttendance - intended matching and roll-load behavior', () => {
         <option value="2026-09" selected>September 2026</option>
       </select>
       <select class="eden-form-part-input__control" id="class-dropdown">
+        <option value="ALL">All Classes and Quorums</option>
         <option value="adult-ss" selected>Adult Sunday School</option>
       </select>
       <div class="eden-button-bar">

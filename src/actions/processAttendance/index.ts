@@ -20,7 +20,7 @@ import * as Completion from './results/completionHelper';
  *   4. Wait for and scan the ward members roll.
  *   5. Auto-match and mark (or simulate) attendees against the ward roll.
  *   6. Present unmatched review modal (queue matches/visitors; Continue).
- *   7. Mark deferred matches alphabetically, then write visitor counts once.
+ *   7. Mark deferred matches alphabetically, then write visitor counts once (failures are reported, not fatal).
  *   8. Present completion modal (View Logs / Finish).
  *
  * @param overrideOptions - Optional pre-configured execution options.
@@ -95,8 +95,13 @@ export async function runProcessAttendance(
     Utils.showLoadingIndicator('Preparing LCR attendance roll...', 'Press ESC to cancel');
     // prettier-ignore
     const syncStatus = await Sync.synchronizeAttendancePage({ targetDate, targetClassValue, targetClassText }, logs);
-    if (syncStatus === 'aborted' || Utils.isAborted()) {
+    if (syncStatus.status === 'aborted' || Utils.isAborted()) {
       return showAbortCompletion(0, 0, attendees.length);
+    }
+    if (syncStatus.status === 'failed') {
+      Utils.hideLoadingIndicator();
+      Utils.showLcrMaintenanceModal('Process Attendance', syncStatus.message);
+      return { success: false, error: syncStatus.message };
     }
 
     // Step 4: Wait for ward members roll to render
@@ -180,6 +185,7 @@ export async function runProcessAttendance(
     alreadyMarked += deferred.alreadyMarked;
 
     let visitorsSaved = 0;
+    let visitorError: string | undefined;
     if (isSimulation) {
       Utils.showLoadingIndicator('Testing visitor input...', 'Enter, save, clear, verify');
       const visitorSim = await Simulate.simulateVisitorEntryAndRestore(targetDate);
@@ -208,14 +214,18 @@ export async function runProcessAttendance(
           review.visitorCounts,
           logs
         );
-        if (!visitorResult.success) {
-          Utils.hideLoadingIndicator();
-          Utils.showToast(visitorResult.error || 'Failed to save visitor counts', {
-            type: 'error',
+        if (visitorResult.success) {
+          visitorsSaved = totalVisitors;
+        } else {
+          visitorError = visitorResult.error || 'Visitor save failed';
+          Utils.pushAttendanceLog(logs, {
+            date: targetDate,
+            action: 'ERROR',
+            target: 'Visitor Counts',
+            level: 'ERROR',
+            lcrUpdateStatus: `Visitor counts were not saved: ${visitorError}`,
           });
-          return { success: false, error: visitorResult.error || 'Visitor save failed' };
         }
-        visitorsSaved = totalVisitors;
       }
     }
 
@@ -231,13 +241,15 @@ export async function runProcessAttendance(
       unmatchedRemaining,
       visitorsSaved,
       aborted: false,
+      visitorError,
     };
 
     // prettier-ignore
     await Completion.displayCompletionModal(completionMetrics, activeClassName, targetDate, logs, isSimulation);
 
     return {
-      success: true,
+      success: !visitorError,
+      error: visitorError,
       data: {
         total: attendees.length,
         marked: newlyMarked,

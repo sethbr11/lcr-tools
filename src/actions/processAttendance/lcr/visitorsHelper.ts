@@ -1,6 +1,6 @@
 import * as Utils from '../utils';
 import { Dom, Constants, Types, Regex } from '../types';
-import { ensureMonthSelected, switchAttendanceTab } from './syncHelper';
+import { ensureMonthSelected, getMonthNotFoundMessage, switchAttendanceTab } from './syncHelper';
 
 /* ==========================================================================
    EXPORTED FUNCTIONS
@@ -43,7 +43,12 @@ export async function processClassVisitorCounts(
   }
 
   // Step 2: Ensure correct month is loaded, then wait for visitor inputs/rows
-  await ensureMonthSelected(targetDate);
+  const monthSelected = await ensureMonthSelected(targetDate);
+  if (!monthSelected) {
+    const error = getMonthNotFoundMessage(targetDate);
+    if (logs) logVisitorError(logs, targetDate, 'Month Dropdown', error);
+    return { success: false, updated: [], error };
+  }
   await Utils.waitForCondition(
     () =>
       document.querySelectorAll(Dom.NUMBER_INPUT).length > 0 ||
@@ -52,35 +57,44 @@ export async function processClassVisitorCounts(
     Constants.DROPDOWN_SETTLE_POLL_MS
   );
 
-  const updated: string[] = [];
-
-  // Step 3: Iterate through categories and populate corresponding LCR inputs
+  // Step 3: Resolve every input before typing so a partial write never reaches LCR
+  const resolved: Types.ResolvedVisitorInput[] = [];
+  const missing: Types.VisitorCategory[] = [];
   for (const [category, count] of Object.entries(counts)) {
     if (typeof count !== 'number' || count < 0) continue;
     const catName = category as Types.VisitorCategory;
-
     const input = findVisitorInput(catName, targetDate);
-    if (input) {
-      setNativeInputValue(input, count);
-      updated.push(`${catName}: ${count}`);
-      if (logs) {
-        Utils.pushAttendanceLog(logs, {
-          date: targetDate,
-          action: 'INPUT',
-          target: `Visitors: ${catName}`,
-          lcrUpdateStatus: `Entered visitor count: ${catName} = ${count}`,
-        });
-      }
-      await Utils.sleep(Constants.VISITOR_INPUT_SETTLE_MS);
-    }
+    if (input) resolved.push({ category: catName, count, input });
+    else if (count > 0) missing.push(catName);
   }
 
-  if (updated.length === 0) {
+  if (resolved.length === 0) {
     Utils.showLcrMaintenanceModal(
       'Process Attendance',
       'No matching visitor inputs found on this page.'
     );
     return { success: false, updated: [], error: 'No matching visitor inputs found on page.' };
+  }
+
+  if (missing.length > 0) {
+    const error = `Visitor inputs not found for: ${missing.join(', ')}`;
+    if (logs) logVisitorError(logs, targetDate, 'Visitor Inputs', error);
+    return { success: false, updated: [], error };
+  }
+
+  const updated: string[] = [];
+  for (const { category: catName, count, input } of resolved) {
+    setNativeInputValue(input, count);
+    updated.push(`${catName}: ${count}`);
+    if (logs) {
+      Utils.pushAttendanceLog(logs, {
+        date: targetDate,
+        action: 'INPUT',
+        target: `Visitors: ${catName}`,
+        lcrUpdateStatus: `Entered visitor count: ${catName} = ${count}`,
+      });
+    }
+    await Utils.sleep(Constants.VISITOR_INPUT_SETTLE_MS);
   }
 
   // Step 4: Settle delay and pre-save verification so React commits state and enables Save
@@ -159,7 +173,7 @@ export function setNativeInputValue(input: HTMLInputElement, value: number | str
  * Discovers and triggers the primary LCR Save button on the Visitors tab, then waits for save completion.
  *
  * @param maxWaitMs - Maximum wait time in milliseconds for finding an enabled save button.
- * @returns True if save button was found, enabled, clicked, and save completed or timed out gracefully.
+ * @returns True if save button was found, enabled, clicked, and the save spinner cleared; false otherwise.
  */
 export async function clickSaveButton(
   maxWaitMs: number = Constants.SAVE_COMPLETE_TIMEOUT_MS
@@ -186,16 +200,11 @@ export async function clickSaveButton(
   const spinnerPresent = !!document.querySelector(Dom.PROGRESS_SPINNER);
   if (!spinnerPresent) return true;
 
-  await Utils.waitForCondition(
-    () => {
-      const spinner = document.querySelector(Dom.PROGRESS_SPINNER);
-      return !spinner;
-    },
+  return Utils.waitForCondition(
+    () => !document.querySelector(Dom.PROGRESS_SPINNER),
     Constants.SAVE_COMPLETE_TIMEOUT_MS,
     Constants.SAVE_COMPLETE_POLL_MS
   );
-
-  return true;
 }
 
 /* ==========================================================================
@@ -247,16 +256,13 @@ function findVisitorInput(
 /** Discovers input in row corresponding to the column date. */
 function findInputInRowByDate(row: HTMLElement, targetDate: string): HTMLInputElement | null {
   const [year, month, day] = targetDate.split('-').map(Number);
-  const dateObj = new Date(year, month - 1, day);
-  const dayPadded = String(day).padStart(2, '0');
-  const monthAbbr = dateObj.toLocaleString('en-US', { month: 'short' });
-  const labelNoPad = `${day} ${monthAbbr}`.toLowerCase();
-  const labelPadded = `${dayPadded} ${monthAbbr}`.toLowerCase();
+  const monthAbbr = new Date(year, month - 1, day).toLocaleString('en-US', { month: 'short' });
+  // Day must not be preceded by a digit so "4 Jan" never matches a "14 Jan" column.
+  const dayLabel = new RegExp(`(^|[^0-9])0?${day}\\s+${monthAbbr}\\b`, 'i');
 
   const cells = Array.from(row.querySelectorAll('td'));
   for (const cell of cells) {
-    const text = (cell.textContent || '').toLowerCase();
-    if (text.includes(labelNoPad) || text.includes(labelPadded)) {
+    if (dayLabel.test(cell.textContent || '')) {
       const input = cell.querySelector<HTMLInputElement>(Dom.NUMBER_INPUT);
       if (input) return input;
     }
@@ -265,6 +271,22 @@ function findInputInRowByDate(row: HTMLElement, targetDate: string): HTMLInputEl
   // Check input inside cell that has name matching date
   const input = row.querySelector<HTMLInputElement>(`input[name$="::${targetDate}"]`);
   return input;
+}
+
+/** Records an ERROR log entry for a visitor save step that could not proceed. */
+function logVisitorError(
+  logs: Types.AttendanceLogEntry[],
+  targetDate: string,
+  target: string,
+  message: string
+): void {
+  Utils.pushAttendanceLog(logs, {
+    date: targetDate,
+    action: 'ERROR',
+    target,
+    level: 'ERROR',
+    lcrUpdateStatus: message,
+  });
 }
 
 /** Maps display category to slug variants used in LCR DOM. */
