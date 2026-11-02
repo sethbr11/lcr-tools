@@ -92,10 +92,13 @@ export function drawRoutes(routes: Types.OptimizedRoute[]): void {
       ? Dom.MARKER_OUTLIER_COLOR
       : colors[((route.cluster % colors.length) + colors.length) % colors.length];
 
-    if (route.points.length > 1) {
-      const latlngs: L.LatLngExpression[] = route.points.map((point) => [point.lat, point.lng]);
-      const line = turf.lineString(route.points.map((point) => [point.lng, point.lat]));
-      route.displayDistance = turf.length(line, { units: 'miles' });
+    const linePoints = route.startPoint ? [route.startPoint, ...route.points] : route.points;
+    if (linePoints.length > 1) {
+      const latlngs: L.LatLngExpression[] = linePoints.map((point) => [point.lat, point.lng]);
+      if (route.displayDistance === undefined) {
+        const line = turf.lineString(linePoints.map((point) => [point.lng, point.lat]));
+        route.displayDistance = turf.length(line, { units: 'miles' });
+      }
 
       L.polyline(latlngs, { color, weight: 3, opacity: 0.8 })
         .bindPopup(

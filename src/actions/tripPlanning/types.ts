@@ -79,15 +79,26 @@ export namespace Types {
     points: TripMapMember[];
     /** Optimizer distance in miles or minutes depending on metric. */
     distance: number;
-    /** Display distance always expressed in miles. */
+    /** Display distance always expressed in miles (road miles for Mapbox routing). */
     displayDistance?: number;
+    /** Trip origin the route departs from; excluded from `points`. */
+    startPoint?: CoordinatePoint;
   }
-  /** Result payload returned by matrix TSP optimization. */
-  export interface MatrixTspResult {
-    /** Route stop points ordered by travel duration. */
-    orderedPoints: TripMapMember[];
-    /** Total travel duration across the route in minutes. */
-    totalDistance: number;
+  /** Square duration and distance matrices returned by the Mapbox Matrix API. */
+  export interface MapboxTravelMatrix {
+    /** Travel durations in seconds between every pair of points. */
+    durations: number[][];
+    /** Travel distances in meters between every pair of points. */
+    distances: number[][];
+  }
+  /** Cost matrix used by the open-path solver plus the raw road metrics, when available. */
+  export interface RoutingMatrices {
+    /** Square cost matrix minimized by the solver (seconds or straight-line miles). */
+    cost: number[][];
+    /** Travel durations in seconds, present for road-network routing. */
+    durationsSec?: number[][];
+    /** Travel distances in meters, present for road-network routing. */
+    distancesMeters?: number[][];
   }
   /** Structured execution log entry recorded during trip planning. */
   export interface TripLogEntry {
@@ -160,6 +171,8 @@ export namespace Types {
     code?: string;
     /** Duration matrix in seconds. */
     durations?: Array<Array<number | null>>;
+    /** Distance matrix in meters. */
+    distances?: Array<Array<number | null>>;
     /** Returned driving routes. */
     routes?: Array<{ duration?: number }>;
   }
@@ -226,8 +239,6 @@ export const Constants = {
   MAPBOX_GEOCODE_URL: 'https://api.mapbox.com/geocoding/v5/mapbox.places',
   /** Mapbox Directions Matrix endpoint prefix without trailing slash. */
   MAPBOX_MATRIX_URL: 'https://api.mapbox.com/directions-matrix/v1/mapbox/driving',
-  /** Mapbox Directions endpoint prefix. */
-  MAPBOX_DIRECTIONS_URL: 'https://api.mapbox.com/directions/v5/mapbox/driving',
   /** Carto Voyager raster tile URL template. */
   CARTO_TILE_URL: 'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png',
   /** Leaflet attribution for Carto Voyager tiles. */
@@ -259,6 +270,18 @@ export const Constants = {
   RATE_LIMIT_BACKOFF_MS: 5000,
   /** Mapbox matrix batch size limit. */
   MAPBOX_MATRIX_BATCH_SIZE: 12,
+  /** Delay in milliseconds before retrying a Mapbox matrix request that returned HTTP 429. */
+  MAPBOX_MATRIX_RETRY_DELAY_MS: 1500,
+  /** Maximum number of retries for a rate-limited Mapbox matrix request. */
+  MAPBOX_MATRIX_MAX_RETRIES: 3,
+  /** Assumed average driving speed in miles per hour when a matrix cell is missing. */
+  FALLBACK_SPEED_MPH: 30,
+  /** Meters per statute mile. */
+  METERS_PER_MILE: 1609.34,
+  /** Maximum 2-opt plus Or-opt improvement passes for an open path. */
+  OPEN_PATH_MAX_PASSES: 50,
+  /** Minimum cost reduction treated as a real path improvement, guarding against float noise. */
+  PATH_IMPROVEMENT_EPSILON: 1e-9,
   /** Maximum by-size clustering adjustment iterations. */
   CLUSTER_SIZE_MAX_ITERATIONS: 30,
   /** Default number of clusters. */
