@@ -40,6 +40,12 @@ export const Constants = {
   MARK_PRESENT_TIMEOUT_MS: 2000,
   /** Polling interval in milliseconds while waiting for attendance button present state. */
   MARK_PRESENT_POLL_MS: 100,
+  /** Pause in milliseconds between attendance clicks in a batch (fast, but paced for LCR). */
+  MARK_CLICK_GAP_MS: 150,
+  /** Maximum milliseconds to wait for a batch of clicks to show present before re-checking. */
+  MARK_VERIFY_SETTLE_MS: 4000,
+  /** Times to re-click members whose attendance did not register before reporting an error. */
+  MARK_RETRY_ROUNDS: 2,
   /** Timeout in milliseconds waiting for visitor save to complete and inputs to re-enable. */
   SAVE_COMPLETE_TIMEOUT_MS: 2000,
   /** Polling interval in milliseconds while waiting for visitor save completion. */

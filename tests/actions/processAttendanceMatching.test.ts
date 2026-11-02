@@ -121,7 +121,8 @@ describe('processAttendance - exact-only auto-matching', () => {
       expect(result.newlyMarked).toBe(1);
       expect(result.unmatchedList).toHaveLength(1);
       expect(result.unmatchedList[0].suggestedMemberName).toBe('Smith, John');
-      expect(logs[1].lcrUpdateStatus).toContain('possible match: Smith, John');
+      const unmatchedLog = logs.find((entry) => entry.action === 'UNMATCHED');
+      expect(unmatchedLog?.lcrUpdateStatus).toContain('possible match: Smith, John');
     });
   });
 

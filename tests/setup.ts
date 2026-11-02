@@ -1,4 +1,24 @@
 import '@testing-library/jest-dom';
+import { vi } from 'vitest';
+
+// Process Attendance waits generously for live LCR and paces its clicks; shrink those timings so
+// tests (including "not found" and retry paths) run fast.
+vi.mock('@/actions/processAttendance/constants', async (importOriginal) => {
+  const mod = await importOriginal<typeof import('@/actions/processAttendance/constants')>();
+  return {
+    ...mod,
+    Constants: {
+      ...mod.Constants,
+      ATTENDANCE_ROLL_LOAD_TIMEOUT_MS: 300,
+      TAB_SWITCH_TIMEOUT_MS: 300,
+      DROPDOWN_SETTLE_TIMEOUT_MS: 300,
+      SUNDAY_BUTTON_TIMEOUT_MS: 300,
+      SUNDAY_RECLICK_MS: 50,
+      MARK_CLICK_GAP_MS: 0,
+      MARK_VERIFY_SETTLE_MS: 300,
+    },
+  };
+});
 
 // Provide Chrome / WebExtension mock environment for Node jsdom testing
 interface MockChrome {

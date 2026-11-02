@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { synchronizeAttendancePage } from '@/actions/processAttendance/lcr/syncHelper';
 import {
   findAttendanceButton,
@@ -6,22 +6,6 @@ import {
   setAttendanceTarget,
 } from '@/actions/processAttendance/lcr/markHelper';
 import { Types } from '@/actions/processAttendance/types';
-
-// LCR waits are long in production; shrink them so "not found" paths fail fast in tests.
-vi.mock('@/actions/processAttendance/constants', async (importOriginal) => {
-  const mod = await importOriginal<typeof import('@/actions/processAttendance/constants')>();
-  return {
-    ...mod,
-    Constants: {
-      ...mod.Constants,
-      ATTENDANCE_ROLL_LOAD_TIMEOUT_MS: 300,
-      TAB_SWITCH_TIMEOUT_MS: 300,
-      DROPDOWN_SETTLE_TIMEOUT_MS: 300,
-      SUNDAY_BUTTON_TIMEOUT_MS: 300,
-      SUNDAY_RECLICK_MS: 50,
-    },
-  };
-});
 
 /*
  * Fixtures mirror the anonymized November 2026 LCR attendance markup: the Sunday button bar marks

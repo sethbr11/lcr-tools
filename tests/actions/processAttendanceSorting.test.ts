@@ -228,14 +228,10 @@ describe('processAttendance - alphabetical sorting and live scrolling', () => {
       rowAdams.scrollIntoView = vi.fn();
       rowSmith.scrollIntoView = vi.fn();
 
-      // Hold the first mark open so Escape can fire mid-run (no arbitrary race on finished work).
-      let releaseMark: (() => void) | undefined;
-      const markGate = new Promise<void>((resolve) => {
-        releaseMark = resolve;
-      });
-      const markSpy = vi.spyOn(MarkHelper, 'markMemberPresent').mockImplementation(async () => {
-        await markGate;
-        return 'marked';
+      // Press Escape as the first click lands, so the abort happens mid-batch.
+      const markSpy = vi.spyOn(MarkHelper, 'clickAttendanceButton').mockImplementation(() => {
+        window.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+        return 'clicked';
       });
 
       const actionPromise = runProcessAttendance();
@@ -262,8 +258,6 @@ describe('processAttendance - alphabetical sorting and live scrolling', () => {
       processBtn.click();
 
       await vi.waitFor(() => expect(markSpy).toHaveBeenCalled());
-      window.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
-      releaseMark?.();
 
       await vi.waitFor(() =>
         expect(document.getElementById(Dom.COMPLETION_OVERLAY_ID)).not.toBeNull()
@@ -279,6 +273,7 @@ describe('processAttendance - alphabetical sorting and live scrolling', () => {
       expect(result.error).toBe('Processing cancelled by user');
       expect(document.getElementById(Dom.REVIEW_OVERLAY_ID)).toBeNull();
       expect(document.getElementById(Dom.COMPLETION_OVERLAY_ID)).toBeNull();
+      expect(markSpy).toHaveBeenCalledTimes(1);
 
       markSpy.mockRestore();
     });
