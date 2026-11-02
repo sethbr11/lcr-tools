@@ -17,6 +17,7 @@ export {
   getUnmatchedVisitorButtonHtml,
   getUnmatchedVisitorSelectHtml,
   getUnmatchedNicknameSuggestHtml,
+  getUnmatchedFuzzySuggestHtml,
   getUnmatchedTableRowHtml,
   getUnmatchedQueuedStatusHtml,
   getMemberDropdownItemHtml,

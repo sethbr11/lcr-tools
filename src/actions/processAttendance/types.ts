@@ -85,6 +85,8 @@ export namespace Types {
     fullName: string;
     /** Date of the meeting (YYYY-MM-DD). */
     date: string;
+    /** Fuzzy roll match offered for one-click confirmation, never auto-marked. */
+    suggestedMemberName?: string;
   }
 
   /** Skipped unmatched attendee retained for undo in the results modal. */
@@ -352,6 +354,8 @@ export const Regex = {
   ...Base.Regex,
   /** Context: Splitting tab delimiter. */
   TAB_DELIMITER: /\t/,
+  /** Context: Stripping punctuation (keeping letters, digits, spaces, commas) from names. */
+  NAME_PUNCTUATION: /[^\p{L}\p{N}\s,]/gu,
   /** Context: Splitting comma delimiter. */
   COMMA_DELIMITER: /,/,
   /** Context: Stripping time suffix from timestamps (e.g. 14:01:02 PM). */

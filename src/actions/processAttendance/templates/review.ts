@@ -161,12 +161,32 @@ export function getUnmatchedNicknameSuggestHtml(idx: number, memberNameEscaped: 
 }
 
 /**
+ * Generates the possible-match suggestion box for an unmatched row (never auto-queued).
+ *
+ * @param idx - Unmatched row index.
+ * @param memberNameEscaped - HTML-escaped suggested ward member name.
+ * @returns HTML string for the fuzzy suggestion controls.
+ */
+export function getUnmatchedFuzzySuggestHtml(idx: number, memberNameEscaped: string): string {
+  return `
+    <div class="lcrx-nickname-suggest-box" id="${Dom.FUZZY_BOX_ID_PREFIX}${idx}" style="display: flex; flex-direction: column; gap: 3px; margin-bottom: 4px;">
+      <div>Possible match: <strong>${memberNameEscaped}</strong></div>
+      <div>
+        <button type="button" class="lcrx-btn lcrx-btn-primary lcrx-btn-sm ${Dom.FUZZY_BTN}" data-idx="${idx}" title="Confirm this match and mark present">
+          Use this match
+        </button>
+      </div>
+    </div>
+  `;
+}
+
+/**
  * Generates a full unmatched attendee table row.
  *
  * @param idx - Unmatched row index.
  * @param date - Meeting date string.
  * @param fullNameEscaped - HTML-escaped attendee full name.
- * @param nicknameBoxHtml - Optional nickname suggestion markup (may be empty).
+ * @param nicknameBoxHtml - Optional nickname or possible-match suggestion markup (may be empty).
  * @param autoBoxDisplay - CSS display value for the autocomplete box.
  * @param visitorActionHtml - Visitor button or select markup.
  * @returns HTML string for the unmatched table row cells.
@@ -222,8 +242,9 @@ export function getUnmatchedQueuedStatusHtml(messageEscaped: string, cellClass: 
  * Generates one floating autocomplete dropdown list item.
  *
  * @param nameEscaped - HTML-escaped ward member full name.
+ * @param memberIndex - Index of the member in the ward roll (distinguishes duplicate names).
  * @returns HTML string for a dropdown list item.
  */
-export function getMemberDropdownItemHtml(nameEscaped: string): string {
-  return `<li class="${Dom.DROPDOWN_ITEM}" data-name="${nameEscaped}">${nameEscaped}</li>`;
+export function getMemberDropdownItemHtml(nameEscaped: string, memberIndex: number): string {
+  return `<li class="${Dom.DROPDOWN_ITEM}" ${Dom.MEMBER_INDEX_ATTR}="${memberIndex}">${nameEscaped}</li>`;
 }

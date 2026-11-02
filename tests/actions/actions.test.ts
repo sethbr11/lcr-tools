@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { parseAttendanceText } from '@/actions/processAttendance/setup/parseHelper';
-import { matchMemberName } from '@/actions/processAttendance/utils';
+import { findExactMemberMatches } from '@/actions/processAttendance/utils';
 import { inferColumnFilterType } from '@/actions/tableFilters/utils';
 import { shuffleArray } from '@/actions/memberFlashcards/utils';
 
@@ -19,11 +19,11 @@ describe('Action Helpers & Logic', () => {
       expect(attendees[1].fullName).toBe('Jane Doe');
     });
 
-    it('should match member name exactly or with fuzzy fallback', () => {
+    it('should match member names exactly and ignore near misses', () => {
       const ward = ['John Smith', 'Jane Doe', 'Michael Johnson'];
-      expect(matchMemberName('John Smith', ward)).toBe('John Smith');
-      expect(matchMemberName('john smith', ward)).toBe('John Smith');
-      expect(matchMemberName('Unknown Person', ward)).toBeNull();
+      expect(findExactMemberMatches('John Smith', ward)).toEqual(['John Smith']);
+      expect(findExactMemberMatches('john smith', ward)).toEqual(['John Smith']);
+      expect(findExactMemberMatches('Unknown Person', ward)).toEqual([]);
     });
   });
 

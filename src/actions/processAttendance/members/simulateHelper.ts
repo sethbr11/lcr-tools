@@ -38,68 +38,73 @@ export async function simulateMemberRollProcessing(
       const fullName = `${attendee.firstName} ${attendee.lastName}`.trim();
       // prettier-ignore
       Utils.showLoadingIndicator(`Simulating ${i + 1} of ${attendees.length} attendees...`, 'Press ESC to cancel simulation');
-      const matchedWardName = Utils.matchMemberName(fullName, wardNames);
+      const exactIndices = Utils.findExactMemberIndices(fullName, wardMembers);
 
-      if (matchedWardName) {
-        const member = wardMembers.find((m) => m.fullName === matchedWardName);
-        if (member) {
-          if (typeof member.row?.scrollIntoView === 'function') {
-            member.row.scrollIntoView({ behavior: 'smooth', block: 'center' });
-            await Utils.sleep(Constants.SIM_VISUAL_PAUSE_MS);
-          }
+      if (exactIndices.length === 1) {
+        const member = wardMembers[exactIndices[0]];
+        if (typeof member.row?.scrollIntoView === 'function') {
+          member.row.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          await Utils.sleep(Constants.SIM_VISUAL_PAUSE_MS);
+        }
 
-          if (Utils.isAborted()) break;
+        if (Utils.isAborted()) break;
 
-          if (member.isPresent) {
-            alreadyMarked++;
-            Utils.pushAttendanceLog(logs, {
-              date: targetDate,
-              action: 'VERIFY',
-              target: member.fullName,
-              firstName: attendee.firstName,
-              lastName: attendee.lastName,
-              lcrUpdateStatus: 'Simulated - Already Present (No Click)',
-            });
-          } else if (!hasTestedToggle) {
-            const toggleSuccess = await testMemberToggle(member);
-            hasTestedToggle = true;
-            newlyMarked++;
-            Utils.pushAttendanceLog(logs, {
-              date: targetDate,
-              action: 'CLICK',
-              target: member.fullName,
-              firstName: attendee.firstName,
-              lastName: attendee.lastName,
-              lcrUpdateStatus: toggleSuccess
-                ? 'Simulated - Toggle Tested ON/OFF (Restored)'
-                : 'Simulated - Toggle Test Error',
-            });
-          } else {
-            newlyMarked++;
-            Utils.pushAttendanceLog(logs, {
-              date: targetDate,
-              action: 'VERIFY',
-              target: member.fullName,
-              firstName: attendee.firstName,
-              lastName: attendee.lastName,
-              lcrUpdateStatus: 'Simulated - Match Confirmed (Did Not Click)',
-            });
-          }
+        if (member.isPresent) {
+          alreadyMarked++;
+          Utils.pushAttendanceLog(logs, {
+            date: targetDate,
+            action: 'VERIFY',
+            target: member.fullName,
+            firstName: attendee.firstName,
+            lastName: attendee.lastName,
+            lcrUpdateStatus: 'Simulated - Already Present (No Click)',
+          });
+        } else if (!hasTestedToggle) {
+          const toggleSuccess = await testMemberToggle(member);
+          hasTestedToggle = true;
+          newlyMarked++;
+          Utils.pushAttendanceLog(logs, {
+            date: targetDate,
+            action: 'CLICK',
+            target: member.fullName,
+            firstName: attendee.firstName,
+            lastName: attendee.lastName,
+            lcrUpdateStatus: toggleSuccess
+              ? 'Simulated - Toggle Tested ON/OFF (Restored)'
+              : 'Simulated - Toggle Test Error',
+          });
+        } else {
+          newlyMarked++;
+          Utils.pushAttendanceLog(logs, {
+            date: targetDate,
+            action: 'VERIFY',
+            target: member.fullName,
+            firstName: attendee.firstName,
+            lastName: attendee.lastName,
+            lcrUpdateStatus: 'Simulated - Match Confirmed (Did Not Click)',
+          });
         }
       } else {
+        const isAmbiguous = exactIndices.length > 1;
+        const suggestion = isAmbiguous ? null : Utils.suggestMemberMatch(fullName, wardNames);
         unmatchedList.push({
           firstName: attendee.firstName,
           lastName: attendee.lastName,
           fullName,
           date: targetDate,
+          suggestedMemberName: suggestion ?? undefined,
         });
+        // prettier-ignore
+        const detail = isAmbiguous
+          ? `Unmatched (Simulated) - Multiple ward members named ${wardMembers[exactIndices[0]].fullName} — choose manually`
+          : `Unmatched (Simulated)${suggestion ? ` - possible match: ${suggestion}` : ''}`;
         Utils.pushAttendanceLog(logs, {
           date: targetDate,
           action: 'UNMATCHED',
           target: fullName,
           firstName: attendee.firstName,
           lastName: attendee.lastName,
-          lcrUpdateStatus: 'Unmatched (Simulated)',
+          lcrUpdateStatus: detail,
         });
       }
     }

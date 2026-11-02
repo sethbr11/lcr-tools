@@ -149,6 +149,8 @@ export const Dom = {
   CALC_VAL: '.lcrx-calc-val',
   /** ID prefix for nickname save checkbox elements in unmatched rows. */
   NICK_BOX_ID_PREFIX: 'lcrx-nick-box-',
+  /** ID prefix for fuzzy-match suggestion boxes in unmatched rows. */
+  FUZZY_BOX_ID_PREFIX: 'lcrx-fuzzy-box-',
   /** ID prefix for auto-match checkbox elements in unmatched rows. */
   AUTO_BOX_ID_PREFIX: 'lcrx-auto-box-',
   /** ID prefix for unmatched attendee table rows. */
@@ -196,6 +198,10 @@ export const Dom = {
   QUEUED_UNDO_BTN: 'lcrx-queued-undo',
   /** CSS class for one-click suggested nickname match button. */
   NICKNAME_BTN: 'lcrx-nickname-btn',
+  /** CSS class for one-click possible (fuzzy) match confirmation button. */
+  FUZZY_BTN: 'lcrx-fuzzy-btn',
+  /** Data attribute carrying a ward member's roll index on dropdown items. */
+  MEMBER_INDEX_ATTR: 'data-member-index',
   /** CSS class for save nickname checkbox wrapper in unmatched row. */
   NICKNAME_OPT: 'lcrx-nickname-opt',
   /** CSS class for save nickname checkbox element. */

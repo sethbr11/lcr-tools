@@ -39,60 +39,65 @@ export async function processMembersAgainstRoll(
     // prettier-ignore
     Utils.showLoadingIndicator(`Processing ${i + 1} of ${attendees.length} attendees...`, `Marking: ${attendee.lastName}, ${attendee.firstName} (Press ESC to cancel)`);
 
-    const matchedWardName = Utils.matchMemberName(fullName, wardNames);
-    if (matchedWardName) {
-      const member = wardMembers.find((m) => m.fullName === matchedWardName);
-      if (member) {
-        const markOutcome = await MarkHelper.markMemberPresent(member);
-        if (Utils.isAborted()) {
-          return { newlyMarked, alreadyMarked, unmatchedList, logs, aborted: true };
-        }
+    const exactIndices = Utils.findExactMemberIndices(fullName, wardMembers);
+    if (exactIndices.length === 1) {
+      const member = wardMembers[exactIndices[0]];
+      const markOutcome = await MarkHelper.markMemberPresent(member);
+      if (Utils.isAborted()) {
+        return { newlyMarked, alreadyMarked, unmatchedList, logs, aborted: true };
+      }
 
-        if (markOutcome === 'marked') {
-          newlyMarked++;
-          Utils.pushAttendanceLog(logs, {
-            date: targetDate,
-            action: 'CLICK',
-            target: member.fullName,
-            firstName: attendee.firstName,
-            lastName: attendee.lastName,
-            lcrUpdateStatus: `Clicked attendance checkbox for ${member.fullName} (Newly Marked Present)`,
-          });
-        } else if (markOutcome === 'already') {
-          alreadyMarked++;
-          Utils.pushAttendanceLog(logs, {
-            date: targetDate,
-            action: 'VERIFY',
-            target: member.fullName,
-            firstName: attendee.firstName,
-            lastName: attendee.lastName,
-            lcrUpdateStatus: `Verified already marked present for ${member.fullName} (No click needed)`,
-          });
-        } else {
-          Utils.pushAttendanceLog(logs, {
-            date: targetDate,
-            action: 'ERROR',
-            target: member.fullName,
-            firstName: attendee.firstName,
-            lastName: attendee.lastName,
-            lcrUpdateStatus: `Error clicking attendance checkbox for ${member.fullName}`,
-          });
-        }
+      if (markOutcome === 'marked') {
+        newlyMarked++;
+        Utils.pushAttendanceLog(logs, {
+          date: targetDate,
+          action: 'CLICK',
+          target: member.fullName,
+          firstName: attendee.firstName,
+          lastName: attendee.lastName,
+          lcrUpdateStatus: `Clicked attendance checkbox for ${member.fullName} (Newly Marked Present)`,
+        });
+      } else if (markOutcome === 'already') {
+        alreadyMarked++;
+        Utils.pushAttendanceLog(logs, {
+          date: targetDate,
+          action: 'VERIFY',
+          target: member.fullName,
+          firstName: attendee.firstName,
+          lastName: attendee.lastName,
+          lcrUpdateStatus: `Verified already marked present for ${member.fullName} (No click needed)`,
+        });
+      } else {
+        Utils.pushAttendanceLog(logs, {
+          date: targetDate,
+          action: 'ERROR',
+          target: member.fullName,
+          firstName: attendee.firstName,
+          lastName: attendee.lastName,
+          lcrUpdateStatus: `Error clicking attendance checkbox for ${member.fullName}`,
+        });
       }
     } else {
+      const isAmbiguous = exactIndices.length > 1;
+      const suggestion = isAmbiguous ? null : Utils.suggestMemberMatch(fullName, wardNames);
       unmatchedList.push({
         firstName: attendee.firstName,
         lastName: attendee.lastName,
         fullName,
         date: targetDate,
+        suggestedMemberName: suggestion ?? undefined,
       });
+      // prettier-ignore
+      const detail = isAmbiguous
+        ? `Multiple ward members named ${wardMembers[exactIndices[0]].fullName} — choose manually`
+        : `Attendee not found on roll: ${fullName}${suggestion ? ` (possible match: ${suggestion})` : ''}`;
       Utils.pushAttendanceLog(logs, {
         date: targetDate,
         action: 'UNMATCHED',
         target: fullName,
         firstName: attendee.firstName,
         lastName: attendee.lastName,
-        lcrUpdateStatus: `Attendee not found on roll: ${fullName}`,
+        lcrUpdateStatus: detail,
       });
     }
   }
