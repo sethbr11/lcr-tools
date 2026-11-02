@@ -58,10 +58,7 @@ export async function executeAction(
   }
 
   try {
-    await browser.scripting.executeScript({
-      target: { tabId: targetTabId },
-      files: [scriptFile],
-    });
+    await injectScriptFile(targetTabId, scriptFile);
     window.close();
   } catch (error) {
     const isInternalPage =
@@ -147,11 +144,8 @@ export function setupDevDomAnonymizer(tabId?: number): void {
 
   btn.addEventListener('click', async () => {
     try {
-      await browser.scripting.executeScript({
-        target: { tabId },
-        // Dev-only entrypoint: production builds drop it, so it's absent from generated path types.
-        files: ['/dev-dom-anonymizer.js' as ScriptPublicPath],
-      });
+      // Dev-only entrypoint: production builds drop it, so it's absent from generated path types.
+      await injectScriptFile(tabId, '/dev-dom-anonymizer.js' as ScriptPublicPath);
       showStatusMessage('Anonymized DOM copied to clipboard!', false);
     } catch (err) {
       showStatusMessage(`Failed to copy DOM: ${String(err)}`, true);
@@ -179,14 +173,33 @@ export function setupDevAttendanceSimulation(tabId?: number): void {
         await browser.storage.local.set({
           [Constants.DEV_SIMULATE_ATTENDANCE_KEY]: true,
         });
-        await browser.scripting.executeScript({
-          target: { tabId },
-          files: ['/action-process-attendance.js'],
-        });
+        await injectScriptFile(tabId, '/action-process-attendance.js');
         window.close();
       } catch (err) {
         showStatusMessage(`Failed to run simulation: ${String(err)}`, true);
       }
     });
   }
+}
+
+/* ==========================================================================
+   HELPER FUNCTIONS
+   ========================================================================== */
+
+/**
+ * Injects one bundled script file into a tab.
+ * Uses the scripting API where available (Chrome MV3, Firefox) and falls back to the MV2
+ * tabs.executeScript API, which Safari's MV2 build may need.
+ */
+async function injectScriptFile(tabId: number, file: ScriptPublicPath): Promise<void> {
+  if (browser.scripting?.executeScript) {
+    await browser.scripting.executeScript({ target: { tabId }, files: [file] });
+    return;
+  }
+  const legacyTabs = browser.tabs as unknown as {
+    executeScript?: (tabId: number, details: { file: string }) => Promise<unknown>;
+  };
+  if (!legacyTabs.executeScript)
+    throw new Error('Script injection is not supported in this browser.');
+  await legacyTabs.executeScript(tabId, { file });
 }
