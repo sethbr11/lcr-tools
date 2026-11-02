@@ -101,7 +101,7 @@ export function clickAttendanceButton(
   if (isButtonBusy(btn)) return 'busy';
 
   if (typeof member.row.scrollIntoView === 'function') {
-    member.row.scrollIntoView({ behavior: 'auto', block: 'center' });
+    member.row.scrollIntoView({ behavior: 'smooth', block: 'center' });
   }
   btn.click();
   return 'clicked';
