@@ -6,6 +6,7 @@ import { Constants, Dom, Types } from '@/actions/tripPlanning/types';
 import { showTripPinModal } from '@/actions/tripPlanning/ui/pinModalHelper';
 import { clusterAddresses } from '@/actions/tripPlanning/routing/clusteringHelper';
 import { exportTripCsv } from '@/actions/tripPlanning/export/exportHelper';
+import { exportTripPdf } from '@/actions/tripPlanning/export/pdfExportHelper';
 import { displayFailedGeocodes } from '@/actions/tripPlanning/ui/failureFixerHelper';
 import { geocodePendingRecords } from '@/actions/tripPlanning/geocoding/geocodingHelper';
 import { showTripLogsModal } from '@/actions/tripPlanning/ui/logsModalHelper';
@@ -113,6 +114,9 @@ function bindPlannerActions(): void {
   document.getElementById(Dom.EXPORT_CSV_BTN_ID)?.addEventListener('click', () => {
     void exportTripCsv();
   });
+  document.getElementById(Dom.EXPORT_PDF_BTN_ID)?.addEventListener('click', () => {
+    void exportTripPdf(storedKeys.mapbox || '');
+  });
   document.getElementById(Dom.VIEW_LOGS_BTN_ID)?.addEventListener('click', () => {
     showTripLogsModal();
   });
@@ -207,6 +211,7 @@ function handleCluster(): void {
   drawMarkers(clustered, true);
   updateClusterList(clustered);
   setButtonEnabled(Dom.OPTIMIZE_BTN_ID, clustered.length > 0);
+  setButtonEnabled(Dom.EXPORT_PDF_BTN_ID, clustered.length > 0);
   const optimizeBtn = document.getElementById(Dom.OPTIMIZE_BTN_ID);
   if (optimizeBtn) optimizeBtn.title = '';
 }

@@ -1,10 +1,23 @@
+import { fileURLToPath } from 'node:url';
 import { defineConfig } from 'wxt';
+
+const OPTIONAL_DEPENDENCY_STUB = fileURLToPath(
+  new URL('./src/vendor/optionalDependencyStub.ts', import.meta.url)
+);
 
 export default defineConfig({
   srcDir: 'src',
   outDir: 'output',
   publicDir: 'src/public',
   vite: () => ({
+    resolve: {
+      // jsPDF lazy-loads these only for doc.html()/SVG, which we never call
+      alias: {
+        html2canvas: OPTIONAL_DEPENDENCY_STUB,
+        dompurify: OPTIONAL_DEPENDENCY_STUB,
+        canvg: OPTIONAL_DEPENDENCY_STUB,
+      },
+    },
     plugins: [
       {
         name: 'amo-sanitize-leaflet',
@@ -51,6 +64,20 @@ function __amoSanitize(el, h) {
               );
 
           return { code: sanitized, map: null };
+        },
+      },
+      {
+        name: 'amo-sanitize-jspdf',
+        transform(code, id) {
+          if (!id.includes('jspdf')) return null;
+          // jsPDF's (unused) HTML plugin builds elements via innerHTML; parse instead
+          return {
+            code: code.replace(
+              /(\w+)\.innerHTML=(\w+)\.dompurify\.sanitize\(\2\.innerHTML\)/g,
+              '$1.replaceChildren(...new DOMParser().parseFromString($2.dompurify.sanitize($2.innerHTML),"text/html").body.childNodes)'
+            ),
+            map: null,
+          };
         },
       },
     ],

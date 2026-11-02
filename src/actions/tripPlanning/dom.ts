@@ -56,6 +56,10 @@ export const Dom = {
   METRIC_MAPBOX_AUTOFILL_BTN_ID: 'metricMapboxAutofillBtn',
   /** Download CSV button ID. */
   EXPORT_CSV_BTN_ID: 'exportCsvBtn',
+  /** Header button that starts the per-group PDF export. */
+  EXPORT_PDF_BTN_ID: 'exportPdfBtn',
+  /** Overlay id of the PDF column chooser modal. */
+  PDF_FIELDS_MODAL_ID: 'tripPdfFieldsModal',
   /** Execution log preformatted element ID. */
   STATUS_ID: 'status',
   /** Execution log header ID. */

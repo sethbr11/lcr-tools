@@ -61,8 +61,8 @@ export function buildTripCsv(): string {
    HELPER FUNCTIONS
    ========================================================================== */
 
-/** Resolves original LCR headers, falling back to Name/Address. */
-function resolveBaseHeaders(state: Types.TripPlannerState): string[] {
+/** Resolves original LCR headers, falling back to Name/Address. Shared with the PDF export. */
+export function resolveBaseHeaders(state: Types.TripPlannerState): string[] {
   if (state.originalHeaders.length > 0) return [...state.originalHeaders];
   const sources: Array<Array<{ columns?: Record<string, string> }>> = [
     state.records,
@@ -148,8 +148,8 @@ function rowFromMember(
   ];
 }
 
-/** Copies original LCR column values onto a dictionary keyed by header. */
-function buildBaseRow(
+/** Copies original LCR column values onto a dictionary keyed by header. Shared with the PDF export. */
+export function buildBaseRow(
   record: Types.TripPlanningMember,
   baseHeaders: string[]
 ): Record<string, string> {

@@ -329,6 +329,8 @@ export const Constants = {
   LOADING_SUBHEADER: 'Extracting member records and checking Church Directory coordinates...',
   /** Storage key for the last starting address saved on a group, offered when editing another. */
   STORAGE_STARTING_ADDRESS_KEY: 'trip_planner_starting_address',
+  /** Storage key for the columns last chosen for the PDF export. */
+  STORAGE_PDF_FIELDS_KEY: 'trip_planner_pdf_fields',
   /** Execution log download filename. */
   LOG_FILENAME: 'trip_planner_execution_log.txt',
   /** Title text shown in the execution logs modal header. */
