@@ -245,11 +245,6 @@ export const Constants = {
   MAPBOX_DIRECTIONS_URL: 'https://api.mapbox.com/directions/v5/mapbox/driving',
   /** Maximum waypoints Mapbox Directions accepts in one request. */
   MAPBOX_DIRECTIONS_MAX_WAYPOINTS: 25,
-  /** OpenStreetMap standard tiles, used when no Mapbox key is saved (CARTO now requires a key). */
-  OSM_TILE_URL: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
-  /** Attribution required by the OpenStreetMap tile usage policy. */
-  OSM_ATTRIBUTION:
-    '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
   /** Mapbox Streets raster tile URL template. */
   MAPBOX_TILE_URL:
     'https://api.mapbox.com/styles/v1/mapbox/streets-v12/tiles/{z}/{x}/{y}?access_token={accessToken}',

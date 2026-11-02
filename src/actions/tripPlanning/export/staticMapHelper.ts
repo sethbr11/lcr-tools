@@ -1,4 +1,5 @@
-import { Constants, Types } from '../types';
+import { Types } from '../types';
+import { chooseKeylessBasemap, fillTileUrl } from '../ui/basemapHelper';
 
 /** Logical map size in CSS pixels; the canvas is drawn at 2x for print sharpness. */
 const MAP_WIDTH = 800;
@@ -11,7 +12,6 @@ const MIN_ZOOM = 3;
 const MAX_ZOOM = 17;
 const STOP_RADIUS = 11;
 const MAPBOX_ATTRIBUTION = '© Mapbox © OpenStreetMap';
-const OSM_ATTRIBUTION = '© OpenStreetMap contributors';
 /** Mapbox Streets raster tiles at 256px (retina), matching the on-screen map when a key is set. */
 const MAPBOX_STATIC_TILE_URL =
   'https://api.mapbox.com/styles/v1/mapbox/streets-v12/tiles/256/{z}/{x}/{y}@2x?access_token={accessToken}';
@@ -32,7 +32,7 @@ export interface ClusterMapInput {
   drawRoute: boolean;
   /** Cluster color as a CSS hex string. */
   color: string;
-  /** Mapbox token; when set, Mapbox Streets tiles are used like the on-screen map, else OpenStreetMap. */
+  /** Mapbox token; when set, Mapbox Streets tiles are used like the on-screen map, else USGS/Esri. */
   mapboxToken?: string;
 }
 
@@ -42,7 +42,7 @@ export interface ClusterMapInput {
 
 /**
  * Renders a cluster's map (basemap tiles, route, numbered stops) to a PNG data URL for the PDF.
- * Uses Mapbox tiles when a key is set, otherwise OpenStreetMap (matching the on-screen map). Tiles
+ * Uses Mapbox tiles when a key is set, otherwise USGS (US) or Esri (matching the on-screen map). Tiles
  * that fail to load leave a plain background, so the stops and route still print.
  *
  * @param input - Stops, optional start and road path, and cluster color.
@@ -63,7 +63,26 @@ export async function renderClusterMap(input: ClusterMapInput): Promise<string |
   }
 
   const view = chooseClusterView(input);
-  await drawTiles(ctx, view, input.mapboxToken);
+  // Mapbox when a key is saved; otherwise USGS (US) or Esri, since OSM blocks extensions
+  const keyless = chooseKeylessBasemap([
+    ...input.stops,
+    ...(input.startPoint ? [input.startPoint] : []),
+  ]);
+  const source = input.mapboxToken
+    ? {
+        template: MAPBOX_STATIC_TILE_URL.replace(
+          '{accessToken}',
+          encodeURIComponent(input.mapboxToken)
+        ),
+        maxNativeZoom: MAX_ZOOM,
+        attribution: MAPBOX_ATTRIBUTION,
+      }
+    : {
+        template: keyless.tileUrl,
+        maxNativeZoom: keyless.maxNativeZoom,
+        attribution: keyless.attributionText,
+      };
+  await drawTiles(ctx, view, source);
 
   const toScreen = (point: Types.CoordinatePoint): [number, number] => {
     const [x, y] = projectToWorld(point.lat, point.lng, view.zoom);
@@ -78,7 +97,7 @@ export async function renderClusterMap(input: ClusterMapInput): Promise<string |
   }
   if (input.startPoint) drawStart(ctx, toScreen(input.startPoint));
   input.stops.forEach((stop, index) => drawStop(ctx, toScreen(stop), index + 1, input.color));
-  drawAttribution(ctx, input.mapboxToken ? MAPBOX_ATTRIBUTION : OSM_ATTRIBUTION);
+  drawAttribution(ctx, source.attribution);
 
   return canvas.toDataURL('image/jpeg', MAP_JPEG_QUALITY);
 }
@@ -163,35 +182,34 @@ export function chooseClusterView(input: ClusterMapInput): {
    HELPER FUNCTIONS
    ========================================================================== */
 
-/** Fetches and draws every basemap tile covering the view; failed tiles are skipped. */
+/**
+ * Fetches and draws every basemap tile covering the view; failed tiles are skipped.
+ * When the view zooms past the provider's deepest tiles, those tiles are drawn scaled up.
+ */
 async function drawTiles(
   ctx: CanvasRenderingContext2D,
   view: { zoom: number; originX: number; originY: number },
-  mapboxToken?: string
+  source: { template: string; maxNativeZoom: number }
 ): Promise<void> {
-  const tileCount = 2 ** view.zoom;
-  const firstX = Math.floor(view.originX / TILE_SIZE);
-  const lastX = Math.floor((view.originX + MAP_WIDTH) / TILE_SIZE);
-  const firstY = Math.max(0, Math.floor(view.originY / TILE_SIZE));
-  const lastY = Math.min(tileCount - 1, Math.floor((view.originY + MAP_HEIGHT) / TILE_SIZE));
+  const tileZoom = Math.min(view.zoom, source.maxNativeZoom);
+  const drawSize = TILE_SIZE * 2 ** (view.zoom - tileZoom);
+  const tileCount = 2 ** tileZoom;
+  const firstX = Math.floor(view.originX / drawSize);
+  const lastX = Math.floor((view.originX + MAP_WIDTH) / drawSize);
+  const firstY = Math.max(0, Math.floor(view.originY / drawSize));
+  const lastY = Math.min(tileCount - 1, Math.floor((view.originY + MAP_HEIGHT) / drawSize));
 
   const jobs: Promise<void>[] = [];
   for (let tx = firstX; tx <= lastX; tx += 1) {
     for (let ty = firstY; ty <= lastY; ty += 1) {
       const wrappedX = ((tx % tileCount) + tileCount) % tileCount;
-      const template = mapboxToken
-        ? MAPBOX_STATIC_TILE_URL.replace('{accessToken}', encodeURIComponent(mapboxToken))
-        : Constants.OSM_TILE_URL;
-      const url = template
-        .replace('{z}', String(view.zoom))
-        .replace('{x}', String(wrappedX))
-        .replace('{y}', String(ty));
+      const url = fillTileUrl(source.template, tileZoom, wrappedX, ty);
       jobs.push(
         loadTile(url).then((image) => {
           if (!image) return;
-          const dx = tx * TILE_SIZE - view.originX;
-          const dy = ty * TILE_SIZE - view.originY;
-          ctx.drawImage(image, dx, dy, TILE_SIZE, TILE_SIZE);
+          const dx = tx * drawSize - view.originX;
+          const dy = ty * drawSize - view.originY;
+          ctx.drawImage(image, dx, dy, drawSize, drawSize);
         })
       );
     }

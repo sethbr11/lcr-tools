@@ -58,6 +58,8 @@ export async function initTripPlanner(): Promise<void> {
   bindPlannerActions();
   await updateProviderControls(storedKeys);
   await loadStoredMembers();
+  // Pick the keyless basemap (USGS or Esri) now that member locations are known
+  if (!storedKeys.mapbox) refreshTripBasemap('');
 }
 
 /* ==========================================================================
@@ -178,6 +180,7 @@ async function handleGeocode(): Promise<void> {
   await geocodePendingRecords(provider, apiKey, (percent) => setGeocodeProgress(percent, true));
 
   const { geocoded, failedGeocodes } = getTripState();
+  if (!storedKeys.mapbox) refreshTripBasemap('');
   drawMarkers(geocoded, false);
   displayFailedGeocodes(provider, getPlannerApiKey);
   setButtonEnabled(Dom.CLUSTER_BTN_ID, geocoded.length > 0);

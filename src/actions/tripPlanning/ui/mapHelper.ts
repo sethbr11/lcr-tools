@@ -2,7 +2,8 @@ import L from 'leaflet';
 import * as turf from '@turf/turf';
 import { escapeHtml, setHtml } from '../utils';
 import { Constants, Dom, Types } from '../types';
-import { getClusterColors } from './stateHelper';
+import { getClusterColors, getTripState } from './stateHelper';
+import { chooseKeylessBasemap } from './basemapHelper';
 import { renderClusterStartControl } from './clusterStartHelper';
 
 let map: L.Map | null = null;
@@ -15,7 +16,7 @@ let tileLayer: L.TileLayer | null = null;
    ========================================================================== */
 
 /**
- * Creates the Leaflet map using Carto Voyager tiles, or Mapbox Streets when a token is supplied.
+ * Creates the Leaflet map using Mapbox Streets when a token is supplied, otherwise USGS or Esri tiles.
  *
  * @param mapboxToken - Optional Mapbox token used only for the Streets raster layer.
  */
@@ -33,7 +34,7 @@ export function initTripMap(mapboxToken = ''): void {
 }
 
 /**
- * Replaces the basemap when a Mapbox token becomes available after init.
+ * Replaces the basemap, e.g. when a Mapbox token becomes available or members finish loading.
  *
  * @param mapboxToken - Optional Mapbox token.
  */
@@ -285,10 +286,22 @@ function createTileLayer(mapboxToken: string): L.TileLayer {
       zoomOffset: Constants.MAP_ZOOM_OFFSET,
     });
   }
-  return L.tileLayer(Constants.OSM_TILE_URL, {
-    attribution: Constants.OSM_ATTRIBUTION,
+  // OpenStreetMap blocks extensions and CARTO needs a key: use USGS (US) or Esri (elsewhere)
+  const { geocoded, records } = getTripState();
+  const located = geocoded.length > 0 ? geocoded : records.filter(hasCoordinates);
+  const basemap = chooseKeylessBasemap(located);
+  return L.tileLayer(basemap.tileUrl, {
+    attribution: basemap.attributionHtml,
     maxZoom: Constants.MAP_MAX_ZOOM,
+    maxNativeZoom: basemap.maxNativeZoom,
   });
+}
+
+/** True when a stored record already has numeric coordinates. */
+function hasCoordinates(
+  record: Types.TripPlanningMember
+): record is Types.TripPlanningMember & Types.CoordinatePoint {
+  return typeof record.lat === 'number' && typeof record.lng === 'number';
 }
 
 /** Fits map bounds to contain every plotted coordinate. */
