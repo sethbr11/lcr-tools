@@ -150,8 +150,13 @@ function resolveUniqueFilename(name: string, used: Set<string>): string {
   return `${base}_${counter}${ext}`;
 }
 
-/** Strips branding, sanitizes, and snake_cases text for use in a filename. */
-function normalizeFilenamePart(text: string): string {
+/**
+ * Strips branding, sanitizes, and snake_cases text for use in a filename (no slashes or symbols).
+ *
+ * @param text - Raw text such as a page or table title.
+ * @returns Lowercase filename-safe text, possibly empty.
+ */
+export function normalizeFilenamePart(text: string): string {
   return text
     .replace(Regex.CHURCH_LCR_TITLE, '')
     .replace(Regex.LCR_ACRONYM, '')

@@ -1,9 +1,9 @@
 import Papa from 'papaparse';
 // prettier-ignore
 import { autoScrollToLoadContent, confirmDataStewardshipDownload, downloadCsv, downloadCsvZip,
-  formatCSVCell, generateFilename, goToNextPage, hideLoadingIndicator, isAborted, isLastPage,
+  formatCSVCell, generateFilename, getFirstRowText, goToNextPage, hideLoadingIndicator, isAborted, isLastPage,
   navigateToFirstPage, scrollToTop, setHtml, showLoadingIndicator, showToast, tableToCSV,
-  Templates } from './utils';
+  Templates, waitForTableRowsToChange } from './utils';
 import { Constants, Dom, Regex, Types } from './types';
 
 /* ==========================================================================
@@ -31,7 +31,7 @@ export async function extractPaginatedTableData(table: Types.TableInfo): Promise
   if (isAborted()) return combinedCsvRows;
 
   // Step A: Rewind to first page
-  if (table.needs.includes('pagination')) await navigateToFirstPage();
+  if (table.needs.includes('pagination')) await navigateToFirstPage(undefined, table.table);
 
   // Step B: Loop across pages
   let hasMore = true;
@@ -58,12 +58,28 @@ export async function extractPaginatedTableData(table: Types.TableInfo): Promise
 
     pageCount++;
 
-    // Handle pagination
+    // Handle pagination, reading the next page only once its rows have actually rendered
     if (table.needs.includes('pagination') && !isLastPage()) {
-      hasMore = await goToNextPage();
+      const firstRowBefore = getFirstRowText(table.table);
+      hasMore =
+        (await goToNextPage()) && (await waitForTableRowsToChange(table.table, firstRowBefore));
+      if (!hasMore && !isLastPage()) {
+        showToast(
+          `${table.name}: the next page didn't load, so the export stops at page ${pageCount}.`,
+          {
+            type: 'warning',
+          }
+        );
+      }
     } else {
       hasMore = false;
     }
+  }
+
+  if (hasMore && pageCount >= maxPages) {
+    showToast(`${table.name}: stopped after ${maxPages} pages; later pages are not included.`, {
+      type: 'warning',
+    });
   }
 
   return combinedCsvRows;
