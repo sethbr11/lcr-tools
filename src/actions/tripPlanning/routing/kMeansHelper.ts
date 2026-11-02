@@ -368,8 +368,8 @@ function assignWithCapacity(
   return assignments;
 }
 
-/** Moves points from larger-than-min clusters into undersized clusters, cheapest move first. */
-function repairMinimumSizes(
+/** Moves points from larger-than-min clusters into undersized clusters, cheapest move first. @internal */
+export function repairMinimumSizes(
   xy: [number, number][],
   assignments: number[],
   centroids: [number, number][],

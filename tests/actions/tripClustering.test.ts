@@ -229,3 +229,64 @@ describe('tripClusteringHelper clusterAddresses', () => {
     expect(new Set(clusterMembers().map((m) => m.cluster)).size).toBe(25);
   });
 });
+
+describe('tripClusteringHelper group count with a minimum size, and caps', () => {
+  beforeEach(() => {
+    resetTripState();
+  });
+
+  const clusterSizes = (): number[] => sizesOf(clusterMembers().map((m) => m.cluster ?? -1));
+
+  it('gives every group at least the minimum when clustering by count', () => {
+    // One big blob of 18 and a far-away pair: plain k-means would leave a group of 2
+    const big = scatter(18, 40, -111, 0.05);
+    const far = [member('F1', 41, -112), member('F2', 41.001, -112)];
+    setTripState({ geocoded: [...big, ...far] });
+
+    clusterAddresses('byCount', 2, 5, 10, 6);
+
+    const sizes = clusterSizes();
+    expect(sizes).toHaveLength(2);
+    expect(Math.min(...sizes)).toBeGreaterThanOrEqual(6);
+  });
+
+  it('lowers an impossible minimum to what the number of people allows', () => {
+    setTripState({ geocoded: scatter(10, 40, -111, 0.2) });
+
+    clusterAddresses('byCount', 3, 5, 10, 8);
+
+    const sizes = clusterSizes();
+    expect(sizes).toHaveLength(3);
+    expect(Math.min(...sizes)).toBeGreaterThanOrEqual(3);
+    expect(getTripLogs().some((l) => l.message.includes('using 3'))).toBe(true);
+  });
+
+  it('caps group count and by-size limits at the number of people', () => {
+    setTripState({ geocoded: scatter(5, 40, -111, 0.2) });
+
+    clusterAddresses('byCount', 40, 1, 1);
+    expect(clusterSizes()).toHaveLength(5);
+
+    clusterAddresses('bySize', 0, 50, 99);
+    expect(clusterSizes()).toEqual([5]);
+    expect(getTripLogs().some((l) => l.message.includes('adjusted to 5-5'))).toBe(true);
+  });
+
+  it('caps the clustering inputs at the number of geocoded people', async () => {
+    const { updateTripStats } = await import('@/actions/tripPlanning/ui/stateHelper');
+    document.body.innerHTML = `
+      <input id="clusterCount" value="40" />
+      <input id="countMinSize" value="1" />
+      <input id="minClusterSize" value="5" />
+      <input id="maxClusterSize" value="50" />`;
+    setTripState({ geocoded: scatter(29, 40, -111, 0.2) });
+
+    updateTripStats();
+
+    const input = (id: string) => document.getElementById(id) as HTMLInputElement;
+    expect(input('clusterCount').max).toBe('29');
+    expect(input('clusterCount').value).toBe('29');
+    expect(input('maxClusterSize').value).toBe('29');
+    expect(input('minClusterSize').value).toBe('5');
+  });
+});
