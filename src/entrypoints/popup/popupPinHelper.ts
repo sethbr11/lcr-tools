@@ -10,6 +10,7 @@ import {
   validatePinFormat,
   verifyPin,
 } from '@/utils/security/cryptoUtils';
+import { showConfirmationModal } from '@/utils/ui/uiUtils';
 import { migrateApiKeysToEncryption } from '@/utils/security/apiKeyStorageUtils';
 import { migrateNicknamesToEncryption } from '@/utils/security/storageUtils';
 import { showStatusMessage } from './popupActionHelper';
@@ -189,8 +190,14 @@ async function handlePinSubmit(switchView: (target: Types.PopupView) => void): P
 
 /** Confirms with user and wipes all encrypted credentials and security PIN. */
 async function handlePinReset(switchView: (target: Types.PopupView) => void): Promise<void> {
-  // eslint-disable-next-line no-alert
-  const confirmed = window.confirm(Constants.PIN_RESET_CONFIRM);
+  // window.confirm() is not shown inside Firefox/Safari extension popups, so use an in-page dialog
+  const confirmed = await showConfirmationModal({
+    title: 'Reset PIN?',
+    message: Constants.PIN_RESET_CONFIRM,
+    confirmText: 'Reset PIN',
+    cancelText: 'Cancel',
+    confirmColor: 'danger',
+  });
   if (!confirmed) return;
 
   await clearSecurityData();

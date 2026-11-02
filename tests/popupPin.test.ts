@@ -181,13 +181,24 @@ describe('popupPinHelper', () => {
 
     const resetBtn = document.getElementById(Dom.PIN_RESET_BTN_ID) as HTMLButtonElement;
 
-    const confirmSpy = vi.spyOn(window, 'confirm').mockReturnValue(false);
+    // The reset is confirmed with an in-popup dialog (window.confirm doesn't show in Firefox/Safari popups)
+    const confirmSpy = vi.spyOn(window, 'confirm');
+    const dialogButton = (label: string) =>
+      Array.from(document.querySelectorAll<HTMLButtonElement>('button')).find(
+        (b) => b.textContent?.trim() === label
+      );
+
     resetBtn.click();
+    await vi.waitFor(() => expect(dialogButton('Reset PIN')).toBeDefined());
+    dialogButton('Cancel')?.click();
+    await vi.waitFor(() => expect(dialogButton('Reset PIN')).toBeUndefined());
     expect(localStorageData[Constants.PIN_STORAGE_KEY]).toBeTruthy();
     expect(switchView).not.toHaveBeenCalledWith('settings');
 
-    confirmSpy.mockReturnValue(true);
     resetBtn.click();
+    await vi.waitFor(() => expect(dialogButton('Reset PIN')).toBeDefined());
+    dialogButton('Reset PIN')?.click();
+    expect(confirmSpy).not.toHaveBeenCalled();
     await vi.waitFor(() => {
       expect(switchView).toHaveBeenCalledWith('settings');
       expect(localStorageData[Constants.PIN_STORAGE_KEY]).toBeUndefined();
