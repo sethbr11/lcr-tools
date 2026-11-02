@@ -149,7 +149,8 @@ export function setupDevDomAnonymizer(tabId?: number): void {
     try {
       await browser.scripting.executeScript({
         target: { tabId },
-        files: ['/dev-dom-anonymizer.js'],
+        // Dev-only entrypoint: production builds drop it, so it's absent from generated path types.
+        files: ['/dev-dom-anonymizer.js' as ScriptPublicPath],
       });
       showStatusMessage('Anonymized DOM copied to clipboard!', false);
     } catch (err) {
