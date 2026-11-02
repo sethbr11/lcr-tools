@@ -14,6 +14,7 @@ vi.mock('@/actions/processAttendance/constants', async (importOriginal) => {
       TAB_SWITCH_TIMEOUT_MS: 300,
       DROPDOWN_SETTLE_TIMEOUT_MS: 300,
       SUNDAY_BUTTON_TIMEOUT_MS: 300,
+      SUNDAY_RECLICK_MS: 50,
     },
   };
 });

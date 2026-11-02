@@ -18,6 +18,7 @@ vi.mock('@/actions/processAttendance/constants', async (importOriginal) => {
       TAB_SWITCH_TIMEOUT_MS: 300,
       DROPDOWN_SETTLE_TIMEOUT_MS: 300,
       SUNDAY_BUTTON_TIMEOUT_MS: 300,
+      SUNDAY_RECLICK_MS: 50,
     },
   };
 });
@@ -132,6 +133,38 @@ describe('processAttendance - November 2026 LCR layout', () => {
       expect(status).toEqual({ status: 'ok' });
       const selected = document.querySelector(`.${SELECTED}`) as HTMLElement;
       expect(selected.dataset.value).toBe('2026-11-08');
+    });
+
+    it('re-finds the Sunday button when LCR redraws the button bar after a click', async () => {
+      // Emulate React: clicking or changing class re-renders the bar with brand-new button nodes,
+      // so any button reference held from before the redraw is detached and never shows selected.
+      document.body.innerHTML = `${buildControls(sundays, 'ALL')}<table><tbody></tbody></table>`;
+      let selectedSunday = 'ALL';
+      const renderBar = () => {
+        const bar = document.querySelector('.eden-button-bar__buttons') as HTMLElement;
+        bar.replaceChildren(
+          ...sundays.map((s) => {
+            const btn = document.createElement('button');
+            btn.className = `eden-button-bar__button${s.value === selectedSunday ? ` ${SELECTED}` : ''}`;
+            btn.textContent = ` ${s.label}`;
+            btn.addEventListener('click', () => {
+              selectedSunday = s.value;
+              setTimeout(renderBar, 20);
+            });
+            return btn;
+          })
+        );
+      };
+      renderBar();
+      document.getElementById('class-select')?.addEventListener('change', () => {
+        selectedSunday = 'ALL';
+        setTimeout(renderBar, 20);
+      });
+
+      const status = await synchronizeAttendancePage(options, []);
+
+      expect(status).toEqual({ status: 'ok' });
+      expect(selectedSunday).toBe('2026-11-08');
     });
 
     it('treats an already-selected Sunday button as done without clicking', async () => {

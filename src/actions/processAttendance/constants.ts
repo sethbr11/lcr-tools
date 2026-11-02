@@ -34,6 +34,8 @@ export const Constants = {
   SUNDAY_BUTTON_TIMEOUT_MS: 10000,
   /** Polling interval in milliseconds while waiting for Sunday button presence or selection. */
   SUNDAY_BUTTON_POLL_MS: 150,
+  /** Minimum milliseconds between repeated clicks on the Sunday control while waiting for it to select. */
+  SUNDAY_RECLICK_MS: 1500,
   /** Timeout in milliseconds waiting for an attendance button to finish saving and show present. */
   MARK_PRESENT_TIMEOUT_MS: 2000,
   /** Polling interval in milliseconds while waiting for attendance button present state. */

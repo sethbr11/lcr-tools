@@ -207,36 +207,57 @@ async function ensureClassSelected(targetClassValue: string): Promise<boolean> {
   return selectDropdownOptionByValue(targetClassValue);
 }
 
-/** Selects the single Sunday view button corresponding to the target date. */
+/**
+ * Selects the single Sunday view for the target date.
+ * LCR re-renders the Sunday controls after a class or month change, so the button is looked up
+ * again on every poll instead of holding a reference that may be detached, and the click is
+ * repeated (throttled) until the live control reports the target Sunday as selected.
+ */
 async function selectSundayView(targetDate: string): Promise<boolean> {
   const labels = [true, false].map((padDay) => getSundayLabel(targetDate, padDay).toLowerCase());
+  let lastAttempt = -Infinity;
 
-  // Wide layouts show a button bar; narrow layouts a <select> of YYYY-MM-DD options. Wait for either.
-  let targetBtn: HTMLButtonElement | undefined;
-  let hasSundaySelect = false;
-  await Utils.waitForCondition(
+  return Utils.waitForCondition(
     () => {
-      const buttons = Array.from(
-        document.querySelectorAll<HTMLButtonElement>(Dom.SUNDAY_TAB_BUTTONS)
-      );
-      targetBtn = buttons.find((b) => labels.includes(normalizeButtonLabel(b.textContent)));
-      hasSundaySelect = Array.from(
-        document.querySelectorAll<HTMLSelectElement>(Dom.SELECT_CONTROL)
-      ).some((s) => Array.from(s.options || []).some((opt) => opt.value === targetDate));
-      return !!targetBtn || hasSundaySelect;
+      // Wide layouts show a button bar; narrow layouts a <select> of YYYY-MM-DD options
+      const button = findSundayButton(labels);
+      const select = button ? null : findSundaySelect(targetDate);
+      if (button && isSundayButtonSelected(button)) return true;
+      if (select && select.value === targetDate) return true;
+
+      if (Date.now() - lastAttempt >= Constants.SUNDAY_RECLICK_MS) {
+        if (button) {
+          button.click();
+          lastAttempt = Date.now();
+        } else if (select) {
+          select.value = targetDate;
+          select.dispatchEvent(new Event('change', { bubbles: true }));
+          lastAttempt = Date.now();
+        }
+      }
+      return false;
     },
     Constants.SUNDAY_BUTTON_TIMEOUT_MS,
     Constants.SUNDAY_BUTTON_POLL_MS
   );
+}
 
-  if (!targetBtn) return hasSundaySelect && selectDropdownOptionByValue(targetDate);
-  if (isSundayButtonSelected(targetBtn)) return true;
+/** Finds the live Sunday button whose label matches, preferring LCR's button-bar buttons. */
+function findSundayButton(labels: string[]): HTMLButtonElement | undefined {
+  const matches = (b: HTMLButtonElement) => labels.includes(normalizeButtonLabel(b.textContent));
+  const barButton = Array.from(
+    document.querySelectorAll<HTMLButtonElement>(Dom.SUNDAY_BAR_BUTTONS)
+  ).find(matches);
+  if (barButton) return barButton;
+  return Array.from(document.querySelectorAll<HTMLButtonElement>(Dom.SUNDAY_TAB_BUTTONS)).find(
+    matches
+  );
+}
 
-  targetBtn.click();
-  return Utils.waitForCondition(
-    () => !!targetBtn && isSundayButtonSelected(targetBtn),
-    Constants.SUNDAY_BUTTON_TIMEOUT_MS,
-    Constants.SUNDAY_BUTTON_POLL_MS
+/** Finds the live Sunday <select> that offers the target date as an option value. */
+function findSundaySelect(targetDate: string): HTMLSelectElement | undefined {
+  return Array.from(document.querySelectorAll<HTMLSelectElement>(Dom.SELECT_CONTROL)).find((s) =>
+    Array.from(s.options || []).some((opt) => opt.value === targetDate)
   );
 }
 

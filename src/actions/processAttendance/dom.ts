@@ -128,6 +128,8 @@ export const Dom = {
   SELECT_CONTROL: 'select.eden-form-part-input__control, select',
   /** CSS selector matching single Sunday tab buttons in button bar. */
   SUNDAY_TAB_BUTTONS: 'button.eden-button-bar__button, button',
+  /** CSS selector for LCR's Sunday button-bar buttons, checked before any other button. */
+  SUNDAY_BAR_BUTTONS: 'button.eden-button-bar__button',
   /** CSS class LCR adds to the selected button in the Sunday button bar (it sets no aria-selected). */
   SUNDAY_BUTTON_SELECTED_CLASS: 'eden-button-bar__button--selected',
 
