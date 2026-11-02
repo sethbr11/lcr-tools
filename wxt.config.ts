@@ -1,8 +1,5 @@
 import { defineConfig } from 'wxt';
 
-const DOC_MARKDOWN = /\.md$/i;
-const DOC_SCREENSHOT = /(?:^|\/)attendance-.*\.(?:png|jpe?g|gif|webp)$/i;
-
 export default defineConfig({
   srcDir: 'src',
   outDir: 'output',
@@ -59,22 +56,18 @@ function __amoSanitize(el, h) {
     ],
   }),
   zip: {
-    exclude: ['**/*.md', 'images/attendance-*'],
-    excludeSources: ['images/attendance-*'],
+    exclude: ['**/*.md'],
   },
   hooks: {
-    'build:publicAssets': (_wxt, files) => {
-      for (let i = files.length - 1; i >= 0; i -= 1) {
-        const dest = files[i]?.relativeDest ?? '';
-        if (DOC_MARKDOWN.test(dest) || DOC_SCREENSHOT.test(dest)) {
-          files.splice(i, 1);
-        }
+    'entrypoints:resolved': (wxt, entrypoints) => {
+      if (wxt.config.mode === 'development') return;
+      for (let i = entrypoints.length - 1; i >= 0; i -= 1) {
+        if (entrypoints[i]?.name === 'dev-dom-anonymizer') entrypoints.splice(i, 1);
       }
     },
   },
   manifest: ({ browser, mode }) => ({
     name: mode === 'development' ? 'LCR Tools (Local)' : 'LCR Tools',
-    version: '2.0.1',
     description: 'An extension to help make LCR easier to use.',
     permissions: ['scripting', 'storage'],
     host_permissions: [

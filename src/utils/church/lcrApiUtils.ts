@@ -90,7 +90,7 @@ export function getMemberInfoFromRow(row: HTMLTableRowElement): Types.MemberRowI
 
 /**
  * Extracts a Church unit number from an element's text content or raw string.
- * Looks for trailing parentheses containing 4-8 digits first, then any parenthesized unit number.
+ * Looks for trailing parentheses containing 2-8 digits first, then any parenthesized unit number.
  *
  * @param text - Raw text string from header or URL.
  * @returns Parsed unit number string, or null if no unit number found.
@@ -116,7 +116,8 @@ export function parseUnitNumberFromText(text: string): string | null {
 /**
  * Resolves the active Church unit number from the current document DOM or URL.
  * Checks LCR header elements (#static-current-unit-text, #current-unit-text, #mltp-unit-info-parent),
- * then falls back to URL parameters, pathnames, and Next.js query state.
+ * then falls back to URL query parameters, Next.js query state, and (on the Church Directory host only)
+ * the first URL path segment.
  *
  * @param doc - Document object to inspect (defaults to global document).
  * @param href - URL string to inspect (defaults to window.location.href).
@@ -149,18 +150,10 @@ export function resolveCurrentUnitNumber(doc?: Document, href?: string): string 
     }
   }
 
-  // 4. URL query parameters or dedicated numeric path segment
+  // 4. URL query parameters
   if (currentHref) {
     const paramMatch = currentHref.match(Regex.NUMERIC_PARAM);
     if (paramMatch?.[1]) return paramMatch[1];
-
-    try {
-      const url = new URL(currentHref, 'https://directory.churchofjesuschrist.org');
-      const pathMatch = url.pathname.match(Regex.UNIT_PATH_SEGMENT);
-      if (pathMatch?.[1]) return pathMatch[1];
-    } catch {
-      // Ignore invalid URL format
-    }
   }
 
   // 5. Next.js state (Church Directory pages)
@@ -171,6 +164,19 @@ export function resolveCurrentUnitNumber(doc?: Document, href?: string): string 
     const pageProps = window.__NEXT_DATA__?.props?.pageProps as Record<string, unknown> | undefined;
     if (pageProps?.unit) return String(pageProps.unit);
     if (pageProps?.unitNumber) return String(pageProps.unitNumber);
+  }
+
+  // 6. Dedicated numeric first path segment (Church Directory host only)
+  if (currentHref) {
+    try {
+      const url = new URL(currentHref, 'https://directory.churchofjesuschrist.org');
+      if (url.hostname === 'directory.churchofjesuschrist.org') {
+        const pathMatch = url.pathname.match(Regex.UNIT_PATH_SEGMENT);
+        if (pathMatch?.[1]) return pathMatch[1];
+      }
+    } catch {
+      // Ignore invalid URL format
+    }
   }
 
   return null;

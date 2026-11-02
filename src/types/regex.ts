@@ -73,8 +73,8 @@ export const Regex = {
   TRAILING_UNIT_NUMBER: /\((\d{2,8})\)\s*$/,
   /** Context: Extracting 2 to 8 digit Church unit number from any parentheses in unit text. */
   PAREN_UNIT_NUMBER: /\((\d{2,8})\)/,
-  /** Context: Extracting 2 to 8 digit Church unit number from dedicated URL path segment (e.g. '/12345' or '/unit/12345'). */
-  UNIT_PATH_SEGMENT: /(?:^|\/)(?:unit\/)?(\d{2,8})(?:\/|$)/,
+  /** Context: Extracting 2 to 8 digit Church unit number from first URL path segment (e.g. '/12345' or '/unit/12345'). */
+  UNIT_PATH_SEGMENT: /^\/(?:unit\/)?(\d{2,8})(?:\/|$)/,
   /** Context: Extracting 2 to 8 digit Church unit number from labeled prefix (e.g. 'Unit 1234' or '#1234'). */
   LABELED_UNIT_NUMBER: /(?:unit|#)\s*(\d{2,8})\b/i,
   /** Context: Validating standalone 2 to 8 digit numeric string. */

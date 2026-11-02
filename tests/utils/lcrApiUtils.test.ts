@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import {
   fetchMemberCard,
   processInBatches,
@@ -9,6 +9,10 @@ import {
 import { setAborted } from '@/utils/coreUtils';
 
 describe('lcrApiUtils', () => {
+  afterEach(() => {
+    delete window.__NEXT_DATA__;
+  });
+
   beforeEach(() => {
     document.body.innerHTML = '';
     vi.restoreAllMocks();
@@ -261,6 +265,35 @@ describe('lcrApiUtils', () => {
       expect(resolveCurrentUnitNumber()).toBe('1234567');
 
       delete window.__NEXT_DATA__;
+    });
+
+    it('should prefer Next.js query.unit over the URL path segment', () => {
+      window.__NEXT_DATA__ = { query: { unit: '42' } };
+      expect(
+        resolveCurrentUnitNumber(
+          document,
+          'https://directory.churchofjesuschrist.org/99999/households'
+        )
+      ).toBe('42');
+    });
+
+    it('should not treat numeric segments on LCR profile paths as unit numbers', () => {
+      document.body.innerHTML = '';
+      expect(
+        resolveCurrentUnitNumber(
+          document,
+          'https://lcr.churchofjesuschrist.org/records/profile/123'
+        )
+      ).toBeNull();
+    });
+
+    it('should resolve unit number from the first path segment of nested Directory paths', () => {
+      expect(
+        resolveCurrentUnitNumber(
+          document,
+          'https://directory.churchofjesuschrist.org/12345/households'
+        )
+      ).toBe('12345');
     });
 
     it('should return null for non-unit paths and invalid strings', () => {
