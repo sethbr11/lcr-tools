@@ -1,9 +1,50 @@
 import * as Utils from '../utils';
-import { Constants, Dom, Types } from '../types';
+import { Constants, Dom, Regex, Types } from '../types';
+
+/** Sunday and class the run is marking; null until sync confirms them. */
+let attendanceTarget: { date: string; className: string | null } | null = null;
 
 /* ==========================================================================
    EXPORTED FUNCTIONS
    ========================================================================== */
+
+/**
+ * Records the confirmed Sunday and class so attendance buttons can be matched by their aria-label.
+ *
+ * @param date - ISO target Sunday date (YYYY-MM-DD), or null to clear the target.
+ * @param className - Display name of the selected class or quorum.
+ */
+export function setAttendanceTarget(date: string | null, className: string | null = null): void {
+  attendanceTarget = date ? { date, className } : null;
+}
+
+/**
+ * Finds the attendance button in a member row for the target Sunday and class.
+ * LCR labels each button "Last, First, YYYY-MM-DD, Class Name", and a row can hold one button per
+ * meeting, so the button is chosen by date (then class) rather than taking the first one.
+ *
+ * @param row - Ward member table row.
+ * @returns The matching button, or null when none (or more than one) matches.
+ */
+export function findAttendanceButton(row: HTMLElement): HTMLButtonElement | null {
+  const buttons = Array.from(row.querySelectorAll<HTMLButtonElement>(Dom.ATTENDANCE_BUTTON));
+  const labelled = buttons
+    .map((btn) => ({
+      btn,
+      match: (btn.getAttribute('aria-label') || '').match(Regex.ATTENDANCE_BUTTON_LABEL),
+    }))
+    .filter((entry): entry is { btn: HTMLButtonElement; match: RegExpMatchArray } => !!entry.match);
+
+  // Legacy markup without dated labels: only safe when the row has a single button
+  if (!attendanceTarget || labelled.length === 0) return buttons.length === 1 ? buttons[0] : null;
+
+  const { date, className } = attendanceTarget;
+  const onDate = labelled.filter((entry) => entry.match[1] === date);
+  const wantedClass = (className || '').trim().toLowerCase();
+  const inClass = onDate.filter((entry) => entry.match[2].trim().toLowerCase() === wantedClass);
+  if (inClass.length === 1) return inClass[0].btn;
+  return onDate.length === 1 ? onDate[0].btn : null;
+}
 
 /**
  * Marks attendance for a specific ward member row in LCR.
@@ -25,7 +66,7 @@ export async function markMemberPresent(
 
   if (Utils.isAborted()) return 'error';
 
-  const btn = member.row.querySelector<HTMLButtonElement>(Dom.ATTENDANCE_BUTTON);
+  const btn = findAttendanceButton(member.row);
   if (!btn) return 'error';
 
   if (isButtonPresent(btn)) return 'already';

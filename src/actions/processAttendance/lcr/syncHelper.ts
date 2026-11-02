@@ -212,14 +212,24 @@ async function selectSundayView(targetDate: string): Promise<boolean> {
     Constants.SUNDAY_BUTTON_POLL_MS
   );
 
-  if (!targetBtn) return false;
-  if (targetBtn.getAttribute('aria-selected') === Dom.ARIA_SELECTED_TRUE) return true;
+  // Narrow layouts show a <select> of YYYY-MM-DD options instead of the button bar
+  if (!targetBtn) return selectDropdownOptionByValue(targetDate);
+  if (isSundayButtonSelected(targetBtn)) return true;
 
   targetBtn.click();
   return Utils.waitForCondition(
-    () => targetBtn?.getAttribute('aria-selected') === Dom.ARIA_SELECTED_TRUE,
+    () => !!targetBtn && isSundayButtonSelected(targetBtn),
     Constants.SUNDAY_BUTTON_TIMEOUT_MS,
     Constants.SUNDAY_BUTTON_POLL_MS
+  );
+}
+
+/** True when a Sunday button-bar button is the active one (LCR marks it with a class, not ARIA). */
+function isSundayButtonSelected(btn: HTMLButtonElement): boolean {
+  return (
+    btn.classList.contains(Dom.SUNDAY_BUTTON_SELECTED_CLASS) ||
+    btn.getAttribute('aria-selected') === Dom.ARIA_SELECTED_TRUE ||
+    btn.getAttribute('aria-pressed') === Dom.ARIA_SELECTED_TRUE
   );
 }
 

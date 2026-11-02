@@ -364,6 +364,8 @@ export const Regex = {
   DATE_PARTS_SPLIT: /[-/]/,
   /** Context: YYYY-MM date prefix matching. */
   YEAR_MONTH_VALUE: /^\d{4}-\d{2}$/,
+  /** Context: Date and class at the end of an attendance button label ("Last, First, 2026-11-01, Elders Quorum"). */
+  ATTENDANCE_BUTTON_LABEL: /,\s*(\d{4}-\d{2}-\d{2}),\s*([^,]+)$/,
   /** Context: Detecting youth Sunday School classes (starts with Course). */
   YOUTH_COURSE_CLASS: /^course\b/i,
   /** Context: Detecting Primary classes. */

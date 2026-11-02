@@ -3,6 +3,7 @@ import { Types } from './types';
 import * as Setup from './setup/setupHelper';
 import * as Sync from './lcr/syncHelper';
 import * as Roll from './lcr/rollHelper';
+import * as Mark from './lcr/markHelper';
 import * as ProcessMembers from './members/processMembersHelper';
 import * as Simulate from './members/simulateHelper';
 import * as ClassHelper from './setup/classHelper';
@@ -30,6 +31,7 @@ export async function runProcessAttendance(
   overrideOptions?: Partial<Types.ProcessAttendanceOptions>
 ): Promise<Types.ActionResult<Types.ProcessAttendanceResult>> {
   Utils.resetAborted();
+  Mark.setAttendanceTarget(null);
 
   // Step 1: Verify LCR page setup
   if (!Sync.verifyLcrAttendanceSetup()) {
@@ -103,6 +105,7 @@ export async function runProcessAttendance(
       Utils.showLcrMaintenanceModal('Process Attendance', syncStatus.message);
       return { success: false, error: syncStatus.message };
     }
+    Mark.setAttendanceTarget(targetDate, targetClassText);
 
     // Step 4: Wait for ward members roll to render
     // prettier-ignore

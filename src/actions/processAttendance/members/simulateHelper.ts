@@ -1,7 +1,7 @@
 import * as Utils from '../utils';
 import { Constants, Dom, Types } from '../types';
 import { switchToMembersTab } from '../lcr/syncHelper';
-import { isButtonBusy, isButtonPresent } from '../lcr/markHelper';
+import { findAttendanceButton, isButtonBusy, isButtonPresent } from '../lcr/markHelper';
 import { clickSaveButton, setNativeInputValue, switchToVisitorsTab } from '../lcr/visitorsHelper';
 
 /* ==========================================================================
@@ -216,7 +216,7 @@ export async function simulateVisitorEntryAndRestore(
 /** Tests toggling a member button ON then immediately back OFF to verify interactivity. */
 async function testMemberToggle(member: Types.WardMember): Promise<boolean> {
   if (!member.row || Utils.isAborted()) return false;
-  const btn = member.row.querySelector<HTMLButtonElement>(Dom.ATTENDANCE_BUTTON);
+  const btn = findAttendanceButton(member.row);
   if (!btn) return false;
 
   await Utils.sleep(Constants.SIM_VISUAL_PAUSE_MS);

@@ -1,6 +1,6 @@
 import * as Utils from '../utils';
 import { Constants, Dom, Types } from '../types';
-import { isButtonPresent } from './markHelper';
+import { findAttendanceButton, isButtonPresent } from './markHelper';
 
 /* ==========================================================================
    EXPORTED FUNCTIONS
@@ -51,7 +51,7 @@ function getWardMembersOnRoll(table?: HTMLTableElement): Types.WardMember[] {
 
 /** Checks whether a row currently has attendance marked via button or checkbox. */
 function isRowMarkedPresent(row: HTMLTableRowElement): boolean {
-  const btn = row.querySelector<HTMLButtonElement>(Dom.ATTENDANCE_BUTTON);
+  const btn = findAttendanceButton(row);
   if (btn && isButtonPresent(btn)) return true;
 
   const checkbox = row.querySelector<HTMLInputElement>(Dom.ATTENDANCE_CHECKBOX);
