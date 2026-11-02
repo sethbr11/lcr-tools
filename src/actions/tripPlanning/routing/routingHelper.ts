@@ -1,6 +1,6 @@
 import { Constants, Types } from '../types';
 import { geocodeAddressMulti } from '../geocoding/geocodingHelper';
-import { buildRoutingMatrices, solveOpenPath } from './matrixHelper';
+import { buildRoutingMatrices, getMapboxRouteGeometry, solveOpenPath } from './matrixHelper';
 import { getTripState, logTripStatus, setTripState, updateTripStats } from '../ui/stateHelper';
 
 /* ==========================================================================
@@ -14,7 +14,8 @@ import { getTripState, logTripStatus, setTripState, updateTripStats } from '../u
  * @param mapboxKey - Mapbox token required for road-network routing.
  * @param provider - Geocoder used only for an optional starting address.
  * @param geocodeKey - API key used for starting address geocoding when required.
- * @param startingAddress - Optional user-typed start location shared by every trip.
+ * @param startingAddress - Optional default start location for every trip.
+ * @param clusterStartAddresses - Optional per-cluster start locations that replace the default.
  * @returns Optimized routes, or null when routing cannot proceed.
  */
 export async function optimizeRoutes(
@@ -22,7 +23,8 @@ export async function optimizeRoutes(
   mapboxKey: string,
   provider: Types.GeocodeProvider,
   geocodeKey: string,
-  startingAddress: string
+  startingAddress: string,
+  clusterStartAddresses: Record<number, string> = {}
 ): Promise<Types.OptimizedRoute[] | null> {
   const { clustered } = getTripState();
   if (clustered.length === 0) {
@@ -35,32 +37,50 @@ export async function optimizeRoutes(
     return null;
   }
 
-  let startMember: Types.TripMapMember | null = null;
-  if (startingAddress) {
-    logTripStatus(`Geocoding starting address: ${startingAddress}...`);
-    const geo = await geocodeAddressMulti(startingAddress, provider, geocodeKey);
-    if (!geo) {
-      logTripStatus(`Could not geocode starting address: ${startingAddress}.`);
-      return null;
-    }
-    startMember = {
-      name: 'Starting Point',
-      address: startingAddress,
-      columns: {},
-      lat: geo.lat,
-      lng: geo.lng,
-      coordSource: 'geocode',
-    };
-    logTripStatus(`Starting address geocoded: [${geo.lat.toFixed(6)}, ${geo.lng.toFixed(6)}]`);
-  }
-
   const clusters = groupClusters(clustered);
   const clusterIds = Object.keys(clusters)
     .map((id) => Number(id))
     .sort((left, right) => left - right);
+
+  // Geocode each distinct starting address once (default plus any per-cluster overrides)
+  const startsByAddress = new Map<string, Types.TripMapMember>();
+  const addresses = new Set(
+    clusterIds.map((id) => (clusterStartAddresses[id] || startingAddress).trim()).filter(Boolean)
+  );
+  for (const address of addresses) {
+    logTripStatus(`Geocoding starting address: ${address}...`);
+    const geo = await geocodeAddressMulti(address, provider, geocodeKey);
+    if (!geo) {
+      logTripStatus(`Could not geocode starting address: ${address}.`);
+      return null;
+    }
+    startsByAddress.set(address, {
+      name: 'Starting Point',
+      address,
+      columns: {},
+      lat: geo.lat,
+      lng: geo.lng,
+      coordSource: 'geocode',
+    });
+    logTripStatus(`Starting address geocoded: [${geo.lat.toFixed(6)}, ${geo.lng.toFixed(6)}]`);
+  }
+
+  // Each cluster is its own trip with its own road route
   const routes: Types.OptimizedRoute[] = [];
   for (const clusterId of clusterIds) {
-    routes.push(await findBestInternalRoute(clusters[clusterId], metric, mapboxKey, startMember));
+    const address = (clusterStartAddresses[clusterId] || startingAddress).trim();
+    const startMember = address ? (startsByAddress.get(address) ?? null) : null;
+    const route = await findBestInternalRoute(clusters[clusterId], metric, mapboxKey, startMember);
+    if (metric === 'mapbox' && mapboxKey) {
+      const stops = route.startPoint ? [route.startPoint, ...route.points] : route.points;
+      route.geometry = (await getMapboxRouteGeometry(stops, mapboxKey)) ?? undefined;
+      if (!route.geometry && stops.length > 1) {
+        logTripStatus(
+          `Road path for cluster ${clusterId + 1} unavailable; drawing straight lines.`
+        );
+      }
+    }
+    routes.push(route);
   }
 
   setTripState({ optimized: routes });

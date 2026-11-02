@@ -83,6 +83,8 @@ export namespace Types {
     displayDistance?: number;
     /** Trip origin the route departs from; excluded from `points`. */
     startPoint?: CoordinatePoint;
+    /** Road path as [lat, lng] pairs from Mapbox Directions; straight lines are drawn without it. */
+    geometry?: [number, number][];
   }
   /** Square duration and distance matrices returned by the Mapbox Matrix API. */
   export interface MapboxTravelMatrix {
@@ -173,8 +175,8 @@ export namespace Types {
     durations?: Array<Array<number | null>>;
     /** Distance matrix in meters. */
     distances?: Array<Array<number | null>>;
-    /** Returned driving routes. */
-    routes?: Array<{ duration?: number }>;
+    /** Returned driving routes; geometry is [lng, lat] pairs when requested as GeoJSON. */
+    routes?: Array<{ duration?: number; geometry?: { coordinates?: number[][] } }>;
   }
   /** Address normalization variants used during geocoding. */
   export interface AddressVariants {
@@ -239,6 +241,10 @@ export const Constants = {
   MAPBOX_GEOCODE_URL: 'https://api.mapbox.com/geocoding/v5/mapbox.places',
   /** Mapbox Directions Matrix endpoint prefix without trailing slash. */
   MAPBOX_MATRIX_URL: 'https://api.mapbox.com/directions-matrix/v1/mapbox/driving',
+  /** Mapbox Directions endpoint used once per cluster to draw its road path. */
+  MAPBOX_DIRECTIONS_URL: 'https://api.mapbox.com/directions/v5/mapbox/driving',
+  /** Maximum waypoints Mapbox Directions accepts in one request. */
+  MAPBOX_DIRECTIONS_MAX_WAYPOINTS: 25,
   /** Carto Voyager raster tile URL template. */
   CARTO_TILE_URL: 'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png',
   /** Leaflet attribution for Carto Voyager tiles. */

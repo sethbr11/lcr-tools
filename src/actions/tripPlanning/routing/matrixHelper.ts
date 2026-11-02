@@ -110,6 +110,40 @@ export function solveOpenPath(cost: number[][], fixedStart: number | null): numb
 }
 
 /**
+ * Fetches the driving path through stops in order, for drawing one cluster's road route.
+ * Requests are split into windows of Constants.MAPBOX_DIRECTIONS_MAX_WAYPOINTS that share their
+ * boundary stop, and the pieces are joined.
+ *
+ * @param stops - Ordered stops, including the trip's starting point if it has one.
+ * @param apiKey - Mapbox access token.
+ * @returns Road path as [lat, lng] pairs, or null when any request fails.
+ */
+export async function getMapboxRouteGeometry(
+  stops: Types.CoordinatePoint[],
+  apiKey: string
+): Promise<[number, number][] | null> {
+  if (stops.length < 2) return null;
+  const windowSize = Constants.MAPBOX_DIRECTIONS_MAX_WAYPOINTS;
+  const path: [number, number][] = [];
+
+  for (let first = 0; first < stops.length - 1; first += windowSize - 1) {
+    const window = stops.slice(first, first + windowSize);
+    const coords = window.map((point) => `${point.lng},${point.lat}`).join(';');
+    const url = `${Constants.MAPBOX_DIRECTIONS_URL}/${coords}?geometries=geojson&overview=full&access_token=${encodeURIComponent(apiKey)}`;
+    try {
+      const data = await fetchMatrixResponse(url);
+      const line = data?.routes?.[0]?.geometry?.coordinates;
+      if (!line || line.length === 0) return null;
+      const latLngs = line.map(([lng, lat]) => [lat, lng] as [number, number]);
+      path.push(...(path.length > 0 ? latLngs.slice(1) : latLngs));
+    } catch {
+      return null;
+    }
+  }
+  return path;
+}
+
+/**
  * Calculates spherical distance in statute miles between two coordinate points.
  *
  * @param from - Origin coordinate point.
@@ -130,7 +164,7 @@ export function haversineMiles(from: Types.CoordinatePoint, to: Types.Coordinate
    HELPER FUNCTIONS
    ========================================================================== */
 
-/** Fetches one Mapbox matrix URL, retrying with a delay while the API returns HTTP 429. */
+/** Fetches one Mapbox matrix or directions URL, retrying with a delay while the API returns HTTP 429. */
 async function fetchMatrixResponse(url: string): Promise<Types.MapboxApiResponse | null> {
   for (let attempt = 0; attempt <= Constants.MAPBOX_MATRIX_MAX_RETRIES; attempt += 1) {
     const response = await fetch(url);

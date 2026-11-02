@@ -23,7 +23,7 @@ function jsonResponse(body: unknown, status = 200): Response {
 }
 
 /** Mapbox Matrix mock: every distinct pair is 60 s and one mile apart. */
-function uniformMatrixFetch(): ReturnType<typeof vi.fn> {
+function uniformMatrixFetch() {
   return vi.fn(async (input: string) => {
     const url = new URL(input);
     const sources = (url.searchParams.get('sources') ?? '').split(';').map(Number);
@@ -243,28 +243,81 @@ describe('optimizeRoutes', () => {
     expect(geocodeAddressMulti).toHaveBeenCalledTimes(1);
   });
 
-  it('computes road totals from matrices without calling Directions', async () => {
+  it('computes road totals from matrices and draws one road path per cluster', async () => {
     vi.mocked(geocodeAddressMulti).mockResolvedValue({
       lat: 39.9,
       lng: -111,
       usedVariant: 'original',
     });
-    const fetchMock = uniformMatrixFetch();
+    const matrixFetch = uniformMatrixFetch();
+    const fetchMock = vi.fn(async (input: string) => {
+      if (!input.includes('/directions/v5/')) return matrixFetch(input);
+      // Echo the waypoints back as the road path ([lng, lat] pairs)
+      const coords = new URL(input).pathname.split('/').pop() ?? '';
+      const line = decodeURIComponent(coords)
+        .split(';')
+        .map((pair) => pair.split(',').map(Number));
+      return jsonResponse({ code: 'Ok', routes: [{ geometry: { coordinates: line } }] });
+    });
     vi.stubGlobal('fetch', fetchMock);
     setTripState({
-      clustered: [point('A', 40, -111, 0), point('B', 40.1, -111, 0), point('C', 40.2, -111, 0)],
+      clustered: [
+        point('A', 40, -111, 0),
+        point('B', 40.1, -111, 0),
+        point('C', 40.2, -111, 0),
+        point('D', 41, -112, 1),
+        point('E', 41.1, -112, 1),
+      ],
     });
 
     const routes = await optimizeRoutes('mapbox', 'token', 'nominatim', '', '1 Start St');
-    const route = routes?.[0];
+
     // Start leg plus two hops: 3 hops of 60 s and 1 mile each.
-    expect(route?.distance).toBeCloseTo(3);
-    expect(route?.displayDistance).toBeCloseTo(3);
-    expect(route?.startPoint).toBeDefined();
-    expect(route?.points).toHaveLength(3);
-    expect(fetchMock).toHaveBeenCalled();
-    for (const call of fetchMock.mock.calls) {
-      expect(String(call[0])).not.toContain('/directions/v5/');
-    }
+    expect(routes?.[0].distance).toBeCloseTo(3);
+    expect(routes?.[0].displayDistance).toBeCloseTo(3);
+    expect(routes?.[0].points).toHaveLength(3);
+    const directionsCalls = fetchMock.mock.calls.filter((c) =>
+      String(c[0]).includes('/directions/v5/')
+    );
+    expect(directionsCalls).toHaveLength(2);
+    // Each road path runs start -> stops for that cluster only
+    expect(routes?.[0].geometry).toHaveLength(4);
+    expect(routes?.[1].geometry).toHaveLength(3);
+    expect(routes?.[1].geometry?.[0]).toEqual([39.9, -111]);
+  });
+
+  it('starts each cluster from its own address when one is set', async () => {
+    vi.mocked(geocodeAddressMulti).mockImplementation(async (address: string) =>
+      address === 'North Chapel'
+        ? { lat: 41.5, lng: -112, usedVariant: 'original' }
+        : { lat: 39.9, lng: -111, usedVariant: 'original' }
+    );
+    setTripState({
+      clustered: [point('A', 40, -111, 0), point('B', 40.1, -111, 0), point('D', 41, -112, 1)],
+    });
+
+    const routes = await optimizeRoutes('straight', '', 'nominatim', '', '1 Start St', {
+      1: 'North Chapel',
+    });
+
+    expect(routes?.[0].startPoint).toEqual({ lat: 39.9, lng: -111 });
+    expect(routes?.[1].startPoint).toEqual({ lat: 41.5, lng: -112 });
+    expect(vi.mocked(geocodeAddressMulti)).toHaveBeenCalledTimes(2);
+  });
+
+  it('falls back to straight lines when the Directions request fails', async () => {
+    const matrixFetch = uniformMatrixFetch();
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (input: string) =>
+        input.includes('/directions/v5/') ? jsonResponse({}, 500) : matrixFetch(input)
+      )
+    );
+    setTripState({ clustered: [point('A', 40, -111, 0), point('B', 40.1, -111, 0)] });
+
+    const routes = await optimizeRoutes('mapbox', 'token', 'nominatim', '', '');
+
+    expect(routes?.[0].geometry).toBeUndefined();
+    expect(routes?.[0].points).toHaveLength(2);
   });
 });

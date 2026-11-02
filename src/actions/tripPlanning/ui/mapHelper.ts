@@ -3,6 +3,7 @@ import * as turf from '@turf/turf';
 import { escapeHtml, setHtml } from '../utils';
 import { Constants, Dom, Types } from '../types';
 import { getClusterColors } from './stateHelper';
+import { renderClusterStartControl } from './clusterStartHelper';
 
 let map: L.Map | null = null;
 let markerLayer: L.LayerGroup | null = null;
@@ -94,7 +95,11 @@ export function drawRoutes(routes: Types.OptimizedRoute[]): void {
 
     const linePoints = route.startPoint ? [route.startPoint, ...route.points] : route.points;
     if (linePoints.length > 1) {
-      const latlngs: L.LatLngExpression[] = linePoints.map((point) => [point.lat, point.lng]);
+      // Prefer the road path from Mapbox; otherwise connect stops with straight lines
+      const latlngs: L.LatLngExpression[] =
+        route.geometry && route.geometry.length > 1
+          ? route.geometry
+          : linePoints.map((point) => [point.lat, point.lng]);
       if (route.displayDistance === undefined) {
         const line = turf.lineString(linePoints.map((point) => [point.lng, point.lat]));
         route.displayDistance = turf.length(line, { units: 'miles' });
@@ -103,6 +108,20 @@ export function drawRoutes(routes: Types.OptimizedRoute[]): void {
       L.polyline(latlngs, { color, weight: 3, opacity: 0.8 })
         .bindPopup(
           `<b>${isOutlier ? 'Outlier' : `Cluster ${route.cluster + 1}`}</b><br>Distance: ${route.displayDistance.toFixed(1)} miles`
+        )
+        .addTo(routesLayer);
+    }
+
+    if (route.startPoint) {
+      L.circleMarker([route.startPoint.lat, route.startPoint.lng], {
+        radius: 7,
+        fillColor: Dom.MARKER_START_COLOR,
+        color: color,
+        weight: 3,
+        fillOpacity: 1,
+      })
+        .bindPopup(
+          `<b>Starting point</b><br>${isOutlier ? 'Outlier' : `Cluster ${route.cluster + 1}`}`
         )
         .addTo(routesLayer);
     }
@@ -207,6 +226,7 @@ export function updateClusterList(
       </div>
     `
     );
+    if (!isOutlier) renderClusterStartControl(item, group.id);
     container.appendChild(item);
   }
 }

@@ -40,6 +40,8 @@ export const Dom = {
   CLUSTER_COUNT_ID: 'clusterCount',
   /** Minimum cluster size input ID. */
   MIN_CLUSTER_SIZE_ID: 'minClusterSize',
+  /** Input id for the optional minimum members per group when clustering by group count. */
+  COUNT_MIN_SIZE_ID: 'countMinSize',
   /** Maximum cluster size input ID. */
   MAX_CLUSTER_SIZE_ID: 'maxClusterSize',
   /** By-count clustering controls container ID. */
@@ -142,6 +144,16 @@ export const Dom = {
   CLUSTER_MEMBERS_CLASS: 'cluster-members',
   /** CSS class for light gray distance number on top right of cluster box. */
   CLUSTER_DISTANCE_CLASS: 'cluster-distance',
+  /** Row inside a cluster card showing (and editing) that cluster's starting address. */
+  CLUSTER_START_CLASS: 'cluster-start',
+  /** "Start:" label inside the cluster starting address row. */
+  CLUSTER_START_LABEL_CLASS: 'cluster-start-label',
+  /** Address text (or "Default") inside the cluster starting address row. */
+  CLUSTER_START_VALUE_CLASS: 'cluster-start-value',
+  /** Text-style buttons (Change / Save / Use default) in the cluster starting address row. */
+  CLUSTER_START_LINK_CLASS: 'cluster-start-link',
+  /** Address input shown while editing a cluster's starting address. */
+  CLUSTER_START_INPUT_CLASS: 'cluster-start-input',
   /** Name attribute for clustering strategy radios. */
   CLUSTER_STRATEGY_NAME: 'clusterStrategy',
   /** Name attribute for distance metric radios. */

@@ -18,6 +18,8 @@ import {
 } from '@/actions/tripPlanning/ui/mapHelper';
 import { optimizeRoutes } from '@/actions/tripPlanning/routing/routingHelper';
 import {
+  clearClusterStartAddresses,
+  getClusterStartAddresses,
   getTripState,
   logTripStatus,
   setTripState,
@@ -219,6 +221,7 @@ function handleCluster(): void {
   const countInput = document.getElementById(Dom.CLUSTER_COUNT_ID) as HTMLInputElement | null;
   const minInput = document.getElementById(Dom.MIN_CLUSTER_SIZE_ID) as HTMLInputElement | null;
   const maxInput = document.getElementById(Dom.MAX_CLUSTER_SIZE_ID) as HTMLInputElement | null;
+  const countMinInput = document.getElementById(Dom.COUNT_MIN_SIZE_ID) as HTMLInputElement | null;
 
   const rawCount = parseInt(countInput?.value || '', 10);
   const rawMin = parseInt(minInput?.value || '', 10);
@@ -226,8 +229,11 @@ function handleCluster(): void {
   const count = Number.isNaN(rawCount) ? Constants.CLUSTER_COUNT_DEFAULT : rawCount;
   const min = Number.isNaN(rawMin) ? Constants.CLUSTER_MIN_SIZE_DEFAULT : rawMin;
   const max = Number.isNaN(rawMax) ? Constants.CLUSTER_MAX_SIZE_DEFAULT : rawMax;
+  const rawCountMin = parseInt(countMinInput?.value || '', 10);
+  const countMin = Number.isNaN(rawCountMin) ? 1 : rawCountMin;
 
-  clusterAddresses(strategy, count, min, max);
+  clusterAddresses(strategy, count, min, max, countMin);
+  clearClusterStartAddresses();
   const { clustered } = getTripState();
   drawMarkers(clustered, true);
   updateClusterList(clustered);
@@ -256,7 +262,8 @@ async function handleOptimize(): Promise<void> {
       mapboxKey,
       provider,
       geocodeKey,
-      startInput?.value.trim() || ''
+      startInput?.value.trim() || '',
+      getClusterStartAddresses()
     );
     if (!routes) return;
     drawRoutes(routes);

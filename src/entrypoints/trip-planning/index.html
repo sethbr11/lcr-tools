@@ -115,6 +115,15 @@
                 <div class="control-row">
                   <label for="clusterCount">Number of Groups:</label>
                   <input type="number" id="clusterCount" value="1" min="1" max="20" step="1" />
+                  <label for="countMinSize">Min per group:</label>
+                  <input
+                    type="number"
+                    id="countMinSize"
+                    value="1"
+                    min="1"
+                    step="1"
+                    title="Each group gets at least this many people (1 = no minimum)"
+                  />
                 </div>
               </div>
               <div id="bySizeControls" class="method-controls" style="display: none">
@@ -176,7 +185,11 @@
                 </div>
               </div>
               <div class="control-row starting-address-row">
-                <label for="startingAddressInput">Starting Address (optional):</label>
+                <label
+                  for="startingAddressInput"
+                  title="Used by every group unless you set a different start for a group under Cluster Details"
+                  >Default Starting Address (optional):</label
+                >
                 <div class="input-with-action">
                   <input type="text" id="startingAddressInput" placeholder="e.g., 123 Main St" />
                   <button
