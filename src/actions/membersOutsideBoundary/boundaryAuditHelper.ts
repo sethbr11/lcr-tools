@@ -65,30 +65,12 @@ export async function extractDirectoryHouseholds(): Promise<Types.AuditedHouseho
         }
       }
     } catch {
-      // Fall through to DOM extraction fallback
+      // Network or parse failure: reported to the user as "could not load" by the caller
     }
   }
 
-  // 3. Fallback: Locate household records in DOM (for mock testing environments)
-  const list: Types.AuditedHousehold[] = [];
-  const rows = document.querySelectorAll('div.household-item, tr[data-household-id]');
-
-  rows.forEach((row, index) => {
-    const nameEl = row.querySelector('.household-name, .member-name');
-    const addressEl = row.querySelector('.household-address, .member-address');
-    const name = (nameEl?.textContent || `Household ${index + 1}`).trim();
-    const address = (addressEl?.textContent || '').trim();
-
-    list.push({
-      name,
-      address,
-      coordinates: { lat: 0, lng: 0 },
-      isInside: true,
-      status: 'inside',
-    });
-  });
-
-  return list;
+  // No fallback: guessing "inside" for households we couldn't locate would make the audit lie
+  return [];
 }
 
 /**

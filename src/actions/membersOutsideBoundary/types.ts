@@ -72,6 +72,9 @@ export namespace Types {
    ========================================================================== */
 
 export const Constants = {
+  /** Shown when the ward boundary or households could not be loaded from the Church Directory. */
+  AUDIT_LOAD_FAILED:
+    "Couldn't load the ward boundary or households from the Church Directory. Make sure the directory has finished loading and you're signed in, then try again.",
   ...Base.Constants,
   /** Session storage key signaling a pending boundary audit on page reload. */
   AUDIT_PENDING_KEY: 'LCR_AUDIT_PENDING',
