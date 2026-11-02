@@ -6,7 +6,6 @@ import { Constants, Dom, Types } from '@/actions/tripPlanning/types';
 import { showTripPinModal } from '@/actions/tripPlanning/ui/pinModalHelper';
 import { clusterAddresses } from '@/actions/tripPlanning/routing/clusteringHelper';
 import { exportTripCsv } from '@/actions/tripPlanning/export/exportHelper';
-import { exportTripPdf } from '@/actions/tripPlanning/export/pdfExportHelper';
 import { displayFailedGeocodes } from '@/actions/tripPlanning/ui/failureFixerHelper';
 import { geocodePendingRecords } from '@/actions/tripPlanning/geocoding/geocodingHelper';
 import { showTripLogsModal } from '@/actions/tripPlanning/ui/logsModalHelper';
@@ -115,7 +114,7 @@ function bindPlannerActions(): void {
     void exportTripCsv();
   });
   document.getElementById(Dom.EXPORT_PDF_BTN_ID)?.addEventListener('click', () => {
-    void exportTripPdf(storedKeys.mapbox || '');
+    void handleExportPdf();
   });
   document.getElementById(Dom.VIEW_LOGS_BTN_ID)?.addEventListener('click', () => {
     showTripLogsModal();
@@ -186,6 +185,12 @@ async function handleGeocode(): Promise<void> {
   logTripStatus(
     `Geocoding complete: ${geocoded.length} succeeded, ${failedGeocodes.length} failed.`
   );
+}
+
+/** Loads the PDF export (and jsPDF) only when needed, keeping the planner page bundle small. */
+async function handleExportPdf(): Promise<void> {
+  const { exportTripPdf } = await import('@/actions/tripPlanning/export/pdfExportHelper');
+  await exportTripPdf(storedKeys.mapbox || '');
 }
 
 /** Clusters geocoded members using the selected strategy. */
