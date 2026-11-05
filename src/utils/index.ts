@@ -11,6 +11,7 @@ export * from './navigationUtils';
 export * from './security/cryptoUtils';
 export * from './security/apiKeyStorageUtils';
 export * from './security/storageUtils';
+export * from './security/pinSetupUtils';
 export * from './passiveActionUtils';
 
 export * from './church/directoryPageUtils';

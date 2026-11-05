@@ -30,11 +30,12 @@ export async function getStoredApiKeys(): Promise<Types.StoredApiKeys> {
       }
     }
 
-    const sanitized = sanitizeStoredApiKeys(raw);
+    // Unencrypted keys from before a PIN existed stay locked until one is created (which
+    // encrypts them); with a PIN unlocked they are encrypted in place on first read
     const activePin = await getUnlockedPin();
-    if (activePin && Object.keys(sanitized).length > 0) {
-      await persistApiKeys(sanitized);
-    }
+    if (!activePin) return {};
+    const sanitized = sanitizeStoredApiKeys(raw);
+    if (Object.keys(sanitized).length > 0) await persistApiKeys(sanitized);
     return sanitized;
   } catch (error) {
     console.error('LCR Tools: Failed to read API keys:', error);
@@ -43,30 +44,35 @@ export async function getStoredApiKeys(): Promise<Types.StoredApiKeys> {
 }
 
 /**
- * Persists one catalog API key value. Unknown identifiers are ignored.
+ * Persists one catalog API key value, encrypted with the unlocked session PIN.
+ * Keys are never written unencrypted: without an unlocked PIN nothing is saved.
  *
  * @param id - Catalog key identifier.
  * @param value - Secret string to store; empty values remove the slot.
+ * @returns True when the key was saved; false for unknown ids or when no PIN is unlocked.
  */
-export async function saveApiKey(id: string, value: string): Promise<void> {
-  if (!isKnownApiKeyId(id)) return;
+export async function saveApiKey(id: string, value: string): Promise<boolean> {
+  if (!isKnownApiKeyId(id)) return false;
+  if (!(await getUnlockedPin())) return false;
   const current = await getStoredApiKeys();
   const trimmed = value.trim();
   if (trimmed) current[id] = trimmed;
   else delete current[id];
-  await persistApiKeys(current);
+  return persistApiKeys(current);
 }
 
 /**
- * Removes one catalog API key from isolated extension storage.
+ * Removes one catalog API key from isolated extension storage (requires an unlocked PIN).
  *
  * @param id - Catalog key identifier to clear.
+ * @returns True when the key was removed.
  */
-export async function clearApiKey(id: string): Promise<void> {
-  if (!isKnownApiKeyId(id)) return;
+export async function clearApiKey(id: string): Promise<boolean> {
+  if (!isKnownApiKeyId(id)) return false;
+  if (!(await getUnlockedPin())) return false;
   const current = await getStoredApiKeys();
   delete current[id];
-  await persistApiKeys(current);
+  return persistApiKeys(current);
 }
 
 /**
@@ -134,22 +140,21 @@ export function isKnownApiKeyId(id: string): id is Types.KnownApiKeyId {
    HELPER FUNCTIONS
    ========================================================================== */
 
-/** Writes the sanitized API key dictionary to extension storage (encrypted if PIN unlocked). */
-async function persistApiKeys(keys: Types.StoredApiKeys): Promise<void> {
+/** Writes the API key dictionary encrypted with the unlocked PIN; refuses to write without one. */
+async function persistApiKeys(keys: Types.StoredApiKeys): Promise<boolean> {
   try {
-    if (!browser?.storage?.local) return;
+    if (!browser?.storage?.local) return false;
     const pin = await getUnlockedPin();
-    if (pin) {
-      const encrypted = await encryptData(keys, pin);
-      const keyIds = Object.keys(keys) as Types.KnownApiKeyId[];
-      await browser.storage.local.set({
-        [Constants.API_KEYS_STORAGE_KEY]: { ...encrypted, keyIds },
-      });
-      return;
-    }
-    await browser.storage.local.set({ [Constants.API_KEYS_STORAGE_KEY]: keys });
+    if (!pin) return false;
+    const encrypted = await encryptData(keys, pin);
+    const keyIds = Object.keys(keys) as Types.KnownApiKeyId[];
+    await browser.storage.local.set({
+      [Constants.API_KEYS_STORAGE_KEY]: { ...encrypted, keyIds },
+    });
+    return true;
   } catch (error) {
     console.error('LCR Tools: Failed to save API keys:', error);
+    return false;
   }
 }
 
