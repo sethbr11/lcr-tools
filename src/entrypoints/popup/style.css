@@ -5,6 +5,12 @@
 @import './pin.css';
 
 /* Reset and base styles */
+/* The UI is designed light-only; without this, Safari's dark mode recolors form controls and
+   system text so it can become unreadable on our light backgrounds */
+:root {
+  color-scheme: light;
+}
+
 * {
   box-sizing: border-box;
 }
