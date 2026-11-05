@@ -1,4 +1,5 @@
-import { hasStoredApiKey, saveApiKey } from '../utils';
+import { hasStoredApiKey } from '../utils';
+import { refreshApiKeySaveButton } from './apiKeyFieldHelper';
 import { Constants, Dom, Types } from '../types';
 
 /* ==========================================================================
@@ -63,16 +64,15 @@ export async function updateProviderControls(storedKeys: Types.StoredApiKeys): P
     if (apiKeyRow) apiKeyRow.style.display = 'flex';
     const keyId =
       provider === 'mapbox' ? Constants.API_KEY_ID_MAPBOX : Constants.API_KEY_ID_LOCATIONIQ;
-    if (apiKeyInput && storedKeys[keyId] && !apiKeyInput.value) {
-      apiKeyInput.value = storedKeys[keyId] || '';
-    }
-
+    // Saved keys are filled only when the user clicks Autofill (PIN-protected), never silently
     if (autofillBtn) {
       const hasKey = Boolean(storedKeys[keyId]) || (await hasStoredApiKey(keyId));
       const isInputEmpty = !apiKeyInput || !apiKeyInput.value.trim();
       autofillBtn.style.display = hasKey && isInputEmpty ? 'inline-block' : 'none';
     }
   }
+
+  await refreshApiKeySaveButton(getProviderKeyId(provider));
 
   const mapboxAvailable = Boolean(
     storedKeys.mapbox || (provider === 'mapbox' && apiKeyInput?.value)
@@ -95,6 +95,17 @@ export async function updateProviderControls(storedKeys: Types.StoredApiKeys): P
       Boolean(storedKeys.mapbox) || (await hasStoredApiKey(Constants.API_KEY_ID_MAPBOX));
     metricAutofillBtn.style.display = !mapboxAvailable && hasMapbox ? 'inline-block' : 'none';
   }
+}
+
+/**
+ * Maps a geocoding provider to the catalog API key it uses.
+ *
+ * @param provider - Selected geocoding provider.
+ * @returns The provider's key id, or null for keyless Nominatim.
+ */
+export function getProviderKeyId(provider: Types.GeocodeProvider): Types.KnownApiKeyId | null {
+  if (provider === 'nominatim') return null;
+  return provider === 'mapbox' ? Constants.API_KEY_ID_MAPBOX : Constants.API_KEY_ID_LOCATIONIQ;
 }
 
 /** Reads the currently selected geocoding provider. */
@@ -125,40 +136,6 @@ export function getSelectedClusterStrategy(): Types.ClusterStrategy {
 export function getPlannerApiKey(): string {
   const input = document.getElementById(Dom.API_KEY_ID) as HTMLInputElement | null;
   return input?.value.trim() || '';
-}
-
-/**
- * Persists the current planner key into the matching catalog slot.
- *
- * @param provider - Provider currently selected in the planner.
- */
-export async function persistPlannerApiKey(provider: Types.GeocodeProvider): Promise<void> {
-  if (provider === 'nominatim') return;
-  const value = getPlannerApiKey();
-  if (!value) return;
-  const keyId =
-    provider === 'mapbox' ? Constants.API_KEY_ID_MAPBOX : Constants.API_KEY_ID_LOCATIONIQ;
-  await saveApiKey(keyId, value);
-}
-
-/**
- * Binds the show/hide toggle and input change listener for the planner API key field.
- *
- * @param onInputChange - Optional callback invoked when the user modifies the API key input.
- */
-export function setupApiKeyVisibilityToggle(onInputChange?: () => void): void {
-  const toggle = document.getElementById(Dom.API_KEY_TOGGLE_ID);
-  const input = document.getElementById(Dom.API_KEY_ID) as HTMLInputElement | null;
-  toggle?.addEventListener('click', () => {
-    if (!input) return;
-    const hidden = input.type === 'password';
-    input.type = hidden ? 'text' : 'password';
-    if (toggle)
-      toggle.textContent = hidden ? Constants.API_KEYS_HIDE_LABEL : Constants.API_KEYS_SHOW_LABEL;
-  });
-  input?.addEventListener('input', () => {
-    onInputChange?.();
-  });
 }
 
 /**

@@ -4,6 +4,7 @@ import { getStoredApiKeys } from '@/utils/security/apiKeyStorageUtils';
 import { showConfirmationModal, showToast } from '@/actions/tripPlanning/utils';
 import { Constants, Dom, Types } from '@/actions/tripPlanning/types';
 import { showTripPinModal } from '@/actions/tripPlanning/ui/pinModalHelper';
+import { fillSavedApiKey, setupApiKeyField } from '@/actions/tripPlanning/ui/apiKeyFieldHelper';
 import { clusterAddresses } from '@/actions/tripPlanning/routing/clusteringHelper';
 import { exportTripCsv } from '@/actions/tripPlanning/export/exportHelper';
 import { displayFailedGeocodes } from '@/actions/tripPlanning/ui/failureFixerHelper';
@@ -28,13 +29,12 @@ import {
 } from '@/actions/tripPlanning/ui/stateHelper';
 import {
   getPlannerApiKey,
+  getProviderKeyId,
   getSelectedClusterStrategy,
   getSelectedMetric,
   getSelectedProvider,
-  persistPlannerApiKey,
   setButtonEnabled,
   setGeocodeProgress,
-  setupApiKeyVisibilityToggle,
   setupPlannerChrome,
   updateProviderControls,
 } from '@/actions/tripPlanning/ui/uiHelper';
@@ -52,9 +52,12 @@ export async function initTripPlanner(): Promise<void> {
   storedKeys = await getStoredApiKeys();
   initTripMap(storedKeys.mapbox || '');
   setupPlannerChrome();
-  setupApiKeyVisibilityToggle(() => {
-    void updateProviderControls(storedKeys);
-  });
+  setupApiKeyField(
+    () => getProviderKeyId(getSelectedProvider()),
+    () => {
+      void refreshSavedKeysAndControls();
+    }
+  );
   bindPlannerActions();
   await updateProviderControls(storedKeys);
   await loadStoredMembers();
@@ -142,9 +145,9 @@ async function handleGeocode(): Promise<void> {
     return;
   }
 
-  await persistPlannerApiKey(provider);
-  storedKeys = await getStoredApiKeys();
-  if (storedKeys.mapbox) refreshTripBasemap(storedKeys.mapbox);
+  // Keys are only saved through the Save button; a typed Mapbox key is used for this visit
+  const sessionMapboxKey = getSessionMapboxKey();
+  if (sessionMapboxKey) refreshTripBasemap(sessionMapboxKey);
   await updateProviderControls(storedKeys);
 
   const { records, geocoded: currentGeocoded } = getTripState();
@@ -197,7 +200,7 @@ async function handleGeocode(): Promise<void> {
 /** Loads the PDF export (and jsPDF) only when needed, keeping the planner page bundle small. */
 async function handleExportPdf(): Promise<void> {
   const { exportTripPdf } = await import('@/actions/tripPlanning/export/pdfExportHelper');
-  await exportTripPdf(storedKeys.mapbox || '');
+  await exportTripPdf(getSessionMapboxKey());
 }
 
 /** Clusters geocoded members using the selected strategy. */
@@ -239,7 +242,7 @@ async function handleOptimize(): Promise<void> {
   try {
     const metric = getSelectedMetric();
     const provider = getSelectedProvider();
-    const mapboxKey = storedKeys.mapbox || (provider === 'mapbox' ? getPlannerApiKey() : '');
+    const mapboxKey = getSessionMapboxKey();
     const geocodeKey =
       provider === 'nominatim' ? '' : getPlannerApiKey() || storedKeys[provider] || '';
     const routes = await optimizeRoutes(
@@ -286,7 +289,7 @@ function applyUnlockedKeys(keys: Types.StoredApiKeys, targetKeyId: Types.KnownAp
   const currentProvider = getSelectedProvider();
 
   if (apiKeyInput && keys[targetKeyId] && (currentProvider === targetKeyId || !apiKeyInput.value)) {
-    apiKeyInput.value = keys[targetKeyId] || '';
+    fillSavedApiKey(keys[targetKeyId] || '');
   }
 
   void updateProviderControls(keys);
@@ -294,6 +297,18 @@ function applyUnlockedKeys(keys: Types.StoredApiKeys, targetKeyId: Types.KnownAp
   if (keys.mapbox) {
     refreshTripBasemap(keys.mapbox);
   }
+}
+
+/** Mapbox key for this visit: the saved (unlocked) key, else a typed but unsaved Mapbox key. */
+function getSessionMapboxKey(): string {
+  if (storedKeys.mapbox) return storedKeys.mapbox;
+  return getSelectedProvider() === 'mapbox' ? getPlannerApiKey() : '';
+}
+
+/** Re-reads saved keys (e.g. after Save unlocked the session) and refreshes key controls. */
+async function refreshSavedKeysAndControls(): Promise<void> {
+  storedKeys = await getStoredApiKeys();
+  await updateProviderControls(storedKeys);
 }
 
 document.addEventListener('DOMContentLoaded', () => {

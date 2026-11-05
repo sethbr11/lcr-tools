@@ -26,6 +26,12 @@ export const Dom = {
   API_KEY_TOGGLE_ID: 'apiKeyToggle',
   /** API key autofill button ID. */
   API_KEY_AUTOFILL_BTN_ID: 'apiKeyAutofillBtn',
+  /** Planner button that saves (or replaces) the typed API key; hidden for autofilled keys. */
+  API_KEY_SAVE_BTN_ID: 'apiKeySaveBtn',
+  /** Attribute on the API key input recording whether its value was autofilled from saved keys. */
+  API_KEY_SOURCE_ATTR: 'data-key-source',
+  /** API key source value meaning the field holds a key autofilled from saved settings. */
+  API_KEY_SOURCE_SAVED: 'saved',
   /** Start geocoding button ID. */
   GEOCODE_BTN_ID: 'geocodeBtn',
   /** Geocode progress container ID. */
@@ -80,6 +86,10 @@ export const Dom = {
   PIN_MODAL_OVERLAY_ID: 'lcr-tools-trip-pin-overlay',
   /** Trip Planner PIN unlock input element ID. */
   PIN_MODAL_INPUT_ID: 'lcr-tools-trip-pin-input',
+  /** Trip Planner PIN confirmation input, shown only when creating a PIN. */
+  PIN_MODAL_CONFIRM_INPUT_ID: 'lcr-tools-trip-pin-confirm',
+  /** Trip Planner PIN modal title element ID. */
+  PIN_MODAL_TITLE_ID: 'lcr-tools-trip-pin-title',
   /** Trip Planner PIN unlock submit button ID. */
   PIN_MODAL_SUBMIT_ID: 'lcr-tools-trip-pin-submit',
   /** Trip Planner PIN unlock modal close button ID. */

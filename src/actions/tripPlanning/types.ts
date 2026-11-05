@@ -19,6 +19,8 @@ export namespace Types {
 
   /** Geocoding provider identifier used by the Trip Planner. */
   export type GeocodeProvider = 'nominatim' | 'locationiq' | 'mapbox';
+  /** PIN dialog purpose: unlock to autofill, unlock to save, create a PIN, or re-check to reveal. */
+  export type TripPinMode = 'unlock' | 'save' | 'setup' | 'verify';
   /** Distance metric used when optimizing visit routes. */
   export type DistanceMetric = 'straight' | 'mapbox';
   /** Clustering strategy selected in the planner UI. */

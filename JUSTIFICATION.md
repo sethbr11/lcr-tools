@@ -113,11 +113,11 @@ This document provides the definitive architectural justification and privacy pr
   - **Fallback:** Unmatched rows send **street address strings only** to Nominatim, LocationIQ, or Mapbox. Member names, phones, emails, UUIDs, and unit numbers are never attached to those requests. Results are cached locally by address (`geocode_cache`).
   - **Basemap:** Carto Voyager raster tiles (`z/x/y` only). Optional Mapbox Streets tiles if a stored Mapbox key is present.
   - **Optional road routing:** Mapbox Matrix and Directions receive coordinates only.
-  - **Storage keys:** `tripPlanningData`, `tripPlanningHeaders`, `geocode_cache`, `trip_planner_starting_address` (optional default starting address), and catalog API keys in `lcr_api_keys`.
+  - **Storage keys:** `tripPlanningData`, `tripPlanningHeaders`, `geocode_cache`, `trip_planner_starting_address` (last group starting address the user saved, offered when setting another group's start), `trip_planner_pdf_fields` (the column names chosen for the PDF export; no member data), and catalog API keys in `lcr_api_keys`.
 - **Precautions Taken:**
   - Church coordinates are preferred so residential addresses are not disclosed to third-party geocoders when a Directory match exists.
   - Geocode and routing requests never include member identity fields.
-  - Catalog API keys (Mapbox, LocationIQ) are stored only on this device in `browser.storage.local` and encrypted at rest with AES-256-GCM when a Security PIN is configured; users cannot add custom key names. Popup access to view, edit, or reveal stored keys is strictly gated to active Church LCR domains and requires PIN unlock.
+  - Catalog API keys (Mapbox, LocationIQ) are stored only on this device in `browser.storage.local` and always encrypted at rest with AES-256-GCM (saving a key requires creating or unlocking a Security PIN, and keys are saved only when the user clicks Save); users cannot add custom key names. Popup access to view, edit, or reveal stored keys is strictly gated to active Church LCR domains and requires PIN unlock.
   - Prompts users with a Handbook 33.8 data stewardship warning before CSV download.
 - **Handbook Alignment:** Minimizes third-party disclosure of member addresses while assisting with authorized pastoral visits (Handbook 33.8 and 38.8.31).
 

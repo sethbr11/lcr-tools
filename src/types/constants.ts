@@ -195,6 +195,40 @@ export const Constants = {
   TRIP_PIN_MODAL_SUBMIT: 'Unlock & Autofill',
   /** Toast message shown after successfully unlocking and autofilling API key. */
   TRIP_PIN_MODAL_SUCCESS: 'API key autofilled successfully.',
+  /** Title of the trip planner dialog that creates a PIN before saving a key. */
+  TRIP_PIN_SETUP_TITLE: 'Create a Security PIN',
+  /** Explanation in the trip planner dialog that creates a PIN before saving a key. */
+  TRIP_PIN_SETUP_DESC:
+    'Saved API keys are always encrypted with a PIN. Choose a 4–8 digit PIN; you will enter it to use or reveal saved keys.',
+  /** Submit button text in the trip planner PIN creation dialog. */
+  TRIP_PIN_SETUP_SUBMIT: 'Create PIN',
+  /** Label for the PIN confirmation field when creating a PIN in the trip planner. */
+  TRIP_PIN_CONFIRM_LABEL: 'Confirm PIN:',
+  /** Title of the trip planner dialog that re-checks the PIN before revealing a saved key. */
+  TRIP_PIN_VERIFY_TITLE: 'Enter PIN to Reveal Key',
+  /** Explanation in the trip planner dialog that re-checks the PIN before revealing a saved key. */
+  TRIP_PIN_VERIFY_DESC: 'Saved keys stay hidden. Enter your security PIN to show this one.',
+  /** Submit button text in the trip planner PIN re-check dialog. */
+  TRIP_PIN_VERIFY_SUBMIT: 'Show Key',
+  /** Title of the trip planner dialog that unlocks the session before saving a key. */
+  TRIP_PIN_SAVE_TITLE: 'Unlock to Save Key',
+  /** Explanation in the trip planner dialog that unlocks the session before saving a key. */
+  TRIP_PIN_SAVE_DESC: 'Enter your security PIN to encrypt and save this API key.',
+  /** Submit button text in the trip planner unlock-to-save dialog. */
+  TRIP_PIN_SAVE_SUBMIT: 'Unlock & Save',
+  /** Planner button label that saves a typed API key when none is saved yet. */
+  TRIP_KEY_SAVE_LABEL: 'Save key',
+  /** Planner button label that overwrites the API key already saved for this service. */
+  TRIP_KEY_REPLACE_LABEL: 'Replace saved key',
+  /** Title of the confirmation shown before overwriting a saved API key. */
+  TRIP_KEY_REPLACE_TITLE: 'Replace saved key?',
+  /** Message of the confirmation shown before overwriting a saved API key. */
+  TRIP_KEY_REPLACE_MESSAGE:
+    'A key is already saved for this service. Replace it with the key in this box? Only one key is kept per service.',
+  /** Toast shown after a planner API key is encrypted and saved. */
+  TRIP_KEY_SAVED_TOAST: 'API key encrypted and saved.',
+  /** Toast shown when a planner API key could not be saved. */
+  TRIP_KEY_SAVE_FAILED_TOAST: 'The API key could not be saved. Please try again.',
   /** Label for the autofill key button on trip planner page. */
   TRIP_PIN_AUTOFILL_LABEL: 'Autofill',
   /** Local storage key used to persist state dropdown auto-sync passive preference. */
