@@ -1,3 +1,5 @@
+import { Types } from '../types';
+
 /* ==========================================================================
    EXPORTED FUNCTIONS
    ========================================================================== */
@@ -38,7 +40,7 @@ export function clearElement(target: Element): void {
  * @param html - The raw HTML string.
  * @returns The markup to parse and the selector locating the element holding the result.
  */
-function getParseContext(target: Element, html: string): { markup: string; selector: string } {
+function getParseContext(target: Element, html: string): Types.HtmlParseContext {
   switch (target.tagName) {
     case 'TR':
       return { markup: `<table><tbody><tr>${html}</tr></tbody></table>`, selector: 'tr' };

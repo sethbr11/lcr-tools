@@ -28,7 +28,7 @@ export namespace Types {
   /** Origin of a member coordinate pair. */
   export type CoordSource = 'church' | 'geocode' | 'manual';
   /** Turf feature representing a clustered member. */
-  export type ClusterFeature = Feature<Point, Types.TripMapMember>;
+  export type ClusterFeature = Feature<Point, TripMapMember>;
   /** Member entry formatted for map trip planning. */
   export interface TripPlanningMember {
     /** Full name of the member. */
@@ -202,192 +202,101 @@ export namespace Types {
     /** Original LCR table headers. */
     originalHeaders: string[];
   }
+  /** A keyless raster basemap the planner and PDF can draw. Templates use {z}/{x}/{y}. */
+  export interface KeylessBasemap {
+    /** Short provider id, for logs and tests. */
+    id: 'usgs' | 'esri';
+    /** Tile URL template (256px tiles). */
+    tileUrl: string;
+    /** Attribution HTML for the on-screen Leaflet map. */
+    attributionHtml: string;
+    /** Plain-text attribution printed on PDF maps. */
+    attributionText: string;
+    /** Highest zoom the provider actually has tiles for; deeper zooms scale these up. */
+    maxNativeZoom: number;
+  }
+  /** Everything needed to draw one cluster's map. */
+  export interface ClusterMapInput {
+    /** Ordered stops; stop N is labelled N on the map. */
+    stops: CoordinatePoint[];
+    /** Optional starting point, drawn as an "S" square. */
+    startPoint?: CoordinatePoint;
+    /** Optional road path as [lat, lng] pairs; straight lines connect the stops without it. */
+    geometry?: [number, number][];
+    /** Whether to draw the route line (false when routes have not been optimized). */
+    drawRoute: boolean;
+    /** Cluster color as a CSS hex string. */
+    color: string;
+    /** Mapbox token; when set, Mapbox Streets tiles are used like the on-screen map, else USGS/Esri. */
+    mapboxToken?: string;
+  }
+  /** One group's page content. */
+  export interface PdfClusterSection {
+    /** Zero-based cluster id. */
+    clusterId: number;
+    /** Cluster color as a CSS hex string. */
+    color: string;
+    /** Stops in visit order (route order when optimized, otherwise by name). */
+    stops: TripMapMember[];
+    /** Starting point coordinates, when the route has one. */
+    startPoint?: CoordinatePoint;
+    /** Starting address text, when the group has one. */
+    startAddress?: string;
+    /** Road path as [lat, lng] pairs, when routed with Mapbox. */
+    geometry?: [number, number][];
+    /** True when stops are in optimized route order. */
+    isRouted: boolean;
+    /** Route length in miles, when routed. */
+    miles?: number;
+  }
+  /** Title, description, and submit label shown in the Trip Planner PIN dialog. */
+  export interface TripPinCopy {
+    /** Dialog heading. */
+    title: string;
+    /** Explanatory sentence under the heading. */
+    desc: string;
+    /** Submit button label. */
+    submit: string;
+  }
+  /** Result of one k-means run over planar points. */
+  export interface KMeansResult {
+    /** Cluster index per point. */
+    assignments: number[];
+    /** Final centroid per cluster, in planar coordinates. */
+    centroids: [number, number][];
+    /** Lloyd iterations performed. */
+    iterations: number;
+  }
+  /** Static map viewport: zoom level and the world-pixel position of the top-left corner. */
+  export interface MapView {
+    /** Web Mercator zoom level. */
+    zoom: number;
+    /** World-pixel x of the map's left edge. */
+    originX: number;
+    /** World-pixel y of the map's top edge. */
+    originY: number;
+  }
+  /** Planar distance and coordinate fields mapped to the static map tile source. */
+  export interface MapTileSource {
+    /** Tile URL template with {z}/{x}/{y}. */
+    template: string;
+    /** Deepest zoom the source has tiles for. */
+    maxNativeZoom: number;
+    /** Attribution printed on the map. */
+    attribution: string;
+  }
 }
 
 /* ==========================================================================
    CONSTANTS
    ========================================================================== */
 
-export const Constants = {
-  ...Base.Constants,
-  /** Extension storage key holding member data sent to Trip Planner tab. */
-  STORAGE_DATA_KEY: 'tripPlanningData',
-  /** Extension storage key holding table header names for Trip Planner tab. */
-  STORAGE_HEADERS_KEY: 'tripPlanningHeaders',
-  /** Extension storage key holding cached geocode results keyed by address. */
-  GEOCODE_CACHE_KEY: 'geocode_cache',
-  /** Relative URL path for the standalone trip planning tool tab. */
-  PAGE_PATH: '/trip-planning.html',
-  /** Title of the prompt shown when the browser blocked opening the planner tab. */
-  READY_TITLE: 'Trip Planner is ready',
-  /** Message of the prompt shown when the browser blocked opening the planner tab. */
-  READY_MESSAGE: 'Your browser blocked the new tab. Click Open to view the Trip Planner.',
-  /** Confirmation modal title shown before opening the planner. */
-  CONFIRM_TITLE: 'Trip Planner',
-  /** Confirmation modal body shown before opening the planner. */
-  CONFIRM_MESSAGE: 'This will open the Trip Planner in a new tab. Proceed?',
-  /** Confirmation button label for opening the planner. */
-  CONFIRM_OPEN_TEXT: 'Open Trip Planner',
-  /** Cancel button label for the planner launch confirmation. */
-  CONFIRM_CANCEL_TEXT: 'Cancel',
-  /** Display name used when LCR layout verification fails. */
-  ACTION_DISPLAY_NAME: 'Trip Planner',
-  /** Maintenance reason when no tables are found on the Moved In report. */
-  MAINTENANCE_NO_TABLES: 'No member tables could be located on this page.',
-  /** Maintenance reason when Name or Address columns are missing. */
-  MAINTENANCE_MISSING_COLUMNS:
-    'Visible Name and Address columns could not be located on the selected table.',
-  /** Nominatim contact email required by their usage policy. */
-  NOMINATIM_EMAIL: Base.Constants.MAINTENANCE_EMAIL,
-  /** Nominatim search endpoint. */
-  NOMINATIM_SEARCH_URL: 'https://nominatim.openstreetmap.org/search',
-  /** LocationIQ search endpoint. */
-  LOCATIONIQ_SEARCH_URL: 'https://us1.locationiq.com/v1/search.php',
-  /** Mapbox geocoding endpoint prefix. */
-  MAPBOX_GEOCODE_URL: 'https://api.mapbox.com/geocoding/v5/mapbox.places',
-  /** Mapbox Directions Matrix endpoint prefix without trailing slash. */
-  MAPBOX_MATRIX_URL: 'https://api.mapbox.com/directions-matrix/v1/mapbox/driving',
-  /** Mapbox Directions endpoint used once per cluster to draw its road path. */
-  MAPBOX_DIRECTIONS_URL: 'https://api.mapbox.com/directions/v5/mapbox/driving',
-  /** Maximum waypoints Mapbox Directions accepts in one request. */
-  MAPBOX_DIRECTIONS_MAX_WAYPOINTS: 25,
-  /** Mapbox Streets raster tile URL template. */
-  MAPBOX_TILE_URL:
-    'https://api.mapbox.com/styles/v1/mapbox/streets-v12/tiles/{z}/{x}/{y}?access_token={accessToken}',
-  /** Leaflet attribution for Mapbox Streets tiles. */
-  MAPBOX_TILE_ATTRIBUTION: '&copy; Mapbox &copy; OpenStreetMap',
-  /** Default map center latitude. */
-  MAP_DEFAULT_LAT: 20,
-  /** Default map center longitude. */
-  MAP_DEFAULT_LNG: 0,
-  /** Default map zoom. */
-  MAP_DEFAULT_ZOOM: 2,
-  /** Maximum Leaflet tile zoom. */
-  MAP_MAX_ZOOM: 19,
-  /** Leaflet retina-style tile size. */
-  MAP_TILE_SIZE: 512,
-  /** Leaflet zoom offset paired with retina tile size. */
-  MAP_ZOOM_OFFSET: -1,
-  /** Padding applied when fitting map bounds. */
-  MAP_BOUNDS_PADDING: 30,
-  /** Nominatim delay between requests in milliseconds. */
-  NOMINATIM_RATE_LIMIT_MS: 1100,
-  /** Paid-provider delay between geocode requests in milliseconds. */
-  PAID_GEOCODE_RATE_LIMIT_MS: 300,
-  /** Backoff delay in milliseconds when a geocoding provider returns HTTP 429. */
-  RATE_LIMIT_BACKOFF_MS: 5000,
-  /** Mapbox matrix batch size limit. */
-  MAPBOX_MATRIX_BATCH_SIZE: 12,
-  /** Delay in milliseconds before retrying a Mapbox matrix request that returned HTTP 429. */
-  MAPBOX_MATRIX_RETRY_DELAY_MS: 1500,
-  /** Maximum number of retries for a rate-limited Mapbox matrix request. */
-  MAPBOX_MATRIX_MAX_RETRIES: 3,
-  /** Assumed average driving speed in miles per hour when a matrix cell is missing. */
-  FALLBACK_SPEED_MPH: 30,
-  /** Meters per statute mile. */
-  METERS_PER_MILE: 1609.34,
-  /** Maximum 2-opt plus Or-opt improvement passes for an open path. */
-  OPEN_PATH_MAX_PASSES: 50,
-  /** Minimum cost reduction treated as a real path improvement, guarding against float noise. */
-  PATH_IMPROVEMENT_EPSILON: 1e-9,
-  /** Maximum by-size clustering adjustment iterations. */
-  CLUSTER_SIZE_MAX_ITERATIONS: 30,
-  /** Default number of clusters. */
-  CLUSTER_COUNT_DEFAULT: 1,
-  /** Default minimum cluster size. */
-  CLUSTER_MIN_SIZE_DEFAULT: 5,
-  /** Default maximum cluster size. */
-  CLUSTER_MAX_SIZE_DEFAULT: 10,
-  /** Mean radius of Earth in miles used for spherical distance calculations. */
-  EARTH_RADIUS_MILES: 3958.8,
-  /** Ratio of records requiring a ZIP code before flagging missing ZIP format. */
-  ZIP_RATIO_THRESHOLD: 0.6,
-  /** Fallback extension version string for User-Agent when runtime version is unavailable. */
-  FALLBACK_VERSION: '2.0.1',
-  /** Miles per kilometer conversion factor. */
-  MILES_PER_KM: 0.621371,
-  /** Button label for repairing an un-geocoded address. */
-  BUTTON_FIX_TEXT: 'Fix',
-  /** Button label shown while actively repairing an address. */
-  BUTTON_FIXING_TEXT: 'Fixing...',
-  /** Button label for picking coordinates directly on the Leaflet map. */
-  BUTTON_PICK_MAP_TEXT: 'Pick on Map',
-  /** Button label while waiting for map click selection. */
-  BUTTON_PICKING_MAP_TEXT: 'Click map...',
-  /** Confirmation disclosure shown before sending unmapped addresses to external geocoding endpoints. */
-  GEOCODE_DISCLOSURE_CONFIRM:
-    'Send {count} residential address(es) to {provider} to look up coordinates?\n\nOnly street address text is sent—never member names or sensitive personal information.',
-  /** CSV download filename for trip reports. */
-  CSV_FILENAME: 'route_report.csv',
-  /** Extra CSV columns appended after original LCR headers. */
-  CSV_CUSTOM_FIELDS: ['Latitude', 'Longitude', 'Cluster', 'RouteOrder', 'FailureReason'],
-  /** Fallback CSV headers when original headers are unavailable. */
-  CSV_FALLBACK_HEADERS: ['Name', 'Address'],
-  /** User-Agent header sent to Nominatim, with `{version}` replaced at runtime. */
-  GEOCODE_USER_AGENT: 'LCR-Tools-Extension/{version} (https://github.com/sethbr11/lcr-tools)',
-  /** Title displayed on the modal loader while extracting records from LCR. */
-  LOADING_TITLE: 'Preparing Trip Planner...',
-  /** Supporting subtitle displayed on the modal loader while extracting records. */
-  LOADING_SUBHEADER: 'Extracting member records and checking Church Directory coordinates...',
-  /** Storage key for the last starting address saved on a group, offered when editing another. */
-  STORAGE_STARTING_ADDRESS_KEY: 'trip_planner_starting_address',
-  /** Storage key for the columns last chosen for the PDF export. */
-  STORAGE_PDF_FIELDS_KEY: 'trip_planner_pdf_fields',
-  /** Execution log download filename. */
-  LOG_FILENAME: 'trip_planner_execution_log.txt',
-  /** Title text shown in the execution logs modal header. */
-  LOGS_MODAL_TITLE: 'Trip Planner • Execution Log',
-  /** Placeholder text shown when the execution log is empty. */
-  LOGS_NO_ENTRIES: 'No log entries recorded.',
-  /** Toast message shown after execution log download completes. */
-  LOGS_DOWNLOADED_TOAST: 'Execution log downloaded',
-} as const;
+export { Constants } from './constants';
 
 /* ==========================================================================
    REGULAR EXPRESSIONS
    ========================================================================== */
 
-export const Regex = {
-  ...Base.Regex,
-  /** Context: Column headers identifying member name columns. */
-  NAME_HEADER: /name|member/i,
-  /** Context: Column headers identifying member address columns. */
-  ADDRESS_HEADER: /address|street|location/i,
-  /** Context: USPS two-letter state code. */
-  STATE_CODE: /\b[A-Z]{2}\b/,
-  /** Context: Two or three letter state, province, or territory abbreviation (US, CA, AU). */
-  REGION_OR_STATE_CODE: /\b[A-Z]{2,3}\b/,
-  /** Context: International postal code formats (Canada, UK, Australia, Europe, etc.). */
-  POSTAL_CODE_INTL:
-    /\b[A-Z]\d[A-Z]\s*\d[A-Z]\d\b|\b[A-Z]{1,2}\d[A-Z\d]?\s*\d[A-Z]{2}\b|\b\d{4,6}\b/i,
-  /** Context: Global match for US or international postal codes to support stripping variants. */
-  POSTAL_CODE_GLOBAL:
-    /\b\d{5}(?:-\d{4})?\b|\b[A-Z]\d[A-Z]\s*\d[A-Z]\d\b|\b[A-Z]{1,2}\d[A-Z\d]?\s*\d[A-Z]{2}\b|\b\d{4,6}\b/gi,
-  /** Context: International country name tokens found in residential addresses. */
-  COUNTRY_NAME:
-    /\b(?:Canada|UK|United Kingdom|Australia|New Zealand|France|Germany|Spain|Mexico|Japan|Brazil|Philippines|England|Scotland|Wales)\b/i,
-  /** Context: ZIP+4 hyphenated postal code for shortening. */
-  ZIP_PLUS_FOUR: /\b(\d{5})-\d{4}\b/g,
-  /** Context: Five-digit ZIP with optional plus-four. */
-  ZIP_CODE: /\b\d{5}(?:-\d{4})?\b/g,
-  /** Context: Surrounding double quotes on an address string. */
-  SURROUNDING_QUOTES: /^"+|"+$/g,
-  /** Context: Address that does not begin with a street number. */
-  LEADING_STREET_NUMBER: /^\d+/,
-  /** Context: Address that is only a street number. */
-  INCOMPLETE_STREET: /^\d+\s*$/,
-  /** Context: Street number and name before a trailing state code. */
-  NUMBER_STREET_ONLY: /^(\d+\s+[^\d,]+?)(?:\s+[A-Z]{2}\b.*)?$/,
-  /** Context: Glued unit designator attached to preceding street text without whitespace. */
-  GLUED_UNIT:
-    /([a-zA-Z0-9])((?:Ste|Apt|Unit|#|Suite|Bldg|Rm|Room|Floor|Fl|Spc|Space|Lot|Trlr|Trailer)\.?\s*\d+)/gi,
-  /** Context: Glued unit designator attached to following unit number without whitespace. */
-  GLUED_UNIT_DIGIT:
-    /((?:Ste|Apt|Unit|#|Suite|Bldg|Rm|Room|Floor|Fl|Spc|Space|Lot|Trlr|Trailer)\.?)(\d+)/gi,
-  /** Context: Glued number attached to following word without whitespace. */
-  GLUED_NUMBER_WORD: /(\d+)([A-Z][a-z]+)/g,
-  /** Context: Glued two-letter state code attached to five-digit ZIP code without whitespace. */
-  GLUED_STATE_ZIP: /\b([A-Z]{2})(\d{5})\b/g,
-} as const;
+export { Regex } from './regex';
 
 export { Dom } from './dom';

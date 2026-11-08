@@ -1,4 +1,4 @@
-import { Constants } from '../types';
+import { Constants, Types } from '../types';
 
 /* ==========================================================================
    EXPORTED FUNCTIONS
@@ -42,7 +42,7 @@ export function bestKMeans(
   xy: [number, number][],
   k: number,
   log: (message: string) => void = () => {}
-): { assignments: number[]; centroids: [number, number][]; iterations: number } {
+): Types.KMeansResult {
   const distinctCount = getDistinctIndices(xy).length;
   const clusterTotal = Math.min(k, distinctCount);
   if (clusterTotal < k) {
@@ -51,11 +51,13 @@ export function bestKMeans(
     );
   }
 
-  const runs = Array.from({ length: KMEANS_RESTARTS }, (_, i) => kMeans(xy, clusterTotal, i + 1));
+  const runs = Array.from({ length: Constants.KMEANS_RESTARTS }, (_, i) =>
+    kMeans(xy, clusterTotal, i + 1)
+  );
   const costs = runs.map((run) => withinClusterCost(xy, run.assignments, run.centroids));
   const best = runs[argMin(runs.length, (i) => costs[i])];
   log(
-    `k-means chose ${best.centroids.length} clusters (best of ${KMEANS_RESTARTS} restarts, ${best.iterations} iterations).`
+    `k-means chose ${best.centroids.length} clusters (best of ${Constants.KMEANS_RESTARTS} restarts, ${best.iterations} iterations).`
   );
   return best;
 }
@@ -71,11 +73,7 @@ export function bestKMeans(
  * @returns Cluster index per point, final centroids, and Lloyd iterations used.
  * @internal
  */
-export function kMeans(
-  xy: [number, number][],
-  k: number,
-  seed: number
-): { assignments: number[]; centroids: [number, number][]; iterations: number } {
+export function kMeans(xy: [number, number][], k: number, seed: number): Types.KMeansResult {
   const distinct = getDistinctIndices(xy);
   const clusterTotal = Math.max(0, Math.min(k, distinct.length));
   if (clusterTotal === 0) return { assignments: [], centroids: [], iterations: 0 };
@@ -86,7 +84,7 @@ export function kMeans(
 
   // Step 2: Lloyd iterations
   let iterations = 0;
-  while (iterations < KMEANS_MAX_ITERATIONS) {
+  while (iterations < Constants.KMEANS_MAX_ITERATIONS) {
     iterations += 1;
     let changed = false;
     xy.forEach((point, index) => {
@@ -168,13 +166,6 @@ export function capacitatedClusters(
    HELPER FUNCTIONS
    ========================================================================== */
 
-/** Maximum Lloyd iterations per k-means run. */
-const KMEANS_MAX_ITERATIONS = 100;
-/** Number of seeded k-means restarts; the lowest-variance result wins. */
-const KMEANS_RESTARTS = 8;
-/** Decimal places used to treat two coordinates as the same location. */
-const COORD_KEY_DECIMALS = 6;
-
 /** Creates a deterministic pseudo-random generator returning values in [0, 1). */
 function mulberry32(seed: number): () => number {
   let state = seed >>> 0;
@@ -194,7 +185,7 @@ function squaredDistance(left: [number, number], right: [number, number]): numbe
 
 /** Builds a string key identifying a location at 6-decimal precision. */
 function coordKey(point: [number, number]): string {
-  return `${point[0].toFixed(COORD_KEY_DECIMALS)},${point[1].toFixed(COORD_KEY_DECIMALS)}`;
+  return `${point[0].toFixed(Constants.KMEANS_COORD_KEY_DECIMALS)},${point[1].toFixed(Constants.KMEANS_COORD_KEY_DECIMALS)}`;
 }
 
 /** Returns the index of the first point at each distinct (6-decimal) location. */

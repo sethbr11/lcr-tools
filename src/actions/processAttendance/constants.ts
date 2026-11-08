@@ -68,4 +68,10 @@ export const Constants = {
   MIXED_DATES_ERROR: 'All roster rows must use the same date.',
   /** Setup status hint after a mixed-date paste, pointing users to the record editor. */
   MIXED_DATES_FIX_HINT: 'Use View / Edit to correct dates.',
+  /** Minimum surname length (both sides) before one typo is tolerated in a name suggestion. */
+  FUZZY_LAST_NAME_MIN_LENGTH: 5,
+  /** Minimum given-name length (both sides) before one typo is tolerated in a name suggestion. */
+  FUZZY_FIRST_NAME_MIN_LENGTH: 4,
+  /** Minimum length of the shorter given name for a prefix match to count as a suggestion. */
+  FUZZY_PREFIX_MIN_LENGTH: 3,
 } as const;

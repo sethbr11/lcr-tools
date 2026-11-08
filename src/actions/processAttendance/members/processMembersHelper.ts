@@ -30,7 +30,7 @@ export async function processMembersAgainstRoll(
   Utils.showLoadingIndicator(`Processing ${attendees.length} attendees on LCR...`, 'Press ESC to cancel');
 
   // Step 1: Match every attendee first (no clicks), collecting exact single matches to mark
-  const toMark: BatchMarkEntry[] = [];
+  const toMark: Types.BatchMarkEntry[] = [];
   for (const attendee of attendees) {
     const fullName = `${attendee.firstName} ${attendee.lastName}`.trim();
     const exactIndices = Utils.findExactMemberIndices(fullName, wardMembers);
@@ -143,13 +143,6 @@ export async function markPendingMatches(
    HELPER FUNCTIONS
    ========================================================================== */
 
-/** One roll member to mark, with the roster name that matched it (for the audit log). */
-interface BatchMarkEntry {
-  member: Types.WardMember;
-  firstName: string;
-  lastName: string;
-}
-
 /**
  * Marks members present quickly, then verifies.
  * Clicks every button with a short fixed gap without waiting for each save, then waits for LCR to
@@ -157,14 +150,14 @@ interface BatchMarkEntry {
  * sometimes drops clicks), up to Constants.MARK_RETRY_ROUNDS times.
  */
 async function markMembersInBatch(
-  entries: BatchMarkEntry[],
+  entries: Types.BatchMarkEntry[],
   targetDate: string,
   logs: Types.AttendanceLogEntry[],
   label: string = 'attendee'
-): Promise<{ newlyMarked: number; alreadyMarked: number; aborted: boolean }> {
+): Promise<Types.MarkPendingMatchesResult> {
   let newlyMarked = 0;
   let alreadyMarked = 0;
-  const log = (entry: BatchMarkEntry, action: string, status: string) =>
+  const log = (entry: Types.BatchMarkEntry, action: string, status: string) =>
     Utils.pushAttendanceLog(logs, {
       date: targetDate,
       action,
@@ -173,11 +166,11 @@ async function markMembersInBatch(
       lastName: entry.lastName,
       lcrUpdateStatus: status,
     });
-  const countConfirmed = (clicked: BatchMarkEntry[]) =>
+  const countConfirmed = (clicked: Types.BatchMarkEntry[]) =>
     clicked.filter((entry) => MarkHelper.isMemberMarkedPresent(entry.member)).length;
 
   // Pass 1: click every button, paced but without waiting for each save
-  let pending: BatchMarkEntry[] = [];
+  let pending: Types.BatchMarkEntry[] = [];
   for (let i = 0; i < entries.length; i++) {
     if (Utils.isAborted()) {
       return { newlyMarked: countConfirmed(pending), alreadyMarked, aborted: true };
@@ -217,7 +210,7 @@ async function markMembersInBatch(
       Constants.MARK_PRESENT_POLL_MS
     );
 
-    const notYet: BatchMarkEntry[] = [];
+    const notYet: Types.BatchMarkEntry[] = [];
     for (const entry of pending) {
       if (!MarkHelper.isMemberMarkedPresent(entry.member)) {
         notYet.push(entry);

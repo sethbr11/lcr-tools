@@ -1,4 +1,5 @@
 import { browser } from 'wxt/browser';
+import { replaceTemplate } from '../utils';
 import { Constants, Dom } from '../types';
 import { getClusterStartAddress, logTripStatus, setClusterStartAddress } from './stateHelper';
 
@@ -37,17 +38,17 @@ function showSummary(row: HTMLElement, clusterId: number, allClusterIds: number[
   const custom = getClusterStartAddress(clusterId);
   const label = document.createElement('span');
   label.className = Dom.CLUSTER_START_LABEL_CLASS;
-  label.textContent = 'Start:';
+  label.textContent = Constants.CLUSTER_START_LABEL;
 
   const value = document.createElement('span');
   value.className = Dom.CLUSTER_START_VALUE_CLASS;
-  value.textContent = custom || 'First stop';
-  value.title = custom || 'No starting address; the route begins at the first stop';
+  value.textContent = custom || Constants.CLUSTER_START_DEFAULT;
+  value.title = custom || Constants.CLUSTER_START_DEFAULT_TITLE;
 
   const change = document.createElement('button');
   change.type = 'button';
   change.className = Dom.CLUSTER_START_LINK_CLASS;
-  change.textContent = custom ? 'Edit' : 'Set start';
+  change.textContent = custom ? Constants.CLUSTER_START_EDIT : Constants.CLUSTER_START_SET;
   change.addEventListener('click', () => {
     void showEditor(row, clusterId, allClusterIds);
   });
@@ -64,21 +65,23 @@ async function showEditor(
   const input = document.createElement('input');
   input.type = 'text';
   input.className = Dom.CLUSTER_START_INPUT_CLASS;
-  input.placeholder = 'Starting address for this group';
+  input.placeholder = Constants.CLUSTER_START_PLACEHOLDER;
   input.value = getClusterStartAddress(clusterId) || (await getLastUsedAddress());
 
   const apply = (ids: number[], address: string) => {
     for (const id of ids) setClusterStartAddress(id, address);
     if (address.trim()) void rememberAddress(address.trim());
-    const who = ids.length > 1 ? 'All groups' : `Cluster ${clusterId + 1}`;
-    const where = address.trim() || 'their first stop';
-    logTripStatus(`${who} will start from ${where}. Run Optimize Routes to apply.`);
+    const who = ids.length > 1 ? Constants.CLUSTER_START_ALL_GROUPS : `Cluster ${clusterId + 1}`;
+    const where = address.trim() || Constants.CLUSTER_START_FIRST_STOP;
+    logTripStatus(replaceTemplate(Constants.CLUSTER_START_APPLIED_LOG, { who, where }));
     refreshSummaries(ids, allClusterIds);
   };
 
-  const save = makeLink('Save', () => apply([clusterId], input.value));
-  const applyAll = makeLink('Use for all groups', () => apply(allClusterIds, input.value));
-  const clear = makeLink('Clear', () => apply([clusterId], ''));
+  const save = makeLink(Constants.CLUSTER_START_SAVE, () => apply([clusterId], input.value));
+  const applyAll = makeLink(Constants.CLUSTER_START_APPLY_ALL, () =>
+    apply(allClusterIds, input.value)
+  );
+  const clear = makeLink(Constants.CLUSTER_START_CLEAR, () => apply([clusterId], ''));
 
   input.addEventListener('keydown', (event) => {
     if (event.key === 'Enter') apply([clusterId], input.value);

@@ -256,13 +256,19 @@ function findVisitorInput(
 /** Discovers input in row corresponding to the column date. */
 function findInputInRowByDate(row: HTMLElement, targetDate: string): HTMLInputElement | null {
   const [year, month, day] = targetDate.split('-').map(Number);
-  const monthAbbr = new Date(year, month - 1, day).toLocaleString('en-US', { month: 'short' });
-  // Day must not be preceded by a digit so "4 Jan" never matches a "14 Jan" column.
-  const dayLabel = new RegExp(`(^|[^0-9])0?${day}\\s+${monthAbbr}\\b`, 'i');
+  const monthAbbr = new Date(year, month - 1, day)
+    .toLocaleString('en-US', { month: 'short' })
+    .toLowerCase();
+
+  // Compare whole day numbers so "4 Jan" never matches a "14 Jan" column
+  const labelsDate = (text: string): boolean =>
+    Array.from(text.matchAll(Regex.DAY_MONTH_LABEL)).some(
+      (m) => Number(m[1]) === day && m[2].toLowerCase() === monthAbbr
+    );
 
   const cells = Array.from(row.querySelectorAll('td'));
   for (const cell of cells) {
-    if (dayLabel.test(cell.textContent || '')) {
+    if (labelsDate(cell.textContent || '')) {
       const input = cell.querySelector<HTMLInputElement>(Dom.NUMBER_INPUT);
       if (input) return input;
     }

@@ -110,7 +110,7 @@ export function requestTripPin(mode: Types.TripPinMode): Promise<boolean> {
    ========================================================================== */
 
 /** Title, description, and submit label for each PIN dialog purpose. */
-function getModeCopy(mode: Types.TripPinMode): { title: string; desc: string; submit: string } {
+function getModeCopy(mode: Types.TripPinMode): Types.TripPinCopy {
   switch (mode) {
     case 'setup':
       return {
@@ -140,10 +140,7 @@ function getModeCopy(mode: Types.TripPinMode): { title: string; desc: string; su
 }
 
 /** Builds the PIN dialog markup, adding a confirmation field when creating a PIN. */
-function buildPinModalHtml(
-  copy: { title: string; desc: string; submit: string },
-  withConfirm: boolean
-): string {
+function buildPinModalHtml(copy: Types.TripPinCopy, withConfirm: boolean): string {
   const pinField = (id: string, label: string) => `
         <div class="trip-pin-input-group">
           <label for="${id}">${label}</label>

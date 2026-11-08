@@ -63,6 +63,13 @@ export namespace Types {
   export type ToastPosition = Base.Types.ToastPosition;
   /** Configuration options for toast notification display. */
   export type ToastOptions = Base.Types.ToastOptions;
+  /** Wrapper markup and result selector used to parse HTML for a particular target element. */
+  export interface HtmlParseContext {
+    /** HTML to parse, wrapped in table elements when the target is a table part. */
+    markup: string;
+    /** Selector for the parsed element whose children become the target's children. */
+    selector: string;
+  }
   /** Privacy settings for an individual Church Directory member. */
   export interface DirectoryMemberPrivacy {
     /** Privacy level for member portrait photo. */

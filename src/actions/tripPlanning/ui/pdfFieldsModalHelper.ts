@@ -1,9 +1,6 @@
 import { browser } from 'wxt/browser';
 import { escapeHtml, setHtml } from '../utils';
-import { Constants, Dom } from '../types';
-
-/** Fields checked the first time, matched case-insensitively against column headers. */
-const DEFAULT_FIELD_PATTERN = /name|address|phone/i;
+import { Constants, Dom, Regex } from '../types';
 
 /* ==========================================================================
    EXPORTED FUNCTIONS
@@ -20,7 +17,9 @@ export async function promptPdfFields(fields: string[]): Promise<string[] | null
   const saved = await loadSavedFields();
   const savedAvailable = saved.filter((field) => fields.includes(field));
   const initial = new Set(
-    savedAvailable.length > 0 ? savedAvailable : fields.filter((f) => DEFAULT_FIELD_PATTERN.test(f))
+    savedAvailable.length > 0
+      ? savedAvailable
+      : fields.filter((f) => Regex.PDF_DEFAULT_FIELD.test(f))
   );
 
   return new Promise((resolve) => {
@@ -33,14 +32,14 @@ export async function promptPdfFields(fields: string[]): Promise<string[] | null
       `
       <div class="trip-modal-card trip-pdf-card">
         <div class="trip-modal-header">
-          <h2 class="trip-modal-title">PDF columns</h2>
+          <h2 class="trip-modal-title">${Constants.PDF_FIELDS_TITLE}</h2>
           <button type="button" class="trip-close-btn" data-pdf-action="cancel">&times;</button>
         </div>
         <div class="trip-modal-body">
-          <p class="trip-pdf-desc">Choose what to show in each group's table. The stop number always comes first and matches the numbered dots on the map.</p>
+          <p class="trip-pdf-desc">${Constants.PDF_FIELDS_DESC}</p>
           <div class="trip-pdf-quick">
-            <button type="button" class="cluster-start-link" data-pdf-action="all">Select all</button>
-            <button type="button" class="cluster-start-link" data-pdf-action="none">Clear</button>
+            <button type="button" class="cluster-start-link" data-pdf-action="all">${Constants.PDF_FIELDS_SELECT_ALL}</button>
+            <button type="button" class="cluster-start-link" data-pdf-action="none">${Constants.CLUSTER_START_CLEAR}</button>
           </div>
           <div class="trip-pdf-fields">
             ${fields
@@ -55,8 +54,8 @@ export async function promptPdfFields(fields: string[]): Promise<string[] | null
           </div>
         </div>
         <div class="trip-modal-footer">
-          <button type="button" class="lcr-tools-btn lcr-tools-btn-tertiary" data-pdf-action="cancel" style="width: auto; margin: 0;">Cancel</button>
-          <button type="button" class="lcr-tools-btn lcr-tools-btn-primary" data-pdf-action="export" style="width: auto; margin: 0;">Export PDF</button>
+          <button type="button" class="lcr-tools-btn lcr-tools-btn-tertiary" data-pdf-action="cancel" style="width: auto; margin: 0;">${Constants.CONFIRM_CANCEL_TEXT}</button>
+          <button type="button" class="lcr-tools-btn lcr-tools-btn-primary" data-pdf-action="export" style="width: auto; margin: 0;">${Constants.PDF_FIELDS_EXPORT}</button>
         </div>
       </div>
     `

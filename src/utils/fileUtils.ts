@@ -155,6 +155,6 @@ export function normalizeFilenamePart(text: string): string {
     .trim()
     .replace(Regex.MULTIPLE_SPACES, '_')
     .toLowerCase()
-    .replace(/[_-]{2,}/g, '_')
-    .replace(/^[_-]+|[_-]+$/g, '');
+    .replace(Regex.FILENAME_SEPARATOR_RUN, '_')
+    .replace(Regex.FILENAME_EDGE_SEPARATORS, '');
 }

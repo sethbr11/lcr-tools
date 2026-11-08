@@ -13,13 +13,6 @@ import {
 } from '@/utils';
 import { Constants, Regex, Types } from './types';
 
-/** Minimum surname length (both sides) before one typo is tolerated in a suggestion. */
-const FUZZY_LAST_NAME_MIN_LENGTH = 5;
-/** Minimum given-name length (both sides) before one typo is tolerated in a suggestion. */
-const FUZZY_FIRST_NAME_MIN_LENGTH = 4;
-/** Minimum length of the shorter given name for a prefix relation to count as a suggestion. */
-const FUZZY_PREFIX_MIN_LENGTH = 3;
-
 /* ==========================================================================
    EXPORTED FUNCTIONS
    ========================================================================== */
@@ -260,7 +253,9 @@ function normalizedNameParts(name: string): ReturnType<typeof parseFullName> {
 /** Last-name distance: 0 when equal, 1 for long surnames one edit apart, else null. */
 function lastNameDistance(a: string, b: string): number | null {
   if (a === b) return 0;
-  const bothLong = a.length >= FUZZY_LAST_NAME_MIN_LENGTH && b.length >= FUZZY_LAST_NAME_MIN_LENGTH;
+  const bothLong =
+    a.length >= Constants.FUZZY_LAST_NAME_MIN_LENGTH &&
+    b.length >= Constants.FUZZY_LAST_NAME_MIN_LENGTH;
   return bothLong && levenshteinDistance(a, b) <= 1 ? 1 : null;
 }
 
@@ -268,8 +263,9 @@ function lastNameDistance(a: string, b: string): number | null {
 function firstNameDistance(a: string, b: string): number | null {
   if (a === b) return 0;
   const [shorter, longer] = a.length <= b.length ? [a, b] : [b, a];
-  if (shorter.length >= FUZZY_PREFIX_MIN_LENGTH && longer.startsWith(shorter)) return 0.5;
+  if (shorter.length >= Constants.FUZZY_PREFIX_MIN_LENGTH && longer.startsWith(shorter)) return 0.5;
   const bothLong =
-    a.length >= FUZZY_FIRST_NAME_MIN_LENGTH && b.length >= FUZZY_FIRST_NAME_MIN_LENGTH;
+    a.length >= Constants.FUZZY_FIRST_NAME_MIN_LENGTH &&
+    b.length >= Constants.FUZZY_FIRST_NAME_MIN_LENGTH;
   return bothLong && levenshteinDistance(a, b) <= 1 ? 1 : null;
 }

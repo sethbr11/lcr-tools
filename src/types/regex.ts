@@ -41,6 +41,10 @@ export const Regex = {
   CHURCH_FULL_NAME: /The Church of Jesus Christ of Latter-day Saints/gi,
   /** Context: Stripping characters that are unsafe or invalid for filenames. */
   FILENAME_SANITIZE: /[^a-zA-Z0-9_\- ]/g,
+  /** Context: Collapsing runs of underscores or hyphens in generated filenames. */
+  FILENAME_SEPARATOR_RUN: /[_-]{2,}/g,
+  /** Context: Trimming underscores or hyphens from both ends of generated filenames. */
+  FILENAME_EDGE_SEPARATORS: /^[_-]+|[_-]+$/g,
   /** Context: Extracting member UUID token from member-profile anchor URL. */
   MEMBER_PROFILE_UUID: /member-profile\/([a-f0-9-]+)/,
   /** Context: Stripping trailing count parentheses such as '(14)' from sub-heading text. */
