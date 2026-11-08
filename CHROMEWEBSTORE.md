@@ -2,8 +2,8 @@
 
 > **Extension ID:** `camjilfjkjmgcpmnheoeoomfndedpmbn`  
 > **Store URL:** [Chrome Web Store Listing](https://chromewebstore.google.com/detail/lcr-tools/camjilfjkjmgcpmnheoeoomfndedpmbn)  
-> **Current Version:** 2.0.1  
-> **Last Updated:** October 2026
+> **Current Version:** 2.0.2  
+> **Last Updated:** November 2026
 
 ---
 
@@ -23,7 +23,7 @@ Updated for the 2026 React (Eden) UI Overhaul! This extension has been modernize
 
 Key Features:
 - Effortless Attendance: Enter Sunday attendance via CSV or formatted roster. Automatically matches member names, handles pagination, and routes visitors to proper organization buckets.
-- Trip Planning: Plan ministering routes and visits for newly moved-in families. Prefers Church Directory household coordinates and only geocodes unmatched addresses.
+- Trip Planning: Plan ministering routes and visits for newly moved-in families, with per-group road routes and a printable PDF for each group. Prefers Church Directory household coordinates and only geocodes unmatched addresses.
 - Advanced Report Export: Download table data directly into clean CSV format for authorized spreadsheet tasks. Includes formula-injection protection and multi-table ZIP archiving.
 - Synchronized Table Filters: Apply powerful column-based search, date filters, and calling status toggles across multi-table pages simultaneously.
 - Name & Face Flashcards: Learn names and faces with interactive study flashcards. Honors member photo privacy opt-outs and automatically manages short-lived local caches.
@@ -39,6 +39,18 @@ Data Privacy & Security:
 Please report issues, suggestions, or feedback to seth@brockefni.com.
 
 Recent Updates:
+(2.0.2)
+- Latest LCR Attendance Layout: Process Attendance works with LCR's November 2026 attendance page, selecting the correct Sunday and the attendance button for the chosen class.
+- Safer Name Matching: Only exact name matches are marked automatically (middle names ignored); close matches appear as one-click suggestions to confirm, and members who share a name are never auto-marked.
+- Faster, Self-Checking Attendance Marking: Attendees are marked in a paced batch, then every mark is verified and anything LCR dropped is re-marked before the review step.
+- Safe Page Setup: Attendance stops before marking anything if the month, class, or Sunday can't be confirmed, waits longer for LCR to load, and offers Try Again; visitor counts save all-or-nothing.
+- Trip Planner PDF Export: Download a PDF with a page per group, each with a map of the route, numbered stops, and a table of the columns you choose.
+- Trip Planner Groups & Routes: Get exactly the number of groups requested, set a minimum group size, give each group its own starting address, and see one road route per group with improved stop ordering.
+- Maps Without an API Key: Street maps now load without a Mapbox key (USGS in the US, Esri elsewhere), on screen and in PDFs.
+- API Key Security: Keys typed into the Trip Planner are saved only when you click Save, always encrypted with your PIN; revealing a saved key requires the PIN.
+- Reliable Report Export: Each page is read only after it loads, long reports are no longer silently cut off, and suggested filenames are cleaner and use your local date.
+- Fixes & Compatibility: Ward Boundary Audit reports load failures instead of a false all-clear, Multiple Callings no longer double-counts duplicate rows, Table Filters include the chosen end date, and Firefox/Safari fixes for popup actions, PIN reset, opening the Trip Planner, and dark mode.
+
 (2.0.1)
 - Popup Window Sizing Fix: Resolved issue where Firefox and Safari extension windows were cut off at the bottom by removing restrictive container height constraints and allowing natural sizing up to 600px.
 - Vertical Scrolling Support: Added smooth momentum vertical scrolling and custom scrollbars to the popup content container, ensuring all actions, passive tools, and settings remain accessible regardless of window constraints.
@@ -55,13 +67,6 @@ Recent Updates:
 - Enhanced Trip Planner: International address parsing, Turf spatial clustering, click-to-pin coordinate targeting, and automated Church Directory coordinate lookup.
 - Encrypted Storage & Security: Client-side AES-GCM and SHA-256 salted PIN protection for secure API key storage and diagnostic logs.
 - Privacy & PII Anonymizer: Automated in-memory DOM anonymizer for safe development without transmitting member records.
-
-(1.5.0)
-- 2026 Second-Hour Split Attendance: Full support for the new LCR schedule allowing attendance entry for Sunday School, Class/Quorum (Elders Quorum/Relief Society), or both simultaneously.
-- Single Sunday & Single Class Navigation: Modernized navigation flow to operate directly on Single Sunday date bar tabs and dynamic Class/Quorum dropdown filters.
-- Automated Multi-Organization Visitor Processing: Visitor counts automatically route to their mapped organization views (Men -> Elders Quorum, Women -> Relief Society, Youth -> Aaronic Priesthood/Young Women, Children -> Primary) and save per organization.
-- Smart Organization Reset: Restores the view back to All Classes and Quorums after visitor processing completes.
-- Enhanced Modal Usability: Redesigned class selection with high-contrast indicator cards, modal-wide paste detection, and locked top scroll position on launch.
 
 ---
 Note: This tool is an independent open-source project and is not an official application of The Church of Jesus Christ of Latter-day Saints.

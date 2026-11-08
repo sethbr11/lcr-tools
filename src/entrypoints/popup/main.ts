@@ -113,7 +113,7 @@ export async function initPopup(): Promise<void> {
 
   // Populate active extension version from runtime manifest
   const manifest = browser.runtime?.getManifest?.();
-  const versionText = manifest?.version ? `v${manifest.version}` : 'v2.0.1';
+  const versionText = manifest?.version ? `v${manifest.version}` : 'v2.0.2';
   const versionEl = document.getElementById(Dom.EXTENSION_VERSION_ID);
   if (versionEl) {
     versionEl.textContent = versionText;

@@ -56,7 +56,7 @@ const mockChrome: MockChrome = {
     getURL: (path: string) => `chrome-extension://test-extension-id/${path}`,
     onMessage: { addListener: () => {} },
     sendMessage: () => Promise.resolve(),
-    getManifest: () => ({ version: '2.0.1' }),
+    getManifest: () => ({ version: '2.0.2' }),
   },
   tabs: {
     query: () =>

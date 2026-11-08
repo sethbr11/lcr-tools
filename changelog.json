@@ -1,4 +1,16 @@
 {
+  "2.0.2": [
+    "Latest LCR Attendance Layout: Process Attendance works with LCR's November 2026 attendance page, selecting the correct Sunday and the attendance button for the chosen class.",
+    "Safer Name Matching: Only exact name matches are marked automatically (middle names ignored); close matches appear as one-click suggestions to confirm, and members who share a name are never auto-marked.",
+    "Faster, Self-Checking Attendance Marking: Attendees are marked in a paced batch, then every mark is verified and anything LCR dropped is re-marked before the review step.",
+    "Safe Page Setup: Attendance stops before marking anything if the month, class, or Sunday can't be confirmed, waits longer for LCR to load, and offers Try Again; visitor counts save all-or-nothing.",
+    "Trip Planner PDF Export: Download a PDF with a page per group, each with a map of the route, numbered stops, and a table of the columns you choose.",
+    "Trip Planner Groups & Routes: Get exactly the number of groups requested, set a minimum group size, give each group its own starting address, and see one road route per group with improved stop ordering.",
+    "Maps Without an API Key: Street maps now load without a Mapbox key (USGS in the US, Esri elsewhere), on screen and in PDFs.",
+    "API Key Security: Keys typed into the Trip Planner are saved only when you click Save, always encrypted with your PIN; revealing a saved key requires the PIN.",
+    "Reliable Report Export: Each page is read only after it loads, long reports are no longer silently cut off, and suggested filenames are cleaner and use your local date.",
+    "Fixes & Compatibility: Ward Boundary Audit reports load failures instead of a false all-clear, Multiple Callings no longer double-counts duplicate rows, Table Filters include the chosen end date, and Firefox/Safari fixes for popup actions, PIN reset, opening the Trip Planner, and dark mode."
+  ],
   "2.0.1": [
     "Popup Window Sizing Fix: Resolved issue where Firefox and Safari extension windows were cut off at the bottom by removing restrictive container height constraints and allowing natural sizing up to 600px.",
     "Vertical Scrolling Support: Added smooth momentum vertical scrolling and custom scrollbars to the popup content container, ensuring all actions, passive tools, and settings remain accessible regardless of window constraints.",
