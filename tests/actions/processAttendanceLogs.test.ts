@@ -6,6 +6,7 @@ import { processClassVisitorCounts } from '@/actions/processAttendance/lcr/visit
 import { Dom, Types } from '@/actions/processAttendance/types';
 import * as fileUtils from '@/utils/fileUtils';
 import * as utils from '@/actions/processAttendance/utils';
+import { waitForElement } from '../helpers/waitFor';
 
 describe('processAttendance - action execution logs', () => {
   beforeEach(() => {
@@ -98,7 +99,7 @@ describe('processAttendance - action execution logs', () => {
       const processBtn = overlay?.querySelector(`#${Dom.PROCESS_BTN_ID}`) as HTMLButtonElement;
       processBtn.click();
 
-      await new Promise((r) => setTimeout(r, 80));
+      await waitForElement(`#${Dom.REVIEW_OVERLAY_ID}`);
 
       // Open View Logs modal from review dialog
       const resultsOverlay = document.querySelector(`#${Dom.REVIEW_OVERLAY_ID}`);
@@ -147,8 +148,7 @@ describe('processAttendance - action execution logs', () => {
 
       (logsOverlay?.querySelector(`#${Dom.LOGS_DONE_ID}`) as HTMLButtonElement)?.click();
       (resultsOverlay?.querySelector(`#${Dom.REVIEW_CONTINUE_ID}`) as HTMLButtonElement)?.click();
-      await new Promise((r) => setTimeout(r, 80));
-      (document.querySelector(`#${Dom.COMPLETION_DONE_ID}`) as HTMLButtonElement)?.click();
+      (await waitForElement<HTMLButtonElement>(`#${Dom.COMPLETION_DONE_ID}`)).click();
 
       const result = await actionPromise;
       expect(result.success).toBe(true);

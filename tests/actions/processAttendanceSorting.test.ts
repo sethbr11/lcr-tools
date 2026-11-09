@@ -3,6 +3,7 @@ import { runProcessAttendance } from '@/actions/processAttendance';
 import * as MarkHelper from '@/actions/processAttendance/lcr/markHelper';
 import { sortAttendeesAlphabetically } from '@/actions/processAttendance/utils';
 import { Dom, Types } from '@/actions/processAttendance/types';
+import { waitForElement } from '../helpers/waitFor';
 
 describe('processAttendance - alphabetical sorting and live scrolling', () => {
   describe('sortAttendeesAlphabetically', () => {
@@ -174,10 +175,8 @@ describe('processAttendance - alphabetical sorting and live scrolling', () => {
       const processBtn = overlay?.querySelector(`#${Dom.PROCESS_BTN_ID}`) as HTMLButtonElement;
       processBtn.click();
 
-      await new Promise((r) => setTimeout(r, 80));
-      (document.querySelector(`#${Dom.REVIEW_CONTINUE_ID}`) as HTMLButtonElement)?.click();
-      await new Promise((r) => setTimeout(r, 80));
-      (document.querySelector(`#${Dom.COMPLETION_DONE_ID}`) as HTMLButtonElement)?.click();
+      (await waitForElement<HTMLButtonElement>(`#${Dom.REVIEW_CONTINUE_ID}`)).click();
+      (await waitForElement<HTMLButtonElement>(`#${Dom.COMPLETION_DONE_ID}`)).click();
 
       const result = await actionPromise;
 

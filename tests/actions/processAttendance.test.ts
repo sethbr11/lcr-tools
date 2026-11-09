@@ -1,6 +1,7 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { runProcessAttendance } from '@/actions/processAttendance';
 import { Dom } from '@/actions/processAttendance/types';
+import { waitForElement, waitForAssertion } from '../helpers/waitFor';
 
 describe('processAttendance - functional user expectations', () => {
   beforeEach(() => {
@@ -146,7 +147,7 @@ describe('processAttendance - functional user expectations', () => {
     expect(processBtn.disabled).toBe(false);
     processBtn.click();
 
-    await new Promise((r) => setTimeout(r, 50));
+    await waitForElement(`#${Dom.REVIEW_OVERLAY_ID}`);
 
     // Review modal must be visible
     const resultsOverlay = document.querySelector(`#${Dom.REVIEW_OVERLAY_ID}`);
@@ -170,7 +171,7 @@ describe('processAttendance - functional user expectations', () => {
     expect(doneBtn.textContent).toBe('Continue');
     doneBtn?.click();
 
-    await new Promise((r) => setTimeout(r, 80));
+    await waitForElement(`#${Dom.COMPLETION_OVERLAY_ID}`);
     const completion = document.querySelector(`#${Dom.COMPLETION_OVERLAY_ID}`);
     expect(completion).not.toBeNull();
     (completion?.querySelector(`#${Dom.COMPLETION_DONE_ID}`) as HTMLButtonElement)?.click();
@@ -233,7 +234,7 @@ describe('processAttendance - functional user expectations', () => {
     const processBtn = overlay?.querySelector(`#${Dom.PROCESS_BTN_ID}`) as HTMLButtonElement;
     processBtn.click();
 
-    await new Promise((r) => setTimeout(r, 50));
+    await waitForElement(`#${Dom.REVIEW_OVERLAY_ID}`);
 
     // Verify review modal displays the initial visitor counts (1 Men, 1 Women)
     const resultsOverlay = document.querySelector(`#${Dom.REVIEW_OVERLAY_ID}`);
@@ -290,7 +291,7 @@ describe('processAttendance - functional user expectations', () => {
     const processBtn = overlay?.querySelector(`#${Dom.PROCESS_BTN_ID}`) as HTMLButtonElement;
     processBtn.click();
 
-    await new Promise((r) => setTimeout(r, 50));
+    await waitForElement(`#${Dom.REVIEW_OVERLAY_ID}`);
 
     const resultsOverlay = document.querySelector(`#${Dom.REVIEW_OVERLAY_ID}`) as HTMLElement;
     expect(resultsOverlay).not.toBeNull();
@@ -332,9 +333,10 @@ describe('processAttendance - functional user expectations', () => {
     expect(doneBtn.textContent).toBe('Continue');
     doneBtn?.click();
 
-    await new Promise((r) => setTimeout(r, 80));
-    expect(document.getElementById('btn-john')?.getAttribute('aria-pressed')).toBe('true');
-    (document.querySelector(`#${Dom.COMPLETION_DONE_ID}`) as HTMLButtonElement)?.click();
+    await waitForAssertion(() =>
+      expect(document.getElementById('btn-john')?.getAttribute('aria-pressed')).toBe('true')
+    );
+    (await waitForElement<HTMLButtonElement>(`#${Dom.COMPLETION_DONE_ID}`)).click();
 
     await actionPromise;
   });

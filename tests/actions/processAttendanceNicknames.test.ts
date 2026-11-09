@@ -12,6 +12,7 @@ import {
 } from '@/utils/security/storageUtils';
 import { displayUnmatchedReviewModal } from '@/actions/processAttendance/results/reviewHelper';
 import { Dom, Types } from '@/actions/processAttendance/types';
+import { waitForAssertion } from '../helpers/waitFor';
 
 describe('processAttendance - persistent nickname mapping', () => {
   let memoryStorage: Record<string, unknown> = {};
@@ -374,17 +375,16 @@ describe('processAttendance - persistent nickname mapping', () => {
       firstDeleteBtn.click();
 
       // Wait a tick for async storage update
-      await new Promise((r) => setTimeout(r, 50));
-      expect(onUpdated).toHaveBeenCalled();
+      await waitForAssertion(() => expect(onUpdated).toHaveBeenCalled());
 
       // Clear all
       const clearBtn = modal?.querySelector(`#${Dom.CLEAR_NICKNAMES_BTN_ID}`) as HTMLButtonElement;
       expect(clearBtn).not.toBeNull();
       clearBtn.click();
 
-      await new Promise((r) => setTimeout(r, 50));
-      const nicknames = await getSavedNicknames();
-      expect(Object.keys(nicknames)).toHaveLength(0);
+      await waitForAssertion(async () => {
+        expect(Object.keys(await getSavedNicknames())).toHaveLength(0);
+      });
     });
   });
 });

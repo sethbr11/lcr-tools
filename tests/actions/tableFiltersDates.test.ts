@@ -1,5 +1,6 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { runTableFilters } from '@/actions/tableFilters';
+import { waitForAssertion } from '../helpers/waitFor';
 
 describe('tableFilters - date filtering and table selector UI', () => {
   beforeEach(() => {
@@ -143,9 +144,8 @@ describe('tableFilters - date filtering and table selector UI', () => {
     monthSelect.dispatchEvent(new Event('change'));
 
     // Wait a tick for async change handler
-    await new Promise((r) => setTimeout(r, 50));
 
-    expect(pageMonthsSelect.value).toBe('12');
+    await waitForAssertion(() => expect(pageMonthsSelect.value).toBe('12'));
   });
 
   it('should retain Calling dropdowns when unique values exceed generic limit up to category limit', async () => {

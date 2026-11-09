@@ -2,6 +2,7 @@ import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { runProcessAttendance } from '@/actions/processAttendance';
 import { findExactMemberMatches, suggestMemberMatch } from '@/actions/processAttendance/utils';
 import { Dom } from '@/actions/processAttendance/types';
+import { waitForElement, waitForAssertion } from '../helpers/waitFor';
 
 /* ==========================================================================
    INTENT TESTS — outcomes users/LCR care about, not helper internals
@@ -76,14 +77,14 @@ describe('processAttendance - intended matching and roll-load behavior', () => {
 
     (overlay?.querySelector(`#${Dom.PROCESS_BTN_ID}`) as HTMLButtonElement).click();
 
-    await new Promise((r) => setTimeout(r, 50));
-    expect(document.getElementById('btn-elizabeth')?.getAttribute('aria-pressed')).toBe('true');
+    await waitForAssertion(() =>
+      expect(document.getElementById('btn-elizabeth')?.getAttribute('aria-pressed')).toBe('true')
+    );
     expect(document.getElementById('btn-jonathan')?.getAttribute('aria-pressed')).toBe('false');
-    (document.querySelector(`.${Dom.FUZZY_BTN}`) as HTMLButtonElement).click();
+    (await waitForElement<HTMLButtonElement>(`.${Dom.FUZZY_BTN}`)).click();
     expect(document.getElementById('btn-jonathan')?.getAttribute('aria-pressed')).toBe('false');
     (document.querySelector(`#${Dom.REVIEW_CONTINUE_ID}`) as HTMLButtonElement)?.click();
-    await new Promise((r) => setTimeout(r, 80));
-    (document.querySelector(`#${Dom.COMPLETION_DONE_ID}`) as HTMLButtonElement)?.click();
+    (await waitForElement<HTMLButtonElement>(`#${Dom.COMPLETION_DONE_ID}`)).click();
 
     const result = await actionPromise;
 
@@ -129,10 +130,8 @@ describe('processAttendance - intended matching and roll-load behavior', () => {
       });
     }
 
-    await new Promise((r) => setTimeout(r, 400));
-    (document.querySelector(`#${Dom.REVIEW_CONTINUE_ID}`) as HTMLButtonElement)?.click();
-    await new Promise((r) => setTimeout(r, 80));
-    (document.querySelector(`#${Dom.COMPLETION_DONE_ID}`) as HTMLButtonElement)?.click();
+    (await waitForElement<HTMLButtonElement>(`#${Dom.REVIEW_CONTINUE_ID}`)).click();
+    (await waitForElement<HTMLButtonElement>(`#${Dom.COMPLETION_DONE_ID}`)).click();
 
     const result = await actionPromise;
     expect(result.success).toBe(true);
@@ -180,10 +179,8 @@ describe('processAttendance - intended matching and roll-load behavior', () => {
     pasteCatcher.dispatchEvent(pasteEvent);
     (overlay?.querySelector(`#${Dom.PROCESS_BTN_ID}`) as HTMLButtonElement).click();
 
-    await new Promise((r) => setTimeout(r, 1500));
-    (document.querySelector(`#${Dom.REVIEW_CONTINUE_ID}`) as HTMLButtonElement)?.click();
-    await new Promise((r) => setTimeout(r, 1500));
-    (document.querySelector(`#${Dom.COMPLETION_DONE_ID}`) as HTMLButtonElement)?.click();
+    (await waitForElement<HTMLButtonElement>(`#${Dom.REVIEW_CONTINUE_ID}`)).click();
+    (await waitForElement<HTMLButtonElement>(`#${Dom.COMPLETION_DONE_ID}`)).click();
 
     const result = await actionPromise;
     expect(result.success).toBe(true);
