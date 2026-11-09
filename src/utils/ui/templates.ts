@@ -5,6 +5,10 @@ import { escapeHtml } from '../coreUtils';
    EXPORTED TEMPLATES
    ========================================================================== */
 
+/* ==========================================================================
+   EXPORTED FUNCTIONS
+   ========================================================================== */
+
 /**
  * Shared HTML templates for utility dialogs, modals, loading overlays, and alerts.
  */

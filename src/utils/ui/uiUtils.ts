@@ -47,8 +47,8 @@ export function hideLoadingIndicator(event?: Event): void {
 
   if (event) {
     const textEl = loaderElement.querySelector('p');
-    if (textEl) textEl.textContent = 'Process aborting at user request...';
-    setTimeout(removeOverlayElement, 1000);
+    if (textEl) textEl.textContent = Constants.LOADER_ABORT_MESSAGE;
+    setTimeout(removeOverlayElement, Constants.LOADER_ABORT_REMOVE_DELAY_MS);
   } else {
     removeOverlayElement();
   }

@@ -4,6 +4,10 @@ import { Dom } from './types';
  * HTML templates for memberFlashcards action UI components.
  */
 
+/* ==========================================================================
+   EXPORTED FUNCTIONS
+   ========================================================================== */
+
 export const Templates = {
   /** Flashcard container HTML incorporating 3D flip card, progress bar, and control buttons. */
   flashcardModalBody: (): string => `

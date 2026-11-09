@@ -6,6 +6,10 @@ import { confirmDataStewardshipDownload, downloadNoPhotoCsv, ensureLcrIndividual
 import { membersWithoutPhotoFromScan } from './noPhotoHelper';
 import { Constants, Types } from './types';
 
+/* ==========================================================================
+   EXPORTED FUNCTIONS
+   ========================================================================== */
+
 /**
  * Main entrypoint orchestrating the Download Members with No Photos action.
  * Steps:

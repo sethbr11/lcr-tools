@@ -257,4 +257,6 @@ export const Dom = {
   TOGGLE_SLIDER_CLASS: 'toggle-slider',
   /** CSS class for passive tool indicator badge in action directory cards. */
   PASSIVE_BADGE_CLASS: 'passive-badge',
+  /** Selector for the body rows of a table. */
+  TABLE_BODY_ROWS: 'tbody tr',
 } as const;

@@ -290,7 +290,7 @@ export async function loadAllPaginatedTableRows(
 export function getFirstRowText(container: Element): string {
   const row = container.matches('tbody')
     ? container.querySelector('tr')
-    : container.querySelector('tbody tr');
+    : container.querySelector(Dom.TABLE_BODY_ROWS);
   return (row?.textContent || '').trim();
 }
 
@@ -326,9 +326,9 @@ export async function waitForTableRowsToChange(
  * @returns Promise resolving to true if dropdown was found and adjusted, false otherwise.
  */
 export async function expandMonthsToShow(
-  targetCount: number = 12,
+  targetCount: number = Constants.MONTHS_TO_SHOW_DEFAULT,
   targetTable?: HTMLTableElement | null,
-  timeoutMs: number = 2000
+  timeoutMs: number = Constants.MONTHS_TO_SHOW_TIMEOUT_MS
 ): Promise<boolean> {
   const selects = Array.from(document.querySelectorAll<HTMLSelectElement>('select'));
   const monthsSelect = selects.find((s) =>
@@ -350,14 +350,14 @@ export async function expandMonthsToShow(
     return null;
   };
 
-  const initialRows = getLiveTable()?.querySelectorAll('tbody tr').length ?? 0;
+  const initialRows = getLiveTable()?.querySelectorAll(Dom.TABLE_BODY_ROWS).length ?? 0;
   setSelectValue(monthsSelect, targetValue);
 
   const startTime = Date.now();
   while (Date.now() - startTime < timeoutMs) {
-    await sleep(100);
+    await sleep(Constants.MONTHS_TO_SHOW_POLL_MS);
     const liveTable = getLiveTable();
-    const currentRows = liveTable?.querySelectorAll('tbody tr').length ?? 0;
+    const currentRows = liveTable?.querySelectorAll(Dom.TABLE_BODY_ROWS).length ?? 0;
     if (currentRows !== initialRows && currentRows > 0) break;
   }
 

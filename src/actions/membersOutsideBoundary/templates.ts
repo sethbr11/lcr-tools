@@ -5,6 +5,10 @@ import { Dom, Types } from './types';
  * HTML templates for membersOutsideBoundary action UI components.
  */
 
+/* ==========================================================================
+   EXPORTED FUNCTIONS
+   ========================================================================== */
+
 export const Templates = {
   /** Main audit results modal body template. */
   resultsModal: (

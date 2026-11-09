@@ -188,12 +188,7 @@ export function cleanCellContent(element: HTMLElement): string {
   clone
     .querySelectorAll(Dom.BLOCK_CELL_SELECTOR)
     .forEach((el) => el.insertAdjacentText('afterend', ' '));
-  return (
-    clone.textContent
-      ?.replace(/\u00A0/g, ' ')
-      .replace(Regex.MULTIPLE_SPACES, ' ')
-      .trim() || ''
-  );
+  return clone.textContent?.replace(Regex.MULTIPLE_SPACES, ' ').trim() || '';
 }
 
 /** Inspects cell for checkmarks, boolean icons, or interactive attendance toggles. */

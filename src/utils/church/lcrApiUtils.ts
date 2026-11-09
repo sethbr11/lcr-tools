@@ -28,7 +28,7 @@ export async function processInBatches<T>(
     }
 
     await Promise.all(batch.map(taskFn));
-    await sleep(100);
+    await sleep(Constants.BATCH_PROCESS_GAP_MS);
   }
 }
 

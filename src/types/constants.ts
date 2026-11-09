@@ -245,4 +245,16 @@ export const Constants = {
   PASSIVE_TOOL_ENABLED_TOAST: 'Passive tool enabled.',
   /** Toast message shown when a passive tool is toggled off. */
   PASSIVE_TOOL_DISABLED_TOAST: 'Passive tool disabled.',
+  /** Loader text shown while an Escape abort is wrapping up. */
+  LOADER_ABORT_MESSAGE: 'Process aborting at user request...',
+  /** Milliseconds the loader shows the abort message before it is removed. */
+  LOADER_ABORT_REMOVE_DELAY_MS: 1000,
+  /** Pause in milliseconds between batches in processInBatches, to avoid flooding Church APIs. */
+  BATCH_PROCESS_GAP_MS: 100,
+  /** Default number of months to show when expanding a "Months to show" dropdown. */
+  MONTHS_TO_SHOW_DEFAULT: 12,
+  /** Default milliseconds to wait for the table to grow after expanding "Months to show". */
+  MONTHS_TO_SHOW_TIMEOUT_MS: 2000,
+  /** Polling interval in milliseconds while waiting for the table to grow after expanding months. */
+  MONTHS_TO_SHOW_POLL_MS: 100,
 } as const;

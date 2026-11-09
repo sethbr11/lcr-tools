@@ -4,6 +4,10 @@ import { Dom } from '../types';
    NICKNAME MANAGER
    ========================================================================== */
 
+/* ==========================================================================
+   EXPORTED FUNCTIONS
+   ========================================================================== */
+
 /**
  * Generates the Manage Nicknames modal card HTML (backdrop is created by the caller).
  *
