@@ -26,44 +26,46 @@ export async function promptPdfFields(fields: string[]): Promise<string[] | null
     document.getElementById(Dom.PDF_FIELDS_MODAL_ID)?.remove();
     const overlay = document.createElement('div');
     overlay.id = Dom.PDF_FIELDS_MODAL_ID;
-    overlay.className = 'trip-modal-backdrop';
+    overlay.className = Dom.TRIP_MODAL_BACKDROP_CLASS;
     setHtml(
       overlay,
       `
-      <div class="trip-modal-card trip-pdf-card">
-        <div class="trip-modal-header">
-          <h2 class="trip-modal-title">${Constants.PDF_FIELDS_TITLE}</h2>
-          <button type="button" class="trip-close-btn" data-pdf-action="cancel">&times;</button>
+      <div class="${Dom.TRIP_MODAL_CARD_CLASS} ${Dom.PDF_CARD_CLASS}">
+        <div class="${Dom.TRIP_MODAL_HEADER_CLASS}">
+          <h2 class="${Dom.TRIP_MODAL_TITLE_CLASS}">${Constants.PDF_FIELDS_TITLE}</h2>
+          <button type="button" class="${Dom.TRIP_MODAL_CLOSE_CLASS}" ${Dom.PDF_ACTION_ATTR}="${Dom.PDF_ACTION_CANCEL}">&times;</button>
         </div>
-        <div class="trip-modal-body">
-          <p class="trip-pdf-desc">${Constants.PDF_FIELDS_DESC}</p>
-          <div class="trip-pdf-quick">
-            <button type="button" class="cluster-start-link" data-pdf-action="all">${Constants.PDF_FIELDS_SELECT_ALL}</button>
-            <button type="button" class="cluster-start-link" data-pdf-action="none">${Constants.CLUSTER_START_CLEAR}</button>
+        <div class="${Dom.TRIP_MODAL_BODY_CLASS}">
+          <p class="${Dom.PDF_DESC_CLASS}">${Constants.PDF_FIELDS_DESC}</p>
+          <div class="${Dom.PDF_QUICK_CLASS}">
+            <button type="button" class="${Dom.CLUSTER_START_LINK_CLASS}" ${Dom.PDF_ACTION_ATTR}="${Dom.PDF_ACTION_ALL}">${Constants.PDF_FIELDS_SELECT_ALL}</button>
+            <button type="button" class="${Dom.CLUSTER_START_LINK_CLASS}" ${Dom.PDF_ACTION_ATTR}="${Dom.PDF_ACTION_NONE}">${Constants.CLUSTER_START_CLEAR}</button>
           </div>
-          <div class="trip-pdf-fields">
+          <div class="${Dom.PDF_FIELDS_CLASS}">
             ${fields
               .map(
                 (field, index) => `
-              <label class="trip-pdf-field">
-                <input type="checkbox" data-field-index="${index}" ${initial.has(field) ? 'checked' : ''} />
+              <label class="${Dom.PDF_FIELD_CLASS}">
+                <input type="checkbox" ${Dom.PDF_FIELD_INDEX_ATTR}="${index}" ${initial.has(field) ? 'checked' : ''} />
                 <span>${escapeHtml(field)}</span>
               </label>`
               )
               .join('')}
           </div>
         </div>
-        <div class="trip-modal-footer">
-          <button type="button" class="lcr-tools-btn lcr-tools-btn-tertiary" data-pdf-action="cancel" style="width: auto; margin: 0;">${Constants.CONFIRM_CANCEL_TEXT}</button>
-          <button type="button" class="lcr-tools-btn lcr-tools-btn-primary" data-pdf-action="export" style="width: auto; margin: 0;">${Constants.PDF_FIELDS_EXPORT}</button>
+        <div class="${Dom.TRIP_MODAL_FOOTER_CLASS}">
+          <button type="button" class="${Dom.TRIP_BTN_CLASS} ${Dom.TRIP_BTN_TERTIARY_CLASS}" ${Dom.PDF_ACTION_ATTR}="${Dom.PDF_ACTION_CANCEL}" style="${Dom.TRIP_MODAL_BTN_STYLE}">${Constants.CONFIRM_CANCEL_TEXT}</button>
+          <button type="button" class="${Dom.TRIP_BTN_CLASS} ${Dom.TRIP_BTN_PRIMARY_CLASS}" ${Dom.PDF_ACTION_ATTR}="${Dom.PDF_ACTION_EXPORT}" style="${Dom.TRIP_MODAL_BTN_STYLE}">${Constants.PDF_FIELDS_EXPORT}</button>
         </div>
       </div>
     `
     );
     document.body.appendChild(overlay);
 
-    const boxes = Array.from(overlay.querySelectorAll<HTMLInputElement>('input[data-field-index]'));
-    const exportBtn = overlay.querySelector<HTMLButtonElement>('[data-pdf-action="export"]');
+    const boxes = Array.from(
+      overlay.querySelectorAll<HTMLInputElement>(Dom.PDF_FIELD_CHECKBOX_SELECTOR)
+    );
+    const exportBtn = overlay.querySelector<HTMLButtonElement>(Dom.PDF_EXPORT_ACTION_SELECTOR);
     const syncExportState = () => {
       if (exportBtn) exportBtn.disabled = !boxes.some((box) => box.checked);
     };
@@ -80,18 +82,18 @@ export async function promptPdfFields(fields: string[]): Promise<string[] | null
     };
     window.addEventListener('keydown', onKeyDown);
 
-    overlay.querySelectorAll<HTMLButtonElement>('[data-pdf-action]').forEach((button) => {
+    overlay.querySelectorAll<HTMLButtonElement>(Dom.PDF_ANY_ACTION_SELECTOR).forEach((button) => {
       button.addEventListener('click', () => {
-        const action = button.dataset.pdfAction;
-        if (action === 'cancel') finish(null);
-        if (action === 'all' || action === 'none') {
-          boxes.forEach((box) => (box.checked = action === 'all'));
+        const action = button.getAttribute(Dom.PDF_ACTION_ATTR);
+        if (action === Dom.PDF_ACTION_CANCEL) finish(null);
+        if (action === Dom.PDF_ACTION_ALL || action === Dom.PDF_ACTION_NONE) {
+          boxes.forEach((box) => (box.checked = action === Dom.PDF_ACTION_ALL));
           syncExportState();
         }
-        if (action === 'export') {
+        if (action === Dom.PDF_ACTION_EXPORT) {
           const chosen = boxes
             .filter((box) => box.checked)
-            .map((box) => fields[Number(box.dataset.fieldIndex)]);
+            .map((box) => fields[Number(box.getAttribute(Dom.PDF_FIELD_INDEX_ATTR))]);
           void saveFields(chosen);
           finish(chosen);
         }

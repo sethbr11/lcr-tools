@@ -306,13 +306,13 @@ export function getFirstRowText(container: Element): string {
 export async function waitForTableRowsToChange(
   container: Element,
   previousFirstRow: string,
-  timeoutMs: number = 5000
+  timeoutMs: number = Constants.TABLE_ROWS_CHANGE_TIMEOUT_MS
 ): Promise<boolean> {
   const deadline = Date.now() + timeoutMs;
   while (Date.now() < deadline) {
     const current = getFirstRowText(container);
     if (current && current !== previousFirstRow) return true;
-    await sleep(150);
+    await sleep(Constants.TABLE_ROWS_CHANGE_POLL_MS);
   }
   return false;
 }

@@ -259,4 +259,110 @@ export const Constants = {
   PDF_CONFIDENTIAL_FOOTER: 'Confidential: contains member information',
   /** Label beside the start marker when it is pinned to the PDF map's edge. */
   STATIC_MAP_START_OFF_MAP: 'Start (off map)',
+  /** Font size in points for a group heading in the PDF. */
+  PDF_HEADING_FONT_SIZE: 15,
+  /** Font size in points for the facts line under a group heading. */
+  PDF_SUBTITLE_FONT_SIZE: 9.5,
+  /** Font size in points for the "continued" label on overflow pages. */
+  PDF_CONTINUED_FONT_SIZE: 9,
+  /** Font size in points for the PDF page footer. */
+  PDF_FOOTER_FONT_SIZE: 8,
+  /** RGB color of group headings and table header text. */
+  PDF_HEADING_TEXT_COLOR: [26, 32, 44],
+  /** RGB color of the facts line under a group heading. */
+  PDF_SUBTITLE_COLOR: [74, 85, 104],
+  /** RGB color of the border drawn around each PDF map. */
+  PDF_MAP_BORDER_COLOR: [203, 213, 224],
+  /** RGB color of the "continued" label on overflow pages. */
+  PDF_CONTINUED_COLOR: [113, 128, 150],
+  /** RGB fill color of the table header row. */
+  PDF_HEADER_FILL_COLOR: [237, 242, 247],
+  /** RGB fill color of alternating table rows. */
+  PDF_ZEBRA_FILL_COLOR: [247, 250, 252],
+  /** RGB color of table cell text. */
+  PDF_CELL_TEXT_COLOR: [45, 55, 72],
+  /** RGB color of the line under each table row. */
+  PDF_ROW_BORDER_COLOR: [226, 232, 240],
+  /** RGB color of the page footer text. */
+  PDF_FOOTER_COLOR: [160, 174, 192],
+  /** RGB color used when a group color cannot be parsed. */
+  PDF_FALLBACK_GROUP_COLOR: [113, 128, 150],
+  /** Width in millimeters of the colored bar beside a group heading. */
+  PDF_ACCENT_BAR_WIDTH_MM: 4,
+  /** Height in millimeters of the colored bar beside a group heading. */
+  PDF_ACCENT_BAR_HEIGHT_MM: 7,
+  /** Horizontal offset in millimeters from the margin to the heading text. */
+  PDF_HEADING_TEXT_OFFSET_MM: 7,
+  /** Vertical offset in millimeters of the heading text baseline. */
+  PDF_HEADING_BASELINE_MM: 5.5,
+  /** Vertical space in millimeters consumed by the heading row. */
+  PDF_HEADING_ADVANCE_MM: 11,
+  /** Vertical space in millimeters consumed by the facts line. */
+  PDF_FACTS_ADVANCE_MM: 6,
+  /** Vertical gap in millimeters below the map. */
+  PDF_MAP_GAP_MM: 6,
+  /** Vertical offset in millimeters of the "Map unavailable" text. */
+  PDF_MAP_UNAVAILABLE_BASELINE_MM: 4,
+  /** Vertical space in millimeters consumed when the map is unavailable. */
+  PDF_MAP_UNAVAILABLE_ADVANCE_MM: 10,
+  /** Space in millimeters reserved above the bottom margin for the footer. */
+  PDF_FOOTER_RESERVE_MM: 6,
+  /** Vertical offset in millimeters of the "continued" label below the margin. */
+  PDF_CONTINUED_BASELINE_MM: 3,
+  /** Offset in millimeters from the margin to the table on continuation pages. */
+  PDF_CONTINUED_TABLE_TOP_MM: 7,
+  /** Offset in millimeters from a cell top padding to its text baseline. */
+  PDF_TEXT_BASELINE_MM: 3,
+  /** Offset in millimeters from a header cell top padding to its text baseline. */
+  PDF_HEADER_BASELINE_MM: 3.5,
+  /** Extra height in millimeters added to the table header row. */
+  PDF_HEADER_EXTRA_HEIGHT_MM: 1,
+  /** Offset in millimeters of the footer below the bottom margin line. */
+  PDF_FOOTER_OFFSET_MM: 4,
+  /** Minimum relative width weight (in characters) of a PDF table column. */
+  PDF_COLUMN_MIN_WEIGHT: 8,
+  /** Maximum relative width weight (in characters) of a PDF table column. */
+  PDF_COLUMN_MAX_WEIGHT: 40,
+  /** Background color of PDF maps behind the tiles. */
+  STATIC_MAP_BACKGROUND_COLOR: '#eef2f5',
+  /** Web Mercator latitude limit in degrees. */
+  STATIC_MAP_MAX_LATITUDE: 85.0511,
+  /** Font family used for text drawn on PDF maps. */
+  STATIC_MAP_FONT_FAMILY: 'Helvetica, Arial, sans-serif',
+  /** Canvas font for stop numbers up to 99. */
+  STATIC_MAP_STOP_FONT: 'bold 11px Helvetica, Arial, sans-serif',
+  /** Canvas font for stop numbers above 99. */
+  STATIC_MAP_STOP_FONT_SMALL: 'bold 9px Helvetica, Arial, sans-serif',
+  /** Highest stop number drawn with the regular stop font. */
+  STATIC_MAP_STOP_SMALL_FONT_THRESHOLD: 99,
+  /** Canvas font for the off-map start label. */
+  STATIC_MAP_START_NOTE_FONT: 'bold 10px Helvetica, Arial, sans-serif',
+  /** Letter drawn inside the start marker. */
+  STATIC_MAP_START_LABEL: 'S',
+  /** Canvas font for the basemap attribution. */
+  STATIC_MAP_ATTRIBUTION_FONT: '9px Helvetica, Arial, sans-serif',
+  /** Vertical nudge in pixels that centers marker labels. */
+  STATIC_MAP_LABEL_OFFSET_Y: 0.5,
+  /** Width in pixels of the white casing under the route line. */
+  STATIC_MAP_ROUTE_CASING_WIDTH: 7,
+  /** Color of the casing under the route line. */
+  STATIC_MAP_ROUTE_CASING_COLOR: 'rgba(255,255,255,0.9)',
+  /** Width in pixels of the route line. */
+  STATIC_MAP_ROUTE_WIDTH: 4,
+  /** Width in pixels of marker outlines. */
+  STATIC_MAP_MARKER_OUTLINE_WIDTH: 2,
+  /** Color of marker outlines and marker label text. */
+  STATIC_MAP_MARKER_OUTLINE_COLOR: '#ffffff',
+  /** Fill color of the start marker and off-map start label. */
+  STATIC_MAP_START_COLOR: '#1a202c',
+  /** Extra pixels beyond the marker half-size that keep the start marker inside the map. */
+  STATIC_MAP_START_INSET: 4,
+  /** Background color behind the map attribution. */
+  STATIC_MAP_ATTRIBUTION_BG: 'rgba(255,255,255,0.8)',
+  /** Text color of the map attribution. */
+  STATIC_MAP_ATTRIBUTION_COLOR: '#4a5568',
+  /** Height in pixels of the attribution box. */
+  STATIC_MAP_ATTRIBUTION_HEIGHT: 14,
+  /** Horizontal padding in pixels inside the attribution box. */
+  STATIC_MAP_ATTRIBUTION_PADDING: 4,
 } as const;

@@ -1,5 +1,5 @@
 import * as Utils from './utils';
-import { Types } from './types';
+import { Constants, Types } from './types';
 import * as Setup from './setup/setupHelper';
 import * as Sync from './lcr/syncHelper';
 import * as Roll from './lcr/rollHelper';
@@ -111,19 +111,19 @@ export async function runProcessAttendance(
         Utils.showLoadingIndicator('Loading attendance roll...', 'Waiting for ward members (Press ESC to cancel)');
         wardMembers = await Roll.waitAndLoadWardMembers();
         if (Utils.isAborted()) return showAbortCompletion(0, 0, attendees.length);
-        if (wardMembers.length === 0) failure = 'No ward members appeared on the attendance roll.';
+        if (wardMembers.length === 0) failure = Constants.ROLL_EMPTY_FAILURE;
       }
       if (!failure) break;
 
       Utils.hideLoadingIndicator();
       const retry = await Utils.showConfirmationModal({
-        title: "LCR isn't ready yet",
-        message: `${failure} The page may still be loading. Nothing has been marked yet. If this keeps happening, LCR's layout may have changed.`,
-        confirmText: 'Try again',
-        cancelText: 'Cancel',
+        title: Constants.ROLL_RETRY_TITLE,
+        message: `${failure} ${Constants.ROLL_RETRY_MESSAGE_SUFFIX}`,
+        confirmText: Constants.ROLL_RETRY_CONFIRM,
+        cancelText: Constants.ROLL_RETRY_CANCEL,
       });
       if (!retry) {
-        Utils.showToast('Process Attendance cancelled. Nothing was marked.', { type: 'warning' });
+        Utils.showToast(Constants.ROLL_RETRY_CANCELLED_TOAST, { type: 'warning' });
         return { success: false, error: failure };
       }
       Utils.pushAttendanceLog(logs, {

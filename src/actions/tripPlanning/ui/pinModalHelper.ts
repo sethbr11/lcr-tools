@@ -46,7 +46,7 @@ export function requestTripPin(mode: Types.TripPinMode): Promise<boolean> {
     const copy = getModeCopy(mode);
     const overlay = document.createElement('div');
     overlay.id = Dom.PIN_MODAL_OVERLAY_ID;
-    overlay.className = 'trip-modal-backdrop';
+    overlay.className = Dom.TRIP_MODAL_BACKDROP_CLASS;
     setHtml(overlay, buildPinModalHtml(copy, mode === 'setup'));
     document.body.appendChild(overlay);
 
@@ -142,26 +142,26 @@ function getModeCopy(mode: Types.TripPinMode): Types.TripPinCopy {
 /** Builds the PIN dialog markup, adding a confirmation field when creating a PIN. */
 function buildPinModalHtml(copy: Types.TripPinCopy, withConfirm: boolean): string {
   const pinField = (id: string, label: string) => `
-        <div class="trip-pin-input-group">
+        <div class="${Dom.PIN_INPUT_GROUP_CLASS}">
           <label for="${id}">${label}</label>
-          <input type="password" id="${id}" class="trip-pin-input" inputmode="numeric"
+          <input type="password" id="${id}" class="${Dom.PIN_INPUT_CLASS}" inputmode="numeric"
             maxlength="${Constants.PIN_MAX_LENGTH}" placeholder="••••" autocomplete="off" />
         </div>`;
   return `
-    <div class="trip-modal-card trip-pin-card">
-      <div class="trip-modal-header">
-        <h2 class="trip-modal-title" id="${Dom.PIN_MODAL_TITLE_ID}">${copy.title}</h2>
-        <button type="button" class="trip-close-btn" id="${Dom.PIN_MODAL_CLOSE_ID}">&times;</button>
+    <div class="${Dom.TRIP_MODAL_CARD_CLASS} ${Dom.PIN_CARD_CLASS}">
+      <div class="${Dom.TRIP_MODAL_HEADER_CLASS}">
+        <h2 class="${Dom.TRIP_MODAL_TITLE_CLASS}" id="${Dom.PIN_MODAL_TITLE_ID}">${copy.title}</h2>
+        <button type="button" class="${Dom.TRIP_MODAL_CLOSE_CLASS}" id="${Dom.PIN_MODAL_CLOSE_ID}">&times;</button>
       </div>
-      <div class="trip-modal-body">
-        <p class="trip-pin-desc">${copy.desc}</p>
-        <div id="${Dom.PIN_MODAL_STATUS_ID}" class="status-banner error" style="display: none;"></div>
+      <div class="${Dom.TRIP_MODAL_BODY_CLASS}">
+        <p class="${Dom.PIN_DESC_CLASS}">${copy.desc}</p>
+        <div id="${Dom.PIN_MODAL_STATUS_ID}" class="${Dom.PIN_STATUS_CLASS}" style="display: none;"></div>
         ${pinField(Dom.PIN_MODAL_INPUT_ID, 'Security PIN:')}
         ${withConfirm ? pinField(Dom.PIN_MODAL_CONFIRM_INPUT_ID, Constants.TRIP_PIN_CONFIRM_LABEL) : ''}
       </div>
-      <div class="trip-modal-footer">
-        <button type="button" class="lcr-tools-btn lcr-tools-btn-tertiary" id="${Dom.PIN_MODAL_CANCEL_ID}" style="width: auto; margin: 0;">Cancel</button>
-        <button type="button" class="lcr-tools-btn lcr-tools-btn-primary" id="${Dom.PIN_MODAL_SUBMIT_ID}" style="width: auto; margin: 0;">${copy.submit}</button>
+      <div class="${Dom.TRIP_MODAL_FOOTER_CLASS}">
+        <button type="button" class="${Dom.TRIP_BTN_CLASS} ${Dom.TRIP_BTN_TERTIARY_CLASS}" id="${Dom.PIN_MODAL_CANCEL_ID}" style="${Dom.TRIP_MODAL_BTN_STYLE}">Cancel</button>
+        <button type="button" class="${Dom.TRIP_BTN_CLASS} ${Dom.TRIP_BTN_PRIMARY_CLASS}" id="${Dom.PIN_MODAL_SUBMIT_ID}" style="${Dom.TRIP_MODAL_BTN_STYLE}">${copy.submit}</button>
       </div>
     </div>
   `;

@@ -146,7 +146,6 @@ export function clearClusterStartAddresses(): void {
    HELPER FUNCTIONS
    ========================================================================== */
 
-/** Writes a statistic value when the target element exists. */
 /** Caps the group count and group size inputs at the number of people available to group. */
 function capClusterSizeInputs(people: number): void {
   const cap = Math.max(1, people);
@@ -164,6 +163,7 @@ function capClusterSizeInputs(people: number): void {
   }
 }
 
+/** Writes a statistic value when the target element exists. */
 function setStat(id: string, value: string): void {
   const el = document.getElementById(id);
   if (el) el.textContent = value;

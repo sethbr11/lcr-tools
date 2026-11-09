@@ -41,6 +41,10 @@ export const Constants = {
   PAGINATION_SCROLL_DELAY_MS: 300,
   /** Default delay in milliseconds between pagination navigation clicks. */
   DEFAULT_PAGINATION_DELAY_MS: 500,
+  /** Default time in milliseconds to wait for a paged table's first row to change. */
+  TABLE_ROWS_CHANGE_TIMEOUT_MS: 5000,
+  /** Polling interval in milliseconds while waiting for a paged table's rows to change. */
+  TABLE_ROWS_CHANGE_POLL_MS: 150,
   /** Storage key used to persist member photo cache entries. */
   PHOTO_CACHE_KEY: 'lcr_photo_cache',
   /** Storage key used to persist photo cache configuration settings. */

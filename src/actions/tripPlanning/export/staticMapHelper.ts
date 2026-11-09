@@ -20,7 +20,7 @@ export async function renderClusterMap(input: Types.ClusterMapInput): Promise<st
   const ctx = canvas.getContext('2d');
   if (!ctx) return null;
   ctx.scale(Constants.STATIC_MAP_PIXEL_RATIO, Constants.STATIC_MAP_PIXEL_RATIO);
-  ctx.fillStyle = '#eef2f5';
+  ctx.fillStyle = Constants.STATIC_MAP_BACKGROUND_COLOR;
   ctx.fillRect(0, 0, Constants.STATIC_MAP_WIDTH, Constants.STATIC_MAP_HEIGHT);
 
   if (input.stops.length === 0 && !input.startPoint) {
@@ -78,7 +78,10 @@ export async function renderClusterMap(input: Types.ClusterMapInput): Promise<st
  */
 export function projectToWorld(lat: number, lng: number, zoom: number): [number, number] {
   const scale = Constants.STATIC_MAP_TILE_SIZE * 2 ** zoom;
-  const clampedLat = Math.max(-85.0511, Math.min(85.0511, lat));
+  const clampedLat = Math.max(
+    -Constants.STATIC_MAP_MAX_LATITUDE,
+    Math.min(Constants.STATIC_MAP_MAX_LATITUDE, lat)
+  );
   const sin = Math.sin((clampedLat * Math.PI) / 180);
   const x = ((lng + 180) / 360) * scale;
   const y = (0.5 - Math.log((1 + sin) / (1 - sin)) / (4 * Math.PI)) * scale;
@@ -217,8 +220,8 @@ function drawPath(ctx: CanvasRenderingContext2D, path: [number, number][], color
   ctx.lineJoin = 'round';
   ctx.lineCap = 'round';
   for (const [width, stroke] of [
-    [7, 'rgba(255,255,255,0.9)'],
-    [4, color],
+    [Constants.STATIC_MAP_ROUTE_CASING_WIDTH, Constants.STATIC_MAP_ROUTE_CASING_COLOR],
+    [Constants.STATIC_MAP_ROUTE_WIDTH, color],
   ] as const) {
     ctx.beginPath();
     ctx.moveTo(path[0][0], path[0][1]);
@@ -240,50 +243,67 @@ function drawStop(
   ctx.arc(x, y, Constants.STATIC_MAP_STOP_RADIUS, 0, Math.PI * 2);
   ctx.fillStyle = color;
   ctx.fill();
-  ctx.lineWidth = 2;
-  ctx.strokeStyle = '#ffffff';
+  ctx.lineWidth = Constants.STATIC_MAP_MARKER_OUTLINE_WIDTH;
+  ctx.strokeStyle = Constants.STATIC_MAP_MARKER_OUTLINE_COLOR;
   ctx.stroke();
-  ctx.fillStyle = '#ffffff';
-  ctx.font = `bold ${label > 99 ? 9 : 11}px Helvetica, Arial, sans-serif`;
+  ctx.fillStyle = Constants.STATIC_MAP_MARKER_OUTLINE_COLOR;
+  ctx.font =
+    label > Constants.STATIC_MAP_STOP_SMALL_FONT_THRESHOLD
+      ? Constants.STATIC_MAP_STOP_FONT_SMALL
+      : Constants.STATIC_MAP_STOP_FONT;
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
-  ctx.fillText(String(label), x, y + 0.5);
+  ctx.fillText(String(label), x, y + Constants.STATIC_MAP_LABEL_OFFSET_Y);
 }
 
 /** Draws the starting point as a dark "S" square, pinned to the map edge when it is off the map. */
 function drawStart(ctx: CanvasRenderingContext2D, [rawX, rawY]: [number, number]): void {
   const half = Constants.STATIC_MAP_STOP_RADIUS;
-  const inset = half + 4;
+  const inset = half + Constants.STATIC_MAP_START_INSET;
   const x = Math.max(inset, Math.min(Constants.STATIC_MAP_WIDTH - inset, rawX));
   const y = Math.max(inset, Math.min(Constants.STATIC_MAP_HEIGHT - inset, rawY));
   if (x !== rawX || y !== rawY) {
-    ctx.font = 'bold 10px Helvetica, Arial, sans-serif';
-    ctx.fillStyle = '#1a202c';
+    ctx.font = Constants.STATIC_MAP_START_NOTE_FONT;
+    ctx.fillStyle = Constants.STATIC_MAP_START_COLOR;
     ctx.textBaseline = 'middle';
     ctx.textAlign = x > Constants.STATIC_MAP_WIDTH / 2 ? 'right' : 'left';
-    const offset = x > Constants.STATIC_MAP_WIDTH / 2 ? -(half + 4) : half + 4;
+    const offset =
+      x > Constants.STATIC_MAP_WIDTH / 2
+        ? -(half + Constants.STATIC_MAP_START_INSET)
+        : half + Constants.STATIC_MAP_START_INSET;
     ctx.fillText(Constants.STATIC_MAP_START_OFF_MAP, x + offset, y);
   }
-  ctx.fillStyle = '#1a202c';
+  ctx.fillStyle = Constants.STATIC_MAP_START_COLOR;
   ctx.fillRect(x - half, y - half, half * 2, half * 2);
-  ctx.lineWidth = 2;
-  ctx.strokeStyle = '#ffffff';
+  ctx.lineWidth = Constants.STATIC_MAP_MARKER_OUTLINE_WIDTH;
+  ctx.strokeStyle = Constants.STATIC_MAP_MARKER_OUTLINE_COLOR;
   ctx.strokeRect(x - half, y - half, half * 2, half * 2);
-  ctx.fillStyle = '#ffffff';
-  ctx.font = 'bold 11px Helvetica, Arial, sans-serif';
+  ctx.fillStyle = Constants.STATIC_MAP_MARKER_OUTLINE_COLOR;
+  ctx.font = Constants.STATIC_MAP_STOP_FONT;
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
-  ctx.fillText('S', x, y + 0.5);
+  ctx.fillText(Constants.STATIC_MAP_START_LABEL, x, y + Constants.STATIC_MAP_LABEL_OFFSET_Y);
 }
 
 /** Draws the basemap attribution required by the tile provider. */
 function drawAttribution(ctx: CanvasRenderingContext2D, attribution: string): void {
-  ctx.font = '9px Helvetica, Arial, sans-serif';
-  const width = ctx.measureText(attribution).width + 8;
-  ctx.fillStyle = 'rgba(255,255,255,0.8)';
-  ctx.fillRect(Constants.STATIC_MAP_WIDTH - width, Constants.STATIC_MAP_HEIGHT - 14, width, 14);
-  ctx.fillStyle = '#4a5568';
+  ctx.font = Constants.STATIC_MAP_ATTRIBUTION_FONT;
+  const height = Constants.STATIC_MAP_ATTRIBUTION_HEIGHT;
+  const padding = Constants.STATIC_MAP_ATTRIBUTION_PADDING;
+  const width = ctx.measureText(attribution).width + padding * 2;
+  ctx.fillStyle = Constants.STATIC_MAP_ATTRIBUTION_BG;
+  ctx.fillRect(
+    Constants.STATIC_MAP_WIDTH - width,
+    Constants.STATIC_MAP_HEIGHT - height,
+    width,
+    height
+  );
+  ctx.fillStyle = Constants.STATIC_MAP_ATTRIBUTION_COLOR;
   ctx.textAlign = 'right';
   ctx.textBaseline = 'middle';
-  ctx.fillText(attribution, Constants.STATIC_MAP_WIDTH - 4, Constants.STATIC_MAP_HEIGHT - 7);
+  ctx.fillText(
+    attribution,
+    Constants.STATIC_MAP_WIDTH - padding,
+    Constants.STATIC_MAP_HEIGHT - height / 2
+  );
 }

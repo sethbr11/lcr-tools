@@ -175,4 +175,64 @@ export const Dom = {
   MARKER_START_COLOR: 'limegreen',
   /** Route end marker color. */
   MARKER_END_COLOR: 'red',
+  /** Full-screen backdrop behind Trip Planner modals. */
+  TRIP_MODAL_BACKDROP_CLASS: 'trip-modal-backdrop',
+  /** Card container of Trip Planner modals. */
+  TRIP_MODAL_CARD_CLASS: 'trip-modal-card',
+  /** Header row of Trip Planner modals. */
+  TRIP_MODAL_HEADER_CLASS: 'trip-modal-header',
+  /** Title heading of Trip Planner modals. */
+  TRIP_MODAL_TITLE_CLASS: 'trip-modal-title',
+  /** Close button of Trip Planner modals. */
+  TRIP_MODAL_CLOSE_CLASS: 'trip-close-btn',
+  /** Body section of Trip Planner modals. */
+  TRIP_MODAL_BODY_CLASS: 'trip-modal-body',
+  /** Footer row of Trip Planner modals. */
+  TRIP_MODAL_FOOTER_CLASS: 'trip-modal-footer',
+  /** Inline style that sizes footer buttons to their content. */
+  TRIP_MODAL_BTN_STYLE: 'width: auto; margin: 0;',
+  /** Base class of Trip Planner buttons. */
+  TRIP_BTN_CLASS: 'lcr-tools-btn',
+  /** Tertiary (cancel) button modifier class. */
+  TRIP_BTN_TERTIARY_CLASS: 'lcr-tools-btn-tertiary',
+  /** Primary button modifier class. */
+  TRIP_BTN_PRIMARY_CLASS: 'lcr-tools-btn-primary',
+  /** Card modifier of the PDF columns modal. */
+  PDF_CARD_CLASS: 'trip-pdf-card',
+  /** Description paragraph in the PDF columns modal. */
+  PDF_DESC_CLASS: 'trip-pdf-desc',
+  /** Select all / clear link row in the PDF columns modal. */
+  PDF_QUICK_CLASS: 'trip-pdf-quick',
+  /** Container of the PDF column checkboxes. */
+  PDF_FIELDS_CLASS: 'trip-pdf-fields',
+  /** Label wrapping one PDF column checkbox. */
+  PDF_FIELD_CLASS: 'trip-pdf-field',
+  /** Data attribute naming the action of a PDF modal button. */
+  PDF_ACTION_ATTR: 'data-pdf-action',
+  /** Data attribute holding a PDF column checkbox index. */
+  PDF_FIELD_INDEX_ATTR: 'data-field-index',
+  /** Value of the PDF action attribute that cancels the modal. */
+  PDF_ACTION_CANCEL: 'cancel',
+  /** Value of the PDF action attribute that selects every column. */
+  PDF_ACTION_ALL: 'all',
+  /** Value of the PDF action attribute that clears every column. */
+  PDF_ACTION_NONE: 'none',
+  /** Value of the PDF action attribute that exports the PDF. */
+  PDF_ACTION_EXPORT: 'export',
+  /** Selector matching every PDF modal action button. */
+  PDF_ANY_ACTION_SELECTOR: '[data-pdf-action]',
+  /** Selector matching the PDF modal export button. */
+  PDF_EXPORT_ACTION_SELECTOR: '[data-pdf-action="export"]',
+  /** Selector matching PDF column checkboxes. */
+  PDF_FIELD_CHECKBOX_SELECTOR: 'input[data-field-index]',
+  /** Card modifier of the Trip Planner PIN modal. */
+  PIN_CARD_CLASS: 'trip-pin-card',
+  /** Description paragraph in the PIN modal. */
+  PIN_DESC_CLASS: 'trip-pin-desc',
+  /** Wrapper of one PIN input and its label. */
+  PIN_INPUT_GROUP_CLASS: 'trip-pin-input-group',
+  /** PIN password input. */
+  PIN_INPUT_CLASS: 'trip-pin-input',
+  /** Class combination of the PIN error banner. */
+  PIN_STATUS_CLASS: 'status-banner error',
 } as const;
