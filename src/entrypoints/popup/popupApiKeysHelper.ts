@@ -97,14 +97,18 @@ function bindApiKeyRow(row: HTMLElement, id: Types.KnownApiKeyId): void {
       : Constants.API_KEYS_SHOW_LABEL;
   });
 
+  // Keys are only written while the PIN is unlocked; the session may have locked meanwhile
   saveBtn.addEventListener('click', async () => {
-    await saveApiKey(id, input.value);
-    showStatusMessage(Constants.API_KEYS_SAVED);
+    const saved = await saveApiKey(id, input.value);
+    showStatusMessage(saved ? Constants.API_KEYS_SAVED : Constants.API_KEYS_LOCKED_ERROR, !saved);
   });
 
   clearBtn.addEventListener('click', async () => {
-    await clearApiKey(id);
-    input.value = '';
-    showStatusMessage(Constants.API_KEYS_CLEARED);
+    const cleared = await clearApiKey(id);
+    if (cleared) input.value = '';
+    showStatusMessage(
+      cleared ? Constants.API_KEYS_CLEARED : Constants.API_KEYS_LOCKED_ERROR,
+      !cleared
+    );
   });
 }

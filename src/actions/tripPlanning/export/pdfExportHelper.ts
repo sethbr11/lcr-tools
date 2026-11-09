@@ -110,7 +110,7 @@ export function buildPdfSections(
         color: colorFor(clusterId),
         stops: route.points,
         startPoint: route.startPoint,
-        startAddress: startAddresses[clusterId],
+        startAddress: route.startAddress,
         geometry: route.geometry,
         isRouted: true,
         miles: route.displayDistance,

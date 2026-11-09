@@ -123,6 +123,8 @@ export const Constants = {
   API_KEYS_SAVED: 'API key saved.',
   /** Status shown after an API key is cleared. */
   API_KEYS_CLEARED: 'API key cleared.',
+  /** Shown when an API key can't be saved or cleared because the PIN session is locked. */
+  API_KEYS_LOCKED_ERROR: 'Session is locked. Unlock with your PIN, then try again.',
   /** Placeholder shown in masked API key inputs. */
   API_KEYS_INPUT_PLACEHOLDER: 'Paste key',
   /** Button label that reveals a hidden API key value. */

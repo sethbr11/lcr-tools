@@ -12,6 +12,7 @@ import { geocodePendingRecords } from '@/actions/tripPlanning/geocoding/geocodin
 import { showTripLogsModal } from '@/actions/tripPlanning/ui/logsModalHelper';
 import {
   drawMarkers,
+  clearRoutes,
   drawRoutes,
   initTripMap,
   refreshTripBasemap,
@@ -222,6 +223,7 @@ function handleCluster(): void {
 
   clusterAddresses(strategy, count, min, max, countMin);
   clearClusterStartAddresses();
+  clearRoutes();
   const { clustered } = getTripState();
   drawMarkers(clustered, true);
   updateClusterList(clustered);
@@ -238,6 +240,9 @@ async function handleOptimize(): Promise<void> {
     optimizeBtn.disabled = true;
     optimizeBtn.textContent = 'Optimizing...';
   }
+  // Re-clustering or geocoding mid-run would leave routes built from the old groups
+  const lockedDuringOptimize = [Dom.CLUSTER_BTN_ID, Dom.GEOCODE_BTN_ID, Dom.EXPORT_PDF_BTN_ID];
+  lockedDuringOptimize.forEach((id) => setButtonEnabled(id, false));
 
   try {
     const metric = getSelectedMetric();
@@ -258,6 +263,10 @@ async function handleOptimize(): Promise<void> {
     updateClusterList(getTripState().clustered, routes);
     setButtonEnabled(Dom.EXPORT_CSV_BTN_ID, true);
   } finally {
+    const hasClusters = getTripState().clustered.length > 0;
+    setButtonEnabled(Dom.CLUSTER_BTN_ID, getTripState().geocoded.length > 0);
+    setButtonEnabled(Dom.GEOCODE_BTN_ID, true);
+    setButtonEnabled(Dom.EXPORT_PDF_BTN_ID, hasClusters);
     if (optimizeBtn) {
       optimizeBtn.disabled = false;
       optimizeBtn.textContent = 'Optimize Routes';

@@ -28,10 +28,6 @@ export const Dom = {
   API_KEY_AUTOFILL_BTN_ID: 'apiKeyAutofillBtn',
   /** Planner button that saves (or replaces) the typed API key; hidden for autofilled keys. */
   API_KEY_SAVE_BTN_ID: 'apiKeySaveBtn',
-  /** Attribute on the API key input recording whether its value was autofilled from saved keys. */
-  API_KEY_SOURCE_ATTR: 'data-key-source',
-  /** API key source value meaning the field holds a key autofilled from saved settings. */
-  API_KEY_SOURCE_SAVED: 'saved',
   /** Start geocoding button ID. */
   GEOCODE_BTN_ID: 'geocodeBtn',
   /** Geocode progress container ID. */

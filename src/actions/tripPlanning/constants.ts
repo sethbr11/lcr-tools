@@ -78,6 +78,12 @@ export const Constants = {
   MAPBOX_MATRIX_RETRY_DELAY_MS: 1500,
   /** Maximum number of retries for a rate-limited Mapbox matrix request. */
   MAPBOX_MATRIX_MAX_RETRIES: 3,
+  /** Longest wait after a Mapbox HTTP 429 when its rate-limit headers ask for more (per-minute limits). */
+  MAPBOX_MAX_RATE_LIMIT_WAIT_MS: 60000,
+  /** Standard HTTP header giving seconds to wait before retrying. */
+  HTTP_RETRY_AFTER_HEADER: 'retry-after',
+  /** Mapbox header giving the epoch second when the rate limit resets. */
+  MAPBOX_RATE_LIMIT_RESET_HEADER: 'x-rate-limit-reset',
   /** Assumed average driving speed in miles per hour when a matrix cell is missing. */
   FALLBACK_SPEED_MPH: 30,
   /** Meters per statute mile. */

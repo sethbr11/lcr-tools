@@ -75,6 +75,13 @@ export function drawMarkers(points: Types.TripMapMember[], isClustered = false):
 }
 
 /**
+ * Removes drawn routes and stop markers, e.g. after re-clustering makes them stale.
+ */
+export function clearRoutes(): void {
+  routeLayer?.clearLayers();
+}
+
+/**
  * Draws colored polylines and start/end markers for optimized cluster routes.
  *
  * @param routes - Optimized per-cluster routes.

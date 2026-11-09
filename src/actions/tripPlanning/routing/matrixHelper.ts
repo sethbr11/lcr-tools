@@ -164,12 +164,35 @@ export function haversineMiles(from: Types.CoordinatePoint, to: Types.Coordinate
    HELPER FUNCTIONS
    ========================================================================== */
 
+/**
+ * How long to wait after HTTP 429: Mapbox's Retry-After (seconds) or X-Rate-Limit-Reset (epoch
+ * seconds) when present, clamped between the default retry delay and the maximum wait.
+ */
+function getRateLimitWaitMs(response: Response): number {
+  const headers = response.headers;
+  const retryAfter = Number(headers?.get(Constants.HTTP_RETRY_AFTER_HEADER));
+  const resetAt = Number(headers?.get(Constants.MAPBOX_RATE_LIMIT_RESET_HEADER));
+  let waitMs: number = Constants.MAPBOX_MATRIX_RETRY_DELAY_MS;
+  if (Number.isFinite(retryAfter) && retryAfter > 0) waitMs = retryAfter * 1000;
+  else if (Number.isFinite(resetAt) && resetAt > 0) waitMs = resetAt * 1000 - Date.now();
+  return Math.min(
+    Constants.MAPBOX_MAX_RATE_LIMIT_WAIT_MS,
+    Math.max(Constants.MAPBOX_MATRIX_RETRY_DELAY_MS, waitMs)
+  );
+}
+
 /** Fetches one Mapbox matrix or directions URL, retrying with a delay while the API returns HTTP 429. */
 async function fetchMatrixResponse(url: string): Promise<Types.MapboxApiResponse | null> {
   for (let attempt = 0; attempt <= Constants.MAPBOX_MATRIX_MAX_RETRIES; attempt += 1) {
     const response = await fetch(url);
     if (response.status === 429 && attempt < Constants.MAPBOX_MATRIX_MAX_RETRIES) {
-      await sleep(Constants.MAPBOX_MATRIX_RETRY_DELAY_MS);
+      const waitMs = getRateLimitWaitMs(response);
+      if (waitMs > Constants.MAPBOX_MATRIX_RETRY_DELAY_MS) {
+        logTripStatus(
+          `Mapbox rate limit reached; waiting ${Math.ceil(waitMs / 1000)}s to continue.`
+        );
+      }
+      await sleep(waitMs);
       continue;
     }
     if (!response.ok) return null;

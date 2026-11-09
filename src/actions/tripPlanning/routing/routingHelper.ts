@@ -71,6 +71,7 @@ export async function optimizeRoutes(
     const address = (clusterStartAddresses[clusterId] || startingAddress).trim();
     const startMember = address ? (startsByAddress.get(address) ?? null) : null;
     const route = await findBestInternalRoute(clusters[clusterId], metric, mapboxKey, startMember);
+    if (startMember) route.startAddress = address;
     if (metric === 'mapbox' && mapboxKey) {
       const stops = route.startPoint ? [route.startPoint, ...route.points] : route.points;
       route.geometry = (await getMapboxRouteGeometry(stops, mapboxKey)) ?? undefined;

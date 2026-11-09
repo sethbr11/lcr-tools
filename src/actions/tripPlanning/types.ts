@@ -85,6 +85,8 @@ export namespace Types {
     displayDistance?: number;
     /** Trip origin the route departs from; excluded from `points`. */
     startPoint?: CoordinatePoint;
+    /** Starting address the route was optimized from (kept so the PDF matches the route). */
+    startAddress?: string;
     /** Road path as [lat, lng] pairs from Mapbox Directions; straight lines are drawn without it. */
     geometry?: [number, number][];
   }

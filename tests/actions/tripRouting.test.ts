@@ -140,6 +140,33 @@ describe('getMapboxTravelMatrix', () => {
 
   const pair = [point('A', 40, -111), point('B', 40.1, -111)];
 
+  it('waits as long as Mapbox asks (Retry-After) before retrying a 429', async () => {
+    const limited = {
+      ...jsonResponse({}, 429),
+      headers: new Headers({ 'retry-after': '20' }),
+    } as Response;
+    const ok = jsonResponse({
+      code: 'Ok',
+      durations: [
+        [0, 1],
+        [1, 0],
+      ],
+      distances: [
+        [0, 1],
+        [1, 0],
+      ],
+    });
+    const fetchMock = vi.fn().mockResolvedValueOnce(limited).mockResolvedValueOnce(ok);
+    vi.stubGlobal('fetch', fetchMock);
+
+    const pending = getMapboxTravelMatrix(pair, 'token');
+    await vi.advanceTimersByTimeAsync(Constants.MAPBOX_MATRIX_RETRY_DELAY_MS);
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    await vi.advanceTimersByTimeAsync(20000);
+    await pending;
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+  });
+
   it('retries HTTP 429 after a delay and then succeeds', async () => {
     const fetchMock = vi
       .fn()

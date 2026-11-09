@@ -9,6 +9,9 @@ import {
 import { Constants, Dom, Types } from '../types';
 import { requestTripPin } from './pinModalHelper';
 
+/** Key last autofilled from saved settings in this page; Show for it requires the PIN. */
+let autofilledValue = '';
+
 /* ==========================================================================
    EXPORTED FUNCTIONS
    ========================================================================== */
@@ -27,10 +30,7 @@ export function setupApiKeyField(
 ): void {
   const input = getKeyInput();
   const toggle = document.getElementById(Dom.API_KEY_TOGGLE_ID);
-  input?.addEventListener('input', () => {
-    input.removeAttribute(Dom.API_KEY_SOURCE_ATTR);
-    onChange();
-  });
+  input?.addEventListener('input', onChange);
 
   toggle?.addEventListener('click', () => {
     void toggleKeyVisibility();
@@ -51,7 +51,7 @@ export function fillSavedApiKey(value: string): void {
   const input = getKeyInput();
   if (!input) return;
   input.value = value;
-  input.setAttribute(Dom.API_KEY_SOURCE_ATTR, Dom.API_KEY_SOURCE_SAVED);
+  autofilledValue = value;
   setMasked(input, true);
 }
 
@@ -137,9 +137,12 @@ function setMasked(input: HTMLInputElement, masked: boolean): void {
   }
 }
 
-/** True when the key box holds a key autofilled from saved settings (not edited since). */
+/**
+ * True while the key box holds the autofilled (saved) value. Compared by value, so editing and
+ * then restoring the key (e.g. type a character, then delete it) still counts as the saved key.
+ */
 function isAutofilled(input: HTMLInputElement): boolean {
-  return input.getAttribute(Dom.API_KEY_SOURCE_ATTR) === Dom.API_KEY_SOURCE_SAVED;
+  return Boolean(autofilledValue) && input.value === autofilledValue;
 }
 
 /** Returns the planner API key input element. */

@@ -130,6 +130,19 @@ describe('Trip Planner API key box', () => {
     await vi.waitFor(() => expect(input().type).toBe('text'));
   });
 
+  it('still asks for the PIN after editing an autofilled key back to the saved value', async () => {
+    local[Constants.PIN_STORAGE_KEY] = await utils.createPinVerificationSentinel('1234');
+    fillSavedApiKey('saved-key');
+    type('saved-key1');
+    type('saved-key');
+
+    document.getElementById(Dom.API_KEY_TOGGLE_ID)?.click();
+    await vi.waitFor(() =>
+      expect(document.body.textContent).toContain(Constants.TRIP_PIN_VERIFY_TITLE)
+    );
+    expect(input().type).toBe('password');
+  });
+
   it('shows a typed key without asking for the PIN', () => {
     type('typed-key');
     document.getElementById(Dom.API_KEY_TOGGLE_ID)?.click();

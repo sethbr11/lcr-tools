@@ -43,6 +43,7 @@ describe('trip planner PDF export', () => {
             distance: 2,
             displayDistance: 2.5,
             startPoint: { lat: 39.9, lng: -111 },
+            startAddress: 'Chapel',
             geometry: [
               [39.9, -111],
               [40.1, -111],
@@ -51,7 +52,8 @@ describe('trip planner PDF export', () => {
         ],
       });
 
-      const [section, ...rest] = buildPdfSections(getTripState(), { 0: 'Chapel' });
+      // The route's own start address wins over a later per-group change
+      const [section, ...rest] = buildPdfSections(getTripState(), { 0: 'Changed Later' });
 
       expect(rest).toHaveLength(0); // outliers are skipped
       expect(section.stops.map((s) => s.name)).toEqual(['B', 'A']);
