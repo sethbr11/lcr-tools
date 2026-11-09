@@ -260,6 +260,15 @@ export namespace Types {
     /** Submit button label. */
     submit: string;
   }
+  /** One distinct planar location (a household) and the people who share it. */
+  export interface LocationGroup {
+    /** Planar coordinates shared by everyone at this location. */
+    point: [number, number];
+    /** Number of people at this location. */
+    weight: number;
+    /** Indices of the original points located here. */
+    indices: number[];
+  }
   /** Result of one k-means run over planar points. */
   export interface KMeansResult {
     /** Cluster index per point. */

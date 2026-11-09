@@ -290,3 +290,66 @@ describe('tripClusteringHelper group count with a minimum size, and caps', () =>
     expect(input('minClusterSize').value).toBe('5');
   });
 });
+
+describe('tripClustering households', () => {
+  beforeEach(() => {
+    resetTripState();
+  });
+
+  /** Three people at one coordinate plus spread-out singles. */
+  function householdMembers(): Types.TripMapMember[] {
+    const singles = scatter(11, 40, -111, 0.3).map((m, i) => member(`Single ${i}`, m.lat, m.lng));
+    const household = [0, 1, 2].map((i) => member(`Household ${i}`, 40.15, -110.85));
+    return [
+      ...household.slice(0, 1),
+      ...singles.slice(0, 6),
+      ...household.slice(1),
+      ...singles.slice(6),
+    ];
+  }
+
+  function householdClusters(): Set<number | undefined> {
+    return new Set(
+      clusterMembers()
+        .filter((m) => m.name.startsWith('Household'))
+        .map((m) => m.cluster)
+    );
+  }
+
+  it('keeps a household together by count, with and without a minimum', () => {
+    for (const countMin of [1, 4, 5]) {
+      setTripState({ geocoded: householdMembers() });
+      clusterAddresses('byCount', 3, 1, 10, countMin);
+      expect(householdClusters().size).toBe(1);
+    }
+  });
+
+  it('keeps a household together by size', () => {
+    for (const [min, max] of [
+      [3, 4],
+      [4, 5],
+      [2, 3],
+    ]) {
+      setTripState({ geocoded: householdMembers() });
+      clusterAddresses('bySize', 1, min, max);
+      expect(householdClusters().size).toBe(1);
+    }
+  });
+
+  it('never splits a household larger than the maximum and logs it', () => {
+    const xy: [number, number][] = [
+      ...Array.from({ length: 5 }, () => [5, 5] as [number, number]),
+      ...[
+        [0, 0],
+        [0.1, 0],
+        [10, 10],
+        [10, 10.1],
+        [20, 0],
+      ].map(([x, y]) => [x, y] as [number, number]),
+    ];
+    const messages: string[] = [];
+    const assignments = capacitatedClusters(xy, 2, 3, (message) => messages.push(message));
+    expect(new Set(assignments.slice(0, 5)).size).toBe(1);
+    expect(messages.some((message) => /household/.test(message))).toBe(true);
+  });
+});
