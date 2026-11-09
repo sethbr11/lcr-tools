@@ -157,7 +157,7 @@ async function markMembersInBatch(
 ): Promise<Types.MarkPendingMatchesResult> {
   let newlyMarked = 0;
   let alreadyMarked = 0;
-  const log = (entry: Types.BatchMarkEntry, action: string, status: string) =>
+  const log: Types.BatchMarkLogFn = (entry, action, status) =>
     Utils.pushAttendanceLog(logs, {
       date: targetDate,
       action,
@@ -166,8 +166,6 @@ async function markMembersInBatch(
       lastName: entry.lastName,
       lcrUpdateStatus: status,
     });
-  const countConfirmed = (clicked: Types.BatchMarkEntry[]) =>
-    clicked.filter((entry) => MarkHelper.isMemberMarkedPresent(entry.member)).length;
 
   // A member can match more than one roster row (e.g. "John Smith" and "John A. Smith") or be
   // queued twice in review. Clicking twice before the first save shows would toggle them back
@@ -187,7 +185,8 @@ async function markMembersInBatch(
   let pending: Types.BatchMarkEntry[] = [];
   for (let i = 0; i < uniqueEntries.length; i++) {
     if (Utils.isAborted()) {
-      return { newlyMarked: countConfirmed(pending), alreadyMarked, aborted: true };
+      newlyMarked += await settleAbortedClicks(pending, log);
+      return { newlyMarked, alreadyMarked, aborted: true };
     }
     const entry = uniqueEntries[i];
     // prettier-ignore
@@ -239,7 +238,10 @@ async function markMembersInBatch(
         `Clicked attendance checkbox for ${entry.member.fullName} (Newly Marked Present${retryNote})`
       );
     }
-    if (Utils.isAborted()) return { newlyMarked, alreadyMarked, aborted: true };
+    if (Utils.isAborted()) {
+      newlyMarked += await settleAbortedClicks(notYet, log);
+      return { newlyMarked, alreadyMarked, aborted: true };
+    }
 
     if (notYet.length === 0) break;
     if (round >= Constants.MARK_RETRY_ROUNDS) {
@@ -256,7 +258,10 @@ async function markMembersInBatch(
     // prettier-ignore
     Utils.showLoadingIndicator(`Re-marking ${notYet.length} that didn't register...`, 'Press ESC to cancel');
     for (const entry of notYet) {
-      if (Utils.isAborted()) return { newlyMarked, alreadyMarked, aborted: true };
+      if (Utils.isAborted()) {
+        newlyMarked += await settleAbortedClicks(notYet, log);
+        return { newlyMarked, alreadyMarked, aborted: true };
+      }
       // Leave buttons that are still saving alone; another click would undo the mark
       if (MarkHelper.isMemberMarkBusy(entry.member)) continue;
       if (MarkHelper.clickAttendanceButton(entry.member) === 'clicked') {
@@ -272,4 +277,42 @@ async function markMembersInBatch(
   }
 
   return { newlyMarked, alreadyMarked, aborted: false };
+}
+
+/**
+ * Accounts for clicks already sent when the user stops a run.
+ * Waits briefly for in-flight saves to settle, then logs each entry as marked or as sent but
+ * unconfirmed. Never clicks anything.
+ *
+ * @returns Number of entries confirmed present.
+ */
+async function settleAbortedClicks(
+  clicked: Types.BatchMarkEntry[],
+  log: Types.BatchMarkLogFn
+): Promise<number> {
+  await Utils.waitForCondition(
+    () => clicked.every((e) => !MarkHelper.isMemberMarkBusy(e.member)),
+    Constants.MARK_ABORT_SETTLE_MS,
+    Constants.MARK_PRESENT_POLL_MS
+  );
+
+  let confirmed = 0;
+  for (const entry of clicked) {
+    if (MarkHelper.isMemberMarkedPresent(entry.member)) {
+      confirmed++;
+      entry.member.isPresent = true;
+      log(
+        entry,
+        'CLICK',
+        `Clicked attendance checkbox for ${entry.member.fullName} (Newly Marked Present)`
+      );
+      continue;
+    }
+    log(
+      entry,
+      'ERROR',
+      `Click sent for ${entry.member.fullName} but the save was not confirmed before the run was stopped`
+    );
+  }
+  return confirmed;
 }

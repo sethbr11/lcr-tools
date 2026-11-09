@@ -1,4 +1,5 @@
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach } from 'vitest';
+import * as Utils from '@/utils';
 import { processMembersAgainstRoll } from '@/actions/processAttendance/members/processMembersHelper';
 import { setAttendanceTarget } from '@/actions/processAttendance/lcr/markHelper';
 import { Types } from '@/actions/processAttendance/types';
@@ -8,7 +9,10 @@ import { Types } from '@/actions/processAttendance/types';
  * then turns present after `saveMs` — unless `dropClicks` is set, in which case that many clicks
  * are silently lost (LCR occasionally fails to register a click).
  */
-function buildMember(fullName: string, options: { saveMs?: number; dropClicks?: number } = {}) {
+function buildMember(
+  fullName: string,
+  options: { saveMs?: number; dropClicks?: number; onClick?: () => void } = {}
+) {
   const [lastName, firstName] = fullName.split(', ');
   const row = document.createElement('tr');
   row.setAttribute('role', 'row');
@@ -20,6 +24,7 @@ function buildMember(fullName: string, options: { saveMs?: number; dropClicks?: 
   let clicks = 0;
   button.addEventListener('click', () => {
     clicks++;
+    options.onClick?.();
     if (dropsLeft > 0) {
       dropsLeft--;
       return;
@@ -147,5 +152,57 @@ describe('processAttendance - fast batch marking with verification', () => {
 
     expect(result.alreadyMarked).toBe(1);
     expect(adams.clickCount()).toBe(0);
+  });
+
+  describe('when Escape stops the run', () => {
+    afterEach(() => Utils.resetAborted());
+
+    it('sends no further clicks and logs the first click as marked', async () => {
+      const adams = buildMember('Adams, Abby', {
+        saveMs: 100,
+        onClick: () => Utils.setAborted(true),
+      });
+      const brown = buildMember('Brown, Ben');
+      const logs: Types.AttendanceLogEntry[] = [];
+
+      const result = await processMembersAgainstRoll(
+        [
+          { firstName: 'Abby', lastName: 'Adams' },
+          { firstName: 'Ben', lastName: 'Brown' },
+        ],
+        [adams.member, brown.member],
+        '2026-11-01',
+        logs
+      );
+
+      expect(result.aborted).toBe(true);
+      expect(brown.clickCount()).toBe(0);
+      expect(adams.clickCount()).toBe(1);
+      expect(result.newlyMarked).toBe(1);
+      expect(logs.filter((l) => l.action === 'CLICK').map((l) => l.target)).toEqual([
+        'Adams, Abby',
+      ]);
+    });
+
+    it('logs a sent click as unconfirmed when its save never completes', async () => {
+      const adams = buildMember('Adams, Abby', {
+        saveMs: 60000,
+        onClick: () => Utils.setAborted(true),
+      });
+      const logs: Types.AttendanceLogEntry[] = [];
+
+      const result = await processMembersAgainstRoll(
+        [{ firstName: 'Abby', lastName: 'Adams' }],
+        [adams.member],
+        '2026-11-01',
+        logs
+      );
+
+      expect(result.aborted).toBe(true);
+      expect(result.newlyMarked).toBe(0);
+      const entry = logs.find((l) => l.target === 'Adams, Abby');
+      expect(entry?.action).toBe('ERROR');
+      expect(entry?.lcrUpdateStatus).toContain('not confirmed');
+    });
   });
 });

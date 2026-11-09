@@ -352,6 +352,8 @@ export namespace Types {
     /** Label match: index marks where the date starts; groups are [date, class]. */
     match: RegExpMatchArray;
   }
+  /** Writes one audit-log entry for a batch-marked member (action and status text). */
+  export type BatchMarkLogFn = (entry: BatchMarkEntry, action: string, status: string) => void;
   /** Result of clicking (or declining to click) a member's attendance button. */
   export type ClickAttendanceOutcome = 'clicked' | 'already' | 'busy' | 'error';
   /** One roll member to mark in a batch, with the roster name that matched it (for the audit log). */

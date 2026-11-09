@@ -74,4 +74,22 @@ export const Constants = {
   FUZZY_FIRST_NAME_MIN_LENGTH: 4,
   /** Minimum length of the shorter given name for a prefix match to count as a suggestion. */
   FUZZY_PREFIX_MIN_LENGTH: 3,
+  /** Maximum milliseconds to wait for in-flight saves to settle after the user presses Escape. */
+  MARK_ABORT_SETTLE_MS: 2000,
+  /** Completion modal body shown when the user stopped processing with Escape. */
+  ABORTED_COMPLETION_BODY:
+    'You stopped processing with Escape. No further clicks were sent, but clicks already sent may have saved to LCR. Open View Logs to see what was marked or left unconfirmed.',
+  /** Title of the prompt shown when the attendance roll did not load. */
+  ROLL_RETRY_TITLE: "LCR isn't ready yet",
+  /** Text appended to the failure reason in the roll retry prompt. */
+  ROLL_RETRY_MESSAGE_SUFFIX:
+    "The page may still be loading. Nothing has been marked yet. If this keeps happening, LCR's layout may have changed.",
+  /** Confirm button label of the roll retry prompt. */
+  ROLL_RETRY_CONFIRM: 'Try again',
+  /** Cancel button label of the roll retry prompt. */
+  ROLL_RETRY_CANCEL: 'Cancel',
+  /** Toast shown when the user cancels instead of retrying. */
+  ROLL_RETRY_CANCELLED_TOAST: 'Process Attendance cancelled. Nothing was marked.',
+  /** Failure reason when no ward members appear on the attendance roll. */
+  ROLL_EMPTY_FAILURE: 'No ward members appeared on the attendance roll.',
 } as const;

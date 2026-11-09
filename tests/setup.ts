@@ -16,6 +16,7 @@ vi.mock('@/actions/processAttendance/constants', async (importOriginal) => {
       SUNDAY_RECLICK_MS: 50,
       MARK_CLICK_GAP_MS: 0,
       MARK_VERIFY_SETTLE_MS: 300,
+      MARK_ABORT_SETTLE_MS: 300,
     },
   };
 });

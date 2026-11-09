@@ -1,5 +1,5 @@
 import { escapeHtml } from '../utils';
-import { Dom, Types } from '../types';
+import { Constants, Dom, Types } from '../types';
 
 /* ==========================================================================
    COMPLETION MODAL
@@ -26,7 +26,7 @@ export function getCompletionModalHtml(
     : '';
   const title = aborted ? 'Attendance Processing Stopped' : 'Attendance Process Complete';
   const body = aborted
-    ? 'You stopped processing with Escape. Nothing further was written to LCR. Open View Logs to see what completed before the abort.'
+    ? Constants.ABORTED_COMPLETION_BODY
     : isSimulation
       ? 'Simulation finished. No lasting visitor changes should remain on LCR.'
       : metrics.visitorError
