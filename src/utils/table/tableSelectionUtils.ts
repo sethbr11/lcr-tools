@@ -1,6 +1,6 @@
-import { Types } from '@/types';
+import { Dom, Types } from '@/types';
 import { Templates } from '../ui/templates';
-import { setHtml } from '../ui/htmlUtils';
+import { createBackdrop, setHtml } from '../ui/htmlUtils';
 
 /* ==========================================================================
    EXPORTED FUNCTIONS
@@ -47,10 +47,10 @@ export function requestTables(
       )
       .join('');
 
-    const modal = document.createElement('div');
-    modal.className = 'lcr-tools-modal-backdrop';
-    modal.style.cssText =
-      'position:fixed;top:0;left:0;width:100vw;height:100vh;background:rgba(0,0,0,0.6);z-index:99999;display:flex;align-items:center;justify-content:center;';
+    const modal = createBackdrop({
+      backgroundColor: 'rgba(0, 0, 0, 0.6)',
+      zIndex: Dom.TABLE_PICKER_Z_INDEX,
+    });
 
     setHtml(
       modal,

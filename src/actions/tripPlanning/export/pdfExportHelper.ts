@@ -37,10 +37,7 @@ export async function exportTripPdf(mapboxToken: string = ''): Promise<void> {
 
   const fields = await promptPdfFields(resolveBaseHeaders(state));
   if (!fields) return;
-  if (!(await confirmDataStewardshipDownload())) {
-    showToast(Constants.STEWARDSHIP_CANCELLED_TOAST, { type: 'info' });
-    return;
-  }
+  if (!(await confirmDataStewardshipDownload())) return;
 
   showToast(Constants.PDF_BUILDING, { type: 'info' });
   const doc = await buildTripPdf(sections, fields, resolveBaseHeaders(state), (input) =>

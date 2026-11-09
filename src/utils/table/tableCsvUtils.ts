@@ -1,5 +1,5 @@
 import { Regex, Types } from '@/types';
-import { formatCSVCell } from '../coreUtils';
+import { rowsToCSV, toCSV } from '../coreUtils';
 import { generateFilename } from '../fileUtils';
 import { cleanCellContent, getCellValue, getRelevantHeaderCells, isVisible } from './tableUtils';
 
@@ -62,22 +62,14 @@ function processStandardTable(table: HTMLTableElement): string {
     if (tr.querySelectorAll('td').length === 0) continue;
 
     const tds = Array.from(tr.querySelectorAll('td'));
-    if (indices.length > 0) {
-      const rowData = indices.map((idx) => (tds[idx] ? getCellValue(tds[idx] as HTMLElement) : ''));
-      if (rowData.some((cell) => cell.length > 0)) {
-        rows.push(rowData);
-      }
-    } else {
-      const rowData = tds.map((td) => getCellValue(td as HTMLElement));
-      if (rowData.some((cell) => cell.length > 0)) {
-        rows.push(rowData);
-      }
-    }
+    const rowData =
+      indices.length > 0
+        ? indices.map((idx) => (tds[idx] ? getCellValue(tds[idx]) : ''))
+        : tds.map((td) => getCellValue(td));
+    if (rowData.some((cell) => cell.length > 0)) rows.push(rowData);
   }
 
-  const headerLine = headers.map(formatCSVCell).join(',');
-  const rowLines = rows.map((r) => r.map(formatCSVCell).join(','));
-  return [headerLine, ...rowLines].join('\r\n');
+  return toCSV(headers, rows);
 }
 
 /** Parses two-column summary category and count tables into CSV format. */
@@ -110,7 +102,7 @@ function processSummaryTable(table: HTMLTableElement): string {
     rows.push(['Total', totalCount]);
   }
 
-  return rows.map((r) => r.map(formatCSVCell).join(',')).join('\r\n');
+  return rowsToCSV(rows);
 }
 
 /** Parses two-column key/value labeled tables into CSV format. */
@@ -125,7 +117,7 @@ function processLabeledTable(table: HTMLTableElement): string {
     rows.push(cells);
   }
 
-  return rows.map((r) => r.map(formatCSVCell).join(',')).join('\r\n');
+  return rowsToCSV(rows);
 }
 
 /** Formats specialized Church finance tables into category CSV columns. */
@@ -144,5 +136,5 @@ function processFinanceTable(financeTable: HTMLElement): string {
     }
   }
 
-  return rows.map((r) => r.map(formatCSVCell).join(',')).join('\r\n');
+  return rowsToCSV(rows);
 }

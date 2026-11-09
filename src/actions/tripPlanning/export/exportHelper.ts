@@ -1,4 +1,4 @@
-import { confirmDataStewardshipDownload, downloadCsv, showToast, toCSV } from '../utils';
+import { confirmDataStewardshipDownload, downloadCsv, toCSV } from '../utils';
 import { Constants, Types } from '../types';
 import { formatCleanAddress } from '../geocoding/addressHelper';
 import { getTripState, logTripStatus } from '../ui/stateHelper';
@@ -13,11 +13,7 @@ import { getTripState, logTripStatus } from '../ui/stateHelper';
  * @returns True when the dialog was handled, even if the user cancelled.
  */
 export async function exportTripCsv(): Promise<boolean> {
-  const confirmed = await confirmDataStewardshipDownload();
-  if (!confirmed) {
-    showToast(Constants.STEWARDSHIP_CANCELLED_TOAST, { type: 'info' });
-    return true;
-  }
+  if (!(await confirmDataStewardshipDownload())) return true;
 
   const csv = buildTripCsv();
   downloadCsv(csv, Constants.CSV_FILENAME);

@@ -4,7 +4,7 @@ import {
   downloadCsv,
   isPointInsidePolygon,
   resolveCurrentUnitNumber,
-  showToast,
+  toCSV,
 } from './utils';
 import { Constants, Dom, Regex, Types } from './types';
 import { Templates } from './templates';
@@ -162,14 +162,9 @@ async function exportAuditCsv(
   households: Types.AuditedHousehold[],
   filter: string = 'all'
 ): Promise<void> {
-  const confirmed = await confirmDataStewardshipDownload();
-  if (!confirmed) {
-    showToast(Constants.STEWARDSHIP_CANCELLED_TOAST, { type: 'info' });
-    return;
-  }
+  if (!(await confirmDataStewardshipDownload())) return;
 
-  const headers = ['Name', 'Status', 'Address', 'Latitude', 'Longitude'];
-  const rows: string[][] = [headers];
+  const rows: string[][] = [];
 
   for (const h of households) {
     const statusLabel =
@@ -183,18 +178,8 @@ async function exportAuditCsv(
     ]);
   }
 
-  const csv = rows
-    .map((r) =>
-      r
-        .map((cell) => {
-          let val = cell;
-          if (Regex.FORMULA_PREFIX.test(val)) val = `'${val}`;
-          return `"${val.replace(Regex.CSV_DOUBLE_QUOTE, '""')}"`;
-        })
-        .join(',')
-    )
-    .join('\r\n');
+  const csv = toCSV([...Constants.AUDIT_CSV_HEADERS], rows);
 
   const suffix = filter === 'all' ? '' : `_${filter}`;
-  downloadCsv(csv, `boundary_audit_results${suffix}.csv`);
+  downloadCsv(csv, `${Constants.AUDIT_CSV_FILENAME_STEM}${suffix}.csv`);
 }

@@ -1,5 +1,6 @@
 import {
   fetchMemberCard,
+  fetchSessionJson,
   getMemberInfoFromRow,
   processInBatches,
   resolveCurrentUnitNumber,
@@ -100,20 +101,8 @@ async function collectDirectoryHouseholdCandidates(): Promise<Types.MemberPhotoS
   if (!unitNumber) return [];
 
   const endpoint = `${Constants.DIRECTORY_HOUSEHOLDS_ENDPOINT}?unit=${encodeURIComponent(unitNumber)}`;
-  try {
-    const response = await fetch(endpoint, {
-      credentials: 'include',
-      headers: { Accept: 'application/json' },
-    });
-    if (!response.ok) return [];
-
-    const households = (await response.json()) as Types.DirectoryHousehold[];
-    if (!Array.isArray(households)) return [];
-    return parseHouseholdsToCandidates(households);
-  } catch (err) {
-    console.error('LCR Tools: Failed to fetch directory households:', err);
-    return [];
-  }
+  const households = await fetchSessionJson<Types.DirectoryHousehold[]>(endpoint);
+  return Array.isArray(households) ? parseHouseholdsToCandidates(households) : [];
 }
 
 /**

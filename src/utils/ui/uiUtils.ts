@@ -1,7 +1,7 @@
 import { Dom, Constants, Types } from '@/types';
 import { setAborted } from '../coreUtils';
 import { Templates } from './templates';
-import { setHtml } from './htmlUtils';
+import { createBackdrop, setHtml } from './htmlUtils';
 
 /* ==========================================================================
    EXPORTED FUNCTIONS
@@ -117,19 +117,9 @@ export function showConfirmationModal(options: Types.ConfirmationOptions): Promi
   return new Promise((resolve) => {
     injectConfirmModalStyles();
 
-    const backdrop = document.createElement('div');
-    backdrop.className = 'lcr-tools-modal-backdrop';
-    Object.assign(backdrop.style, {
-      position: 'fixed',
-      top: '0',
-      left: '0',
-      width: '100vw',
-      height: '100vh',
+    const backdrop = createBackdrop({
       backgroundColor: 'rgba(0, 0, 0, 0.5)',
-      zIndex: String(Dom.CONFIRM_MODAL_Z_INDEX),
-      display: 'flex',
-      justifyContent: 'center',
-      alignItems: 'center',
+      zIndex: Dom.CONFIRM_MODAL_Z_INDEX,
       fontFamily: 'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
     });
 
@@ -181,13 +171,15 @@ export function showConfirmationModal(options: Types.ConfirmationOptions): Promi
  * @returns Promise resolving to true when the user confirms, or false if cancelled.
  */
 export async function confirmDataStewardshipDownload(): Promise<boolean> {
-  return showConfirmationModal({
+  const confirmed = await showConfirmationModal({
     title: Constants.STEWARDSHIP_TITLE,
     message: Constants.STEWARDSHIP_MESSAGE,
     confirmText: Constants.STEWARDSHIP_CONFIRM_TEXT,
     cancelText: Constants.STEWARDSHIP_CANCEL_TEXT,
     confirmColor: 'primary',
   });
+  if (!confirmed) showToast(Constants.STEWARDSHIP_CANCELLED_TOAST, { type: 'info' });
+  return confirmed;
 }
 
 /**

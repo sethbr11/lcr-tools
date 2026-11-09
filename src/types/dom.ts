@@ -184,6 +184,10 @@ export const Dom = {
   MODAL_BACKDROP_Z_INDEX: '20000',
   /** Z-index for confirmation dialogs so they stack above action overlays. */
   CONFIRM_MODAL_Z_INDEX: '100100',
+  /** z-index of the table picker backdrop. */
+  TABLE_PICKER_Z_INDEX: '99999',
+  /** Shared CSS class on every full-screen modal backdrop. */
+  MODAL_BACKDROP_CLASS: 'lcr-tools-modal-backdrop',
   /** DOM element ID for the security PIN entry screen in the popup. */
   PIN_VIEW_ID: 'pin-view',
   /** DOM element ID for the security PIN view title. */

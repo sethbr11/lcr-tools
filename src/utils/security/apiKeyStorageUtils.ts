@@ -1,6 +1,11 @@
 import { browser } from 'wxt/browser';
 import { Constants, Types } from '@/types';
-import { decryptData, encryptData, getUnlockedPin, isEncryptedPayload } from './cryptoUtils';
+import {
+  decryptWithSessionPin,
+  encryptData,
+  getUnlockedPin,
+  isEncryptedPayload,
+} from './cryptoUtils';
 
 /* ==========================================================================
    EXPORTED FUNCTIONS
@@ -19,15 +24,8 @@ export async function getStoredApiKeys(): Promise<Types.StoredApiKeys> {
     if (!raw) return {};
 
     if (isEncryptedPayload(raw)) {
-      const pin = await getUnlockedPin();
-      if (!pin) return {};
-      try {
-        const decrypted = await decryptData<Types.StoredApiKeys>(raw, pin);
-        return sanitizeStoredApiKeys(decrypted);
-      } catch (err) {
-        console.error('LCR Tools: Failed to decrypt API keys with session PIN:', err);
-        return {};
-      }
+      const decrypted = await decryptWithSessionPin<Types.StoredApiKeys>(raw);
+      return decrypted ? sanitizeStoredApiKeys(decrypted) : {};
     }
 
     // Unencrypted keys from before a PIN existed stay locked until one is created (which
@@ -68,11 +66,7 @@ export async function saveApiKey(id: string, value: string): Promise<boolean> {
  * @returns True when the key was removed.
  */
 export async function clearApiKey(id: string): Promise<boolean> {
-  if (!isKnownApiKeyId(id)) return false;
-  if (!(await getUnlockedPin())) return false;
-  const current = await getStoredApiKeys();
-  delete current[id];
-  return persistApiKeys(current);
+  return saveApiKey(id, '');
 }
 
 /**

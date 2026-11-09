@@ -1,10 +1,8 @@
 // prettier-ignore
-import { getCachedFlashcardMembers, hideLoadingIndicator, isAborted, resetAborted,
-  showLoadingIndicator, showToast, isChurchDirectoryPage, isLcrMemberDirectoryPage,
-  ensureLcrIndividualsTab, waitForLcrDirectoryRows, scanDirectoryMemberPhotos,
-  scanLcrMemberPhotos } from './utils';
-import { mountFlashcardInterface } from './flashcardDomHelper';
-import { flashcardMembersFromScan } from './flashcardPhotoHelper';
+import { getCachedFlashcardMembers, isAborted, resetAborted, showToast, isChurchDirectoryPage,
+  isLcrMemberDirectoryPage, ensureLcrIndividualsTab, waitForLcrDirectoryRows,
+  scanDirectoryMemberPhotos, scanLcrMemberPhotos } from './utils';
+import { flashcardsCancelled, launchDeck, scanAndLaunchDeck } from './flashcardLaunchHelper';
 import { Constants, Types } from './types';
 
 /* ==========================================================================
@@ -22,83 +20,37 @@ import { Constants, Types } from './types';
  *
  * @returns Promise resolving to action result.
  */
-export async function runMemberFlashcards(): Promise<
-  Types.ActionResult<Types.MemberFlashcardsResult>
-> {
+export async function runMemberFlashcards(): Promise<Types.FlashcardsActionResult> {
   resetAborted();
 
   // Step 1: Handle Church Online Directory page flow (always pulls fresh unit directory)
   if (isChurchDirectoryPage()) {
-    showLoadingIndicator('Loading directory members...', 'Press ESC to abort');
-    const scan = await scanDirectoryMemberPhotos();
-    hideLoadingIndicator();
-
-    if (isAborted()) {
-      showToast('Member flashcards cancelled.', { type: 'info' });
-      return { success: false, error: 'Aborted by user' };
-    }
-
-    const directoryDeck = flashcardMembersFromScan(scan.withPhotos);
-    if (directoryDeck.length === 0) {
-      showToast('No member photos found in unit directory.', { type: 'warning' });
-      return { success: false, error: 'No photos found' };
-    }
-
-    mountFlashcardInterface(directoryDeck, async () => {
-      await runMemberFlashcards();
-    });
-    return { success: true, data: { source: 'directory-api', count: directoryDeck.length } };
+    // prettier-ignore
+    return scanAndLaunchDeck('Loading directory members...', scanDirectoryMemberPhotos, Constants.NO_DIRECTORY_PHOTOS_TOAST, runMemberFlashcards, 'directory-api');
   }
 
   // Step 2: Validate LCR Member Directory page
   if (!isLcrMemberDirectoryPage()) {
-    showToast('Please visit the Member Directory or Church Directory to use Flashcards.', {
-      type: 'warning',
-    });
+    showToast(Constants.WRONG_PAGE_TOAST, { type: 'warning' });
     return { success: false, error: 'Not on directory page' };
   }
 
   // Step 3: Switch from Households to Individuals before scanning member portraits
   if (!(await ensureLcrIndividualsTab(Constants.ACTION_NAME))) {
-    if (isAborted()) {
-      showToast('Member flashcards cancelled.', { type: 'info' });
-      return { success: false, error: 'Aborted by user' };
-    }
+    if (isAborted()) return flashcardsCancelled();
     return { success: false, error: 'LCR setup mismatch' };
   }
 
-  // Step 4: Scan LCR member directory rows
+  // Step 4: Scan LCR member directory rows (falling back to cached portraits when none render)
   const rows = await waitForLcrDirectoryRows();
   if (rows.length === 0) {
     const cached = await getCachedFlashcardMembers();
-    if (cached.length > 0) {
-      mountFlashcardInterface(cached, async () => {
-        await runMemberFlashcards();
-      });
-      return { success: true, data: { source: 'cache', count: cached.length } };
-    }
-    showToast('No member photos found on this page.', { type: 'warning' });
+    if (cached.length > 0) return launchDeck(cached, runMemberFlashcards, 'cache');
+    showToast(Constants.NO_PAGE_PHOTOS_TOAST, { type: 'warning' });
     return { success: false, error: 'No photos found' };
   }
 
-  showLoadingIndicator('Scanning member records...', 'Press ESC to abort');
-  const scan = await scanLcrMemberPhotos(rows);
-  hideLoadingIndicator();
-
-  if (isAborted()) {
-    showToast('Member flashcards cancelled.', { type: 'info' });
-    return { success: false, error: 'Aborted by user' };
-  }
-
-  const deck = flashcardMembersFromScan(scan.withPhotos);
-  if (deck.length === 0) {
-    showToast('No member photos found on this page.', { type: 'warning' });
-    return { success: false, error: 'No photos found' };
-  }
-
-  // Step 5: Mount flashcard deck
-  mountFlashcardInterface(deck, async () => {
-    await runMemberFlashcards();
-  });
-  return { success: true, data: { count: deck.length } };
+  // Step 5: Mount flashcard deck for members with portraits
+  // prettier-ignore
+  return scanAndLaunchDeck('Scanning member records...', () => scanLcrMemberPhotos(rows), Constants.NO_PAGE_PHOTOS_TOAST, runMemberFlashcards);
 }

@@ -48,41 +48,29 @@ export async function simulateMemberRollProcessing(
 
         if (Utils.isAborted()) break;
 
+        let action = 'VERIFY';
+        let status = 'Simulated - Match Confirmed (Did Not Click)';
         if (member.isPresent) {
           alreadyMarked++;
-          Utils.pushAttendanceLog(logs, {
-            date: targetDate,
-            action: 'VERIFY',
-            target: member.fullName,
-            firstName: attendee.firstName,
-            lastName: attendee.lastName,
-            lcrUpdateStatus: 'Simulated - Already Present (No Click)',
-          });
-        } else if (!hasTestedToggle) {
-          const toggleSuccess = await testMemberToggle(member);
-          hasTestedToggle = true;
-          newlyMarked++;
-          Utils.pushAttendanceLog(logs, {
-            date: targetDate,
-            action: 'CLICK',
-            target: member.fullName,
-            firstName: attendee.firstName,
-            lastName: attendee.lastName,
-            lcrUpdateStatus: toggleSuccess
-              ? 'Simulated - Toggle Tested ON/OFF (Restored)'
-              : 'Simulated - Toggle Test Error',
-          });
+          status = 'Simulated - Already Present (No Click)';
         } else {
           newlyMarked++;
-          Utils.pushAttendanceLog(logs, {
-            date: targetDate,
-            action: 'VERIFY',
-            target: member.fullName,
-            firstName: attendee.firstName,
-            lastName: attendee.lastName,
-            lcrUpdateStatus: 'Simulated - Match Confirmed (Did Not Click)',
-          });
+          if (!hasTestedToggle) {
+            hasTestedToggle = true;
+            action = 'CLICK';
+            status = (await testMemberToggle(member))
+              ? 'Simulated - Toggle Tested ON/OFF (Restored)'
+              : 'Simulated - Toggle Test Error';
+          }
         }
+        Utils.pushAttendanceLog(logs, {
+          date: targetDate,
+          action,
+          target: member.fullName,
+          firstName: attendee.firstName,
+          lastName: attendee.lastName,
+          lcrUpdateStatus: status,
+        });
       } else {
         // prettier-ignore
         Utils.recordUnmatchedAttendee(attendee, exactIndices, wardMembers, targetDate, true, unmatchedList, logs);

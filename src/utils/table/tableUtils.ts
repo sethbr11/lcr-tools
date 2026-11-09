@@ -117,25 +117,19 @@ export function getRelevantHeaderCells(table: HTMLTableElement): Types.RelevantH
 }
 
 /**
- * Collects a unique, alphabetically sorted array of non-empty cell values for a given column index.
+ * Returns the body cell at a column index for every row that has one.
  *
  * @param table - HTML table element.
  * @param columnIndex - Zero-based index of the target column.
- * @returns Array of unique string values found in that column.
+ * @returns Cells in row order (rows too short to reach the column are skipped).
  */
-export function getUniqueValues(table: HTMLTableElement, columnIndex: number): string[] {
-  const values = new Set<string>();
-  const rows = Array.from(table.querySelectorAll('tbody tr')).filter((r) => isVisible(r));
-
-  for (const row of rows) {
-    const cells = Array.from(row.querySelectorAll('td'));
-    if (cells[columnIndex]) {
-      const val = getCellValue(cells[columnIndex]).trim();
-      if (val) values.add(val);
-    }
-  }
-
-  return Array.from(values).sort();
+export function getColumnCells(table: HTMLTableElement, columnIndex: number): HTMLElement[] {
+  const cells: HTMLElement[] = [];
+  table.querySelectorAll(Dom.TABLE_BODY_ROWS).forEach((row) => {
+    const cell = row.querySelectorAll('td')[columnIndex];
+    if (cell) cells.push(cell);
+  });
+  return cells;
 }
 
 /**

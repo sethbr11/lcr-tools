@@ -1,4 +1,4 @@
-import { Types } from '../types';
+import { Dom, Types } from '../types';
 
 /* ==========================================================================
    EXPORTED FUNCTIONS
@@ -27,6 +27,31 @@ export function setHtml(target: Element, html: string): void {
  */
 export function clearElement(target: Element): void {
   target.replaceChildren();
+}
+
+/**
+ * Creates a full-screen, centered modal backdrop with the shared backdrop class.
+ *
+ * @param style - Extra or overriding styles (background color, z-index, alignment, font).
+ * @param id - Optional element ID.
+ * @returns The unattached backdrop element.
+ */
+export function createBackdrop(style: Partial<CSSStyleDeclaration>, id?: string): HTMLElement {
+  const backdrop = document.createElement('div');
+  if (id) backdrop.id = id;
+  backdrop.className = Dom.MODAL_BACKDROP_CLASS;
+  Object.assign(backdrop.style, {
+    position: 'fixed',
+    top: '0',
+    left: '0',
+    width: '100vw',
+    height: '100vh',
+    display: 'flex',
+    justifyContent: 'center',
+    alignItems: 'center',
+    ...style,
+  });
+  return backdrop;
 }
 
 /* ==========================================================================

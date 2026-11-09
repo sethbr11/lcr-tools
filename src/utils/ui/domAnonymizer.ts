@@ -84,17 +84,17 @@ export async function copyAnonymizedDOM(
    HELPER FUNCTIONS
    ========================================================================== */
 
+/** Removes every row after the first `maxRows`. */
+function removeRowsBeyond(rows: Element[], maxRows: number): void {
+  rows.slice(maxRows).forEach((row) => row.remove());
+}
+
 /** Limits tbody rows to maxRows to prevent overwhelming token windows. */
 function capTableBodyRows(root: HTMLElement, maxRows: number): void {
   const tbodies = root.tagName === 'TBODY' ? [root] : Array.from(root.querySelectorAll('tbody'));
   if (tbodies.length > 0) {
     for (const tbody of tbodies) {
-      const rows = Array.from(tbody.querySelectorAll(':scope > tr'));
-      if (rows.length > maxRows) {
-        for (let i = maxRows; i < rows.length; i++) {
-          rows[i].remove();
-        }
-      }
+      removeRowsBeyond(Array.from(tbody.querySelectorAll(':scope > tr')), maxRows);
     }
   } else {
     const tables = root.tagName === 'TABLE' ? [root] : Array.from(root.querySelectorAll('table'));
@@ -102,11 +102,7 @@ function capTableBodyRows(root: HTMLElement, maxRows: number): void {
       const rows = Array.from(table.querySelectorAll(':scope > tr, :scope > tbody > tr')).filter(
         (tr) => !tr.querySelector('th')
       );
-      if (rows.length > maxRows) {
-        for (let i = maxRows; i < rows.length; i++) {
-          rows[i].remove();
-        }
-      }
+      removeRowsBeyond(rows, maxRows);
     }
   }
 }

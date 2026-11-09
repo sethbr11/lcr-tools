@@ -1,5 +1,5 @@
 import * as Utils from '../utils';
-import { Constants, Dom, Regex, Types } from '../types';
+import { Dom, Regex, Types } from '../types';
 import { getLogsModalHtml, getLogsTableRowHtml } from '../templates';
 
 /* ==========================================================================
@@ -72,11 +72,7 @@ export async function downloadAttendanceReport(
   targetClass: string,
   targetDate: string
 ): Promise<void> {
-  const confirmed = await Utils.confirmDataStewardshipDownload();
-  if (!confirmed) {
-    Utils.showToast(Constants.STEWARDSHIP_CANCELLED_TOAST, { type: 'info' });
-    return;
-  }
+  if (!(await Utils.confirmDataStewardshipDownload())) return;
 
   const filename = `attendance-actions-${targetClass.toLowerCase().replace(Regex.MULTIPLE_SPACES, '-')}-${targetDate}.csv`;
   Utils.exportLogsToCSV(filename, logs);

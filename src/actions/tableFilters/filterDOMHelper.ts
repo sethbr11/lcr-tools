@@ -19,16 +19,14 @@ export function applyFilterRules(
   rules: Map<number, Types.FilterRule>
 ): Types.FilterApplicationResult {
   const isMulti = Array.isArray(target);
-  const tables = isMulti
-    ? target
-    : [target.isConnected ? target : document.querySelector<HTMLTableElement>('table') || target];
+  const tables = resolveFilterTables(target);
   const hasActiveRule = Array.from(rules.values()).some(isRuleActive);
 
   let totalVisible = 0;
   let totalRows = 0;
 
   for (const table of tables) {
-    const rows = Array.from(table.querySelectorAll('tbody tr'));
+    const rows = Array.from(table.querySelectorAll(Dom.TABLE_BODY_ROWS));
     totalRows += rows.length;
 
     let visibleInThisTable = 0;
@@ -121,13 +119,11 @@ export function applyFilterRules(
  */
 export function resetAllFilters(target: HTMLTableElement | HTMLTableElement[]): void {
   const isMulti = Array.isArray(target);
-  const tables = isMulti
-    ? target
-    : [target.isConnected ? target : document.querySelector<HTMLTableElement>('table') || target];
+  const tables = resolveFilterTables(target);
   let totalRows = 0;
 
   for (const table of tables) {
-    const rows = Array.from(table.querySelectorAll('tbody tr'));
+    const rows = Array.from(table.querySelectorAll(Dom.TABLE_BODY_ROWS));
     totalRows += rows.length;
     for (const row of rows) {
       (row as HTMLElement).style.display = '';
@@ -157,6 +153,13 @@ export function resetAllFilters(target: HTMLTableElement | HTMLTableElement[]): 
 /* ==========================================================================
    HELPER FUNCTIONS
    ========================================================================== */
+
+/** Returns the target tables, swapping a detached single table for the live one on the page. */
+function resolveFilterTables(target: HTMLTableElement | HTMLTableElement[]): HTMLTableElement[] {
+  if (Array.isArray(target)) return target;
+  if (target.isConnected) return [target];
+  return [document.querySelector<HTMLTableElement>('table') || target];
+}
 
 /** Returns the card section wrapping a table (its stack section when it holds only this table). */
 function getTableSection(table: HTMLTableElement): HTMLElement {

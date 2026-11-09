@@ -89,11 +89,7 @@ export function showTripLogsModal(): void {
  * @param logs - Array of trip log entries to download.
  */
 export async function downloadTripLogs(logs: Types.TripLogEntry[]): Promise<void> {
-  const confirmed = await confirmDataStewardshipDownload();
-  if (!confirmed) {
-    showToast(Constants.STEWARDSHIP_CANCELLED_TOAST, { type: 'info' });
-    return;
-  }
+  if (!(await confirmDataStewardshipDownload())) return;
 
   const lines = logs.map((log) => `[${log.timestamp}] ${log.message}`).join('\n');
   downloadFile(lines, Constants.LOG_FILENAME, 'text/plain;charset=utf-8;');

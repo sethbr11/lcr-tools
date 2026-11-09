@@ -99,10 +99,9 @@ export async function processClassVisitorCounts(
 
   // Step 4: Settle delay and pre-save verification so React commits state and enables Save
   await Utils.sleep(Constants.VISITOR_SAVE_PREPARE_MS);
-  for (const [category, count] of Object.entries(counts)) {
-    if (typeof count !== 'number' || count < 0) continue;
-    const catName = category as Types.VisitorCategory;
-    const input = findVisitorInput(catName, targetDate);
+  // Re-query each input: LCR may have remounted it while the values were typed
+  for (const { category, count } of resolved) {
+    const input = findVisitorInput(category, targetDate);
     if (input && input.value !== String(count)) {
       setNativeInputValue(input, count);
     }

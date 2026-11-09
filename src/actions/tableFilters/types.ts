@@ -94,6 +94,8 @@ export namespace Types {
    ========================================================================== */
 
 export const Constants = {
+  /** Toast shown after the table is expanded to show all 12 months. */
+  EXPANDED_MONTHS_TOAST: 'Expanded table to show all 12 months.',
   ...Base.Constants,
   /** Maximum unique values permitted for dropdown options before column is omitted. */
   MAX_DROPDOWN_UNIQUE_VALUES: 20,

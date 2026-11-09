@@ -1,6 +1,11 @@
 import { browser } from 'wxt/browser';
 import { Constants, Types } from '@/types';
-import { decryptData, encryptData, getUnlockedPin, isEncryptedPayload } from './cryptoUtils';
+import {
+  decryptWithSessionPin,
+  encryptData,
+  getUnlockedPin,
+  isEncryptedPayload,
+} from './cryptoUtils';
 
 /* ==========================================================================
    EXPORTED FUNCTIONS
@@ -120,14 +125,7 @@ export async function getSavedNicknames(): Promise<Types.NicknameDictionary> {
     if (!raw) return {};
 
     if (isEncryptedPayload(raw)) {
-      const pin = await getUnlockedPin();
-      if (!pin) return {};
-      try {
-        return await decryptData<Types.NicknameDictionary>(raw, pin);
-      } catch (err) {
-        console.error('LCR Tools: Failed to decrypt saved nicknames:', err);
-        return {};
-      }
+      return (await decryptWithSessionPin<Types.NicknameDictionary>(raw)) ?? {};
     }
 
     const dict = (raw as Types.NicknameDictionary) || {};

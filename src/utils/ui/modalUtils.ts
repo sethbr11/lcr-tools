@@ -1,6 +1,6 @@
 import { Dom, Types } from '@/types';
 import { Templates } from './templates';
-import { setHtml } from './htmlUtils';
+import { createBackdrop, setHtml } from './htmlUtils';
 import { removeElement } from './uiUtils';
 
 /* ==========================================================================
@@ -54,6 +54,7 @@ export function createSideModal(options: Types.SideModalOptions): HTMLElement {
   const backdrop = createModalBackdrop(id, {
     backgroundColor: 'rgba(0, 0, 0, 0.4)',
     justifyContent: side === 'right' ? 'flex-end' : 'flex-start',
+    alignItems: 'stretch',
   });
 
   const drawer = document.createElement('div');
@@ -125,19 +126,7 @@ function createModalBackdrop(id: string, style: Partial<CSSStyleDeclaration>): H
   injectModalBaseStyles();
   closeModal(id);
 
-  const backdrop = document.createElement('div');
-  backdrop.id = id;
-  backdrop.className = 'lcr-tools-modal-backdrop';
-  Object.assign(backdrop.style, {
-    position: 'fixed',
-    top: '0',
-    left: '0',
-    width: '100vw',
-    height: '100vh',
-    zIndex: Dom.MODAL_BACKDROP_Z_INDEX,
-    display: 'flex',
-    ...style,
-  });
+  const backdrop = createBackdrop({ zIndex: Dom.MODAL_BACKDROP_Z_INDEX, ...style }, id);
   return backdrop;
 }
 

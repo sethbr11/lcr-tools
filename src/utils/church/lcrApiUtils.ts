@@ -40,15 +40,29 @@ export async function processInBatches<T>(
  */
 export async function fetchMemberCard(memberId: string): Promise<Types.LcrMemberCardData | null> {
   const endpoint = `${Constants.MLTP_API_BASE}/api/member/${encodeURIComponent(memberId)}/card`;
+  return fetchSessionJson<Types.LcrMemberCardData>(endpoint);
+}
+
+/**
+ * GETs JSON from a Church endpoint using the signed-in Church Account session cookies.
+ *
+ * @param url - Endpoint URL.
+ * @param fetchImpl - Fetch implementation (injectable for tests).
+ * @returns Parsed JSON, or null on a network error, non-OK status, or invalid JSON.
+ */
+export async function fetchSessionJson<T>(
+  url: string,
+  fetchImpl: typeof fetch = fetch
+): Promise<T | null> {
   try {
-    const response = await fetch(endpoint, {
+    const response = await fetchImpl(url, {
       credentials: 'include',
       headers: { Accept: 'application/json' },
     });
     if (!response.ok) return null;
-    return (await response.json()) as Types.LcrMemberCardData;
+    return (await response.json()) as T;
   } catch (err) {
-    console.error(`LCR Tools: Failed to fetch card data for member ${memberId}:`, err);
+    console.error('LCR Tools: Church request failed:', err);
     return null;
   }
 }

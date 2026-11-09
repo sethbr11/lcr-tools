@@ -132,7 +132,7 @@ describe('findMultipleCallings - functional user expectations', () => {
     });
     const [csvContent, filename] = downloadCsvSpy.mock.calls[0];
     expect(csvContent).toContain(
-      `"${Constants.CSV_HEADER_MEMBER}","${Constants.CSV_HEADER_CALLING}","${Constants.CSV_HEADER_ORGANIZATION}"`
+      `${Constants.CSV_HEADER_MEMBER},${Constants.CSV_HEADER_CALLING},${Constants.CSV_HEADER_ORGANIZATION}`
     );
     expect(csvContent).toContain('Doe, John');
     expect(csvContent).toContain('1st Counselor');
@@ -143,7 +143,6 @@ describe('findMultipleCallings - functional user expectations', () => {
 
   it('should not download CSV when the stewardship reminder is cancelled', async () => {
     const downloadCsvSpy = vi.spyOn(fileUtils, 'downloadCsv').mockImplementation(() => {});
-    const toastSpy = vi.spyOn(uiUtils, 'showToast');
 
     Object.defineProperty(window, 'location', {
       value: new URL('https://lcr.churchofjesuschrist.org/orgs/callings-by-organization'),
@@ -185,10 +184,7 @@ describe('findMultipleCallings - functional user expectations', () => {
     document.querySelector<HTMLButtonElement>('#lcr-tools-cancel-btn')?.click();
 
     await vi.waitFor(() => {
-      expect(toastSpy).toHaveBeenCalledWith(
-        Constants.STEWARDSHIP_CANCELLED_TOAST,
-        expect.objectContaining({ type: 'info' })
-      );
+      expect(document.body.textContent).toContain(Constants.STEWARDSHIP_CANCELLED_TOAST);
     });
     expect(downloadCsvSpy).not.toHaveBeenCalled();
     expect(document.getElementById(Dom.MODAL_ID)).not.toBeNull();

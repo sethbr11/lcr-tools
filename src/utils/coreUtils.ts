@@ -261,9 +261,17 @@ export function toCSV(
   headers: string[],
   rows: (string | number | boolean | null | undefined)[][]
 ): string {
-  const headerLine = headers.map(formatCSVCell).join(',');
-  const rowLines = rows.map((row) => row.map(formatCSVCell).join(','));
-  return [headerLine, ...rowLines].join('\r\n');
+  return rowsToCSV([headers, ...rows]);
+}
+
+/**
+ * Formats rows (the first row may be a header) into a CSV document string.
+ *
+ * @param rows - 2D matrix of cell values.
+ * @returns Formatted CSV document string with CRLF line endings.
+ */
+export function rowsToCSV(rows: (string | number | boolean | null | undefined)[][]): string {
+  return rows.map((row) => row.map(formatCSVCell).join(',')).join('\r\n');
 }
 
 /**

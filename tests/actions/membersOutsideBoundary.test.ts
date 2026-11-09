@@ -139,7 +139,7 @@ describe('membersOutsideBoundary - functional user expectations', () => {
       expect(downloadCsvSpy).toHaveBeenCalledTimes(1);
     });
     const [csvContent, filename] = downloadCsvSpy.mock.calls[0];
-    expect(csvContent).toContain('"Name","Status","Address","Latitude","Longitude"');
+    expect(csvContent).toContain('Name,Status,Address,Latitude,Longitude');
     expect(csvContent).toContain('Smith, John & Mary');
     expect(csvContent).toContain('123 Main St');
     expect(filename).toBe('boundary_audit_results.csv');

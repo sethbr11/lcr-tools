@@ -1,7 +1,7 @@
 import Papa from 'papaparse';
 // prettier-ignore
 import { callingAssignmentKey, confirmDataStewardshipDownload, downloadCsv, generateFilename,
-  getPageTables, showToast, tableToCSV } from './utils';
+  getPageTables, tableToCSV, toCSV } from './utils';
 import { Constants, Regex, Types } from './types';
 
 /* ==========================================================================
@@ -53,32 +53,21 @@ export function analyzeMembersWithMultipleCallings(
 export async function exportMultipleCallingsCsv(
   holders: Types.MemberCallingsRecord[]
 ): Promise<boolean> {
-  const confirmed = await confirmDataStewardshipDownload();
-  if (!confirmed) {
-    showToast(Constants.STEWARDSHIP_CANCELLED_TOAST, { type: 'info' });
-    return true;
-  }
+  if (!(await confirmDataStewardshipDownload())) return true;
 
-  const rows: string[][] = [
-    [Constants.CSV_HEADER_MEMBER, Constants.CSV_HEADER_CALLING, Constants.CSV_HEADER_ORGANIZATION],
+  const headers = [
+    Constants.CSV_HEADER_MEMBER,
+    Constants.CSV_HEADER_CALLING,
+    Constants.CSV_HEADER_ORGANIZATION,
   ];
+  const rows: string[][] = [];
   for (const holder of holders) {
     for (const calling of holder.callings) {
       rows.push([holder.name, calling.label, calling.organization]);
     }
   }
 
-  const csvContent = rows
-    .map((row) =>
-      row
-        .map((cell) => {
-          let val = cell;
-          if (Regex.FORMULA_PREFIX.test(val)) val = `'${val}`;
-          return `"${val.replace(Regex.CSV_DOUBLE_QUOTE, '""')}"`;
-        })
-        .join(',')
-    )
-    .join('\r\n');
+  const csvContent = toCSV(headers, rows);
 
   downloadCsv(csvContent, generateFilename('csv', Constants.CSV_FILENAME_STEM));
   return true;
