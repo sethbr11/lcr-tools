@@ -11,10 +11,6 @@ import * as Visitors from './lcr/visitorsHelper';
 import * as Review from './results/reviewHelper';
 import * as Completion from './results/completionHelper';
 
-/* ==========================================================================
-   EXPORTED FUNCTIONS
-   ========================================================================== */
-
 /**
  * Main entrypoint orchestrating the Process Attendance action.
  *

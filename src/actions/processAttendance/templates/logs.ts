@@ -4,10 +4,6 @@ import { Dom } from '../types';
    ACTION LOGS MODAL
    ========================================================================== */
 
-/* ==========================================================================
-   EXPORTED FUNCTIONS
-   ========================================================================== */
-
 /**
  * Generates the Action Execution Logs modal card HTML (backdrop is created by the caller).
  *

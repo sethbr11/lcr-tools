@@ -5,10 +5,6 @@ import { Dom, Types } from '../types';
    UNMATCHED REVIEW MODAL & TABLE FRAGMENTS
    ========================================================================== */
 
-/* ==========================================================================
-   EXPORTED FUNCTIONS
-   ========================================================================== */
-
 /**
  * Generates the unmatched-attendee review modal HTML.
  *

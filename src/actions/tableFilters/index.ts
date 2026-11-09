@@ -17,10 +17,6 @@ import {
 import { Constants, Dom, Types } from './types';
 import { Templates } from './templates';
 
-/* ==========================================================================
-   EXPORTED FUNCTIONS
-   ========================================================================== */
-
 /**
  * Main entrypoint orchestrating the Table Filters action pipeline.
  * Steps:
