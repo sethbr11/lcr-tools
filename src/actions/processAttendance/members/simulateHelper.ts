@@ -216,7 +216,7 @@ export async function simulateVisitorEntryAndRestore(
 /** Tests toggling a member button ON then immediately back OFF to verify interactivity. */
 async function testMemberToggle(member: Types.WardMember): Promise<boolean> {
   if (!member.row || Utils.isAborted()) return false;
-  const btn = findAttendanceButton(member.row);
+  const btn = findAttendanceButton(member.row, member.fullName);
   if (!btn) return false;
 
   await Utils.sleep(Constants.SIM_VISUAL_PAUSE_MS);

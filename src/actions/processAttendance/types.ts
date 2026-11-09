@@ -338,6 +338,22 @@ export namespace Types {
     /** Whether the user aborted mid-batch. */
     aborted: boolean;
   }
+  /** Sunday and class the run is marking, used to pick the right attendance button. */
+  export interface AttendanceTarget {
+    /** ISO target Sunday date (YYYY-MM-DD). */
+    date: string;
+    /** Display name of the selected class or quorum. */
+    className: string | null;
+  }
+  /** An attendance button paired with its parsed "Name, date, class" aria-label. */
+  export interface LabelledAttendanceButton {
+    /** The attendance toggle button. */
+    btn: HTMLButtonElement;
+    /** Label match: index marks where the date starts; groups are [date, class]. */
+    match: RegExpMatchArray;
+  }
+  /** Result of clicking (or declining to click) a member's attendance button. */
+  export type ClickAttendanceOutcome = 'clicked' | 'already' | 'busy' | 'error';
   /** One roll member to mark in a batch, with the roster name that matched it (for the audit log). */
   export interface BatchMarkEntry {
     /** Ward member whose attendance button is clicked. */

@@ -213,6 +213,14 @@ describe('processAttendance - November 2026 LCR layout', () => {
       expect(findAttendanceButton(document.querySelector('tr') as HTMLElement)).not.toBeNull();
     });
 
+    it('refuses a button whose label names a different member', () => {
+      const row = allClassesRow();
+      setAttendanceTarget('2026-11-01', 'Elders Quorum');
+
+      expect(findAttendanceButton(row, 'Last, First Middle')?.dataset.class).toBe('Elders Quorum');
+      expect(findAttendanceButton(row, 'Someone, Else')).toBeNull();
+    });
+
     it('marks only the target class button present', async () => {
       const row = allClassesRow();
       wireAttendanceButtons();

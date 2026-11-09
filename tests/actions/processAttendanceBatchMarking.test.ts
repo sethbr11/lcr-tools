@@ -113,6 +113,26 @@ describe('processAttendance - fast batch marking with verification', () => {
     expect(last.lcrUpdateStatus).toContain('did not register');
   });
 
+  it('clicks a member once even when two roster rows match them', async () => {
+    const adams = buildMember('Adams, Abby', { saveMs: 400 });
+    const logs: Types.AttendanceLogEntry[] = [];
+
+    const result = await processMembersAgainstRoll(
+      [
+        { firstName: 'Abby', lastName: 'Adams' },
+        { firstName: 'Abby J.', lastName: 'Adams' },
+      ],
+      [adams.member],
+      '2026-11-01',
+      logs
+    );
+
+    expect(adams.clickCount()).toBe(1);
+    expect(adams.button.getAttribute('aria-pressed')).toBe('true');
+    expect(result.newlyMarked).toBe(1);
+    expect(logs.some((l) => l.lcrUpdateStatus?.includes('duplicate row skipped'))).toBe(true);
+  });
+
   it('does not click members who are already present', async () => {
     const adams = buildMember('Adams, Abby');
     adams.button.setAttribute('aria-pressed', 'true');

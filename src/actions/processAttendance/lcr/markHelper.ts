@@ -1,7 +1,7 @@
 import { Constants, Dom, Regex, Types } from '../types';
 
 /** Sunday and class the run is marking; null until sync confirms them. */
-let attendanceTarget: { date: string; className: string | null } | null = null;
+let attendanceTarget: Types.AttendanceTarget | null = null;
 
 /* ==========================================================================
    EXPORTED FUNCTIONS
@@ -25,14 +25,22 @@ export function setAttendanceTarget(date: string | null, className: string | nul
  * @param row - Ward member table row.
  * @returns The matching button, or null when none (or more than one) matches.
  */
-export function findAttendanceButton(row: HTMLElement): HTMLButtonElement | null {
+export function findAttendanceButton(
+  row: HTMLElement,
+  expectedName?: string
+): HTMLButtonElement | null {
   const buttons = Array.from(row.querySelectorAll<HTMLButtonElement>(Dom.ATTENDANCE_BUTTON));
-  const labelled = buttons
+  const allLabelled = buttons
     .map((btn) => ({
       btn,
       match: (btn.getAttribute('aria-label') || '').match(Regex.ATTENDANCE_BUTTON_LABEL),
     }))
-    .filter((entry): entry is { btn: HTMLButtonElement; match: RegExpMatchArray } => !!entry.match);
+    .filter((entry): entry is Types.LabelledAttendanceButton => !!entry.match);
+  // The label starts with the member's name; never click a button labelled for someone else
+  const labelled = allLabelled.filter(
+    (entry) => !expectedName || labelNameMatches(entry, expectedName)
+  );
+  if (allLabelled.length > 0 && labelled.length === 0) return null;
 
   // Legacy markup without dated labels: only safe when the row has a single button
   if (!attendanceTarget || labelled.length === 0) return buttons.length === 1 ? buttons[0] : null;
@@ -53,11 +61,9 @@ export function findAttendanceButton(row: HTMLElement): HTMLButtonElement | null
  * @returns 'clicked'; 'already' when the button shows present; 'busy' when it is still saving, so a
  *   click would toggle it back off; or 'error' when the button can't be found.
  */
-export function clickAttendanceButton(
-  member: Types.WardMember
-): 'clicked' | 'already' | 'busy' | 'error' {
+export function clickAttendanceButton(member: Types.WardMember): Types.ClickAttendanceOutcome {
   if (!member.row) return 'error';
-  const btn = findAttendanceButton(member.row);
+  const btn = findAttendanceButton(member.row, member.fullName);
   if (!btn) return 'error';
   if (isButtonPresent(btn)) return 'already';
   // A button mid-save would be toggled back off by another click
@@ -77,7 +83,7 @@ export function clickAttendanceButton(
  * @returns True when present and idle, false otherwise (including when the button is missing).
  */
 export function isMemberMarkedPresent(member: Types.WardMember): boolean {
-  const btn = member.row ? findAttendanceButton(member.row) : null;
+  const btn = member.row ? findAttendanceButton(member.row, member.fullName) : null;
   return !!btn && !isButtonBusy(btn) && isButtonPresent(btn);
 }
 
@@ -88,7 +94,7 @@ export function isMemberMarkedPresent(member: Types.WardMember): boolean {
  * @returns True when the button is disabled or showing a progress spinner.
  */
 export function isMemberMarkBusy(member: Types.WardMember): boolean {
-  const btn = member.row ? findAttendanceButton(member.row) : null;
+  const btn = member.row ? findAttendanceButton(member.row, member.fullName) : null;
   return !!btn && isButtonBusy(btn);
 }
 
@@ -125,3 +131,15 @@ export function isButtonPresent(btn: HTMLElement): boolean {
 /* ==========================================================================
    HELPER FUNCTIONS
    ========================================================================== */
+
+/** True when the name before the date in a button's label is the expected member's name. */
+function labelNameMatches(entry: Types.LabelledAttendanceButton, expectedName: string): boolean {
+  const label = entry.btn.getAttribute('aria-label') || '';
+  const normalize = (text: string) =>
+    text
+      .toLowerCase()
+      .replace(Regex.NAME_PUNCTUATION, '')
+      .replace(Regex.MULTIPLE_SPACES, ' ')
+      .trim();
+  return normalize(label.slice(0, entry.match.index)) === normalize(expectedName);
+}

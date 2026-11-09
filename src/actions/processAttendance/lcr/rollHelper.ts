@@ -41,7 +41,7 @@ function getWardMembersOnRoll(table?: HTMLTableElement): Types.WardMember[] {
     if (!fullName) continue;
 
     const { firstName, lastName } = Utils.parseFullName(fullName);
-    const isPresent = isRowMarkedPresent(row);
+    const isPresent = isRowMarkedPresent(row, fullName);
 
     members.push({ fullName, firstName, lastName, isPresent, pageNum: 1, row });
   }
@@ -50,8 +50,8 @@ function getWardMembersOnRoll(table?: HTMLTableElement): Types.WardMember[] {
 }
 
 /** Checks whether a row currently has attendance marked via button or checkbox. */
-function isRowMarkedPresent(row: HTMLTableRowElement): boolean {
-  const btn = findAttendanceButton(row);
+function isRowMarkedPresent(row: HTMLTableRowElement, fullName: string): boolean {
+  const btn = findAttendanceButton(row, fullName);
   if (btn && isButtonPresent(btn)) return true;
 
   const checkbox = row.querySelector<HTMLInputElement>(Dom.ATTENDANCE_CHECKBOX);

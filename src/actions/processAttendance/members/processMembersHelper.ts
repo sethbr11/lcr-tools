@@ -169,15 +169,29 @@ async function markMembersInBatch(
   const countConfirmed = (clicked: Types.BatchMarkEntry[]) =>
     clicked.filter((entry) => MarkHelper.isMemberMarkedPresent(entry.member)).length;
 
+  // A member can match more than one roster row (e.g. "John Smith" and "John A. Smith") or be
+  // queued twice in review. Clicking twice before the first save shows would toggle them back
+  // off, so each member is clicked once and the extra rows are only logged.
+  const seen = new Set<Types.WardMember>();
+  const uniqueEntries = entries.filter((entry) => {
+    if (!seen.has(entry.member)) return seen.add(entry.member);
+    log(
+      entry,
+      'VERIFY',
+      `${entry.firstName} ${entry.lastName} also matched ${entry.member.fullName}, who is already being marked (duplicate row skipped)`
+    );
+    return false;
+  });
+
   // Pass 1: click every button, paced but without waiting for each save
   let pending: Types.BatchMarkEntry[] = [];
-  for (let i = 0; i < entries.length; i++) {
+  for (let i = 0; i < uniqueEntries.length; i++) {
     if (Utils.isAborted()) {
       return { newlyMarked: countConfirmed(pending), alreadyMarked, aborted: true };
     }
-    const entry = entries[i];
+    const entry = uniqueEntries[i];
     // prettier-ignore
-    Utils.showLoadingIndicator(`Marking ${label} ${i + 1} of ${entries.length}...`, `${entry.member.fullName} (Press ESC to cancel)`);
+    Utils.showLoadingIndicator(`Marking ${label} ${i + 1} of ${uniqueEntries.length}...`, `${entry.member.fullName} (Press ESC to cancel)`);
 
     const outcome = MarkHelper.clickAttendanceButton(entry.member);
     if (outcome === 'already') {
