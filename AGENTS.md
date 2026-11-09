@@ -45,6 +45,9 @@ extension/
 │   │   │   ├── <helper>.ts   # Domain-specific logic decomposed into separate files
 │   │   │   ├── templates.ts  # HTML template strings (if action renders UI)
 │   │   │   ├── types.ts      # Action-specific Types, Constants, Regex, Dom
+│   │   │   ├── constants.ts  # (optional) Constants split out of types.ts when it nears 400 lines
+│   │   │   ├── regex.ts      # (optional) Regex split out of types.ts
+│   │   │   ├── dom.ts        # (optional) Dom split out of types.ts
 │   │   │   └── utils.ts      # Re-exports @/utils + action-specific utilities
 │   │   └── registry.ts       # Central action metadata registry and URL matching
 │   └── entrypoints/          # WXT entrypoint targets
@@ -52,6 +55,7 @@ extension/
 │       ├── trip-planning/    # Dedicated Leaflet trip planner web app (HTML, TS, CSS)
 │       ├── directory-audit.content.ts # Content script for pending boundary audits
 │       ├── passive-actions.content.ts # Content script for passive automated actions
+│       ├── dev-dom-anonymizer.ts # Dev-only DOM anonymizer (excluded from production builds)
 │       └── action-*.ts       # 4-line unlisted script launchers for tab injection
 └── tests/                    # Vitest functional test suites
     ├── setup.ts              # JSDOM & WebExtension global mocks
@@ -92,6 +96,7 @@ Every action directory **must** adhere to this pattern:
      - `export const Regex = { ...Base.Regex, ... } as const;`
      - `export const Dom = { ...Base.Dom, ... } as const;` (Strictly HTML/DOM elements: DOM element IDs, CSS classes, query selectors, CSS styles like `z-index`, and data attributes).
    - Every type, interface, property, constant, DOM identifier, and regex **must have its own individual, meaningful one-line JSDoc comment** (`/** ... */`). Group comments spanning multiple properties or constants are strictly prohibited.
+   - When `types.ts` would exceed 400 lines, move `Constants`, `Regex`, or `Dom` into sibling `constants.ts`, `regex.ts`, or `dom.ts` files and re-export them from `types.ts` (`export { Constants } from './constants';`). Consumers still import everything from `./types`.
 
 3. **`utils.ts`**:
    - Re-exports all global utilities: `export * from '@/utils';`.

@@ -8,9 +8,9 @@ This document provides the definitive architectural justification and privacy pr
 
 1. **Zero External Server Infrastructure:** The extension does not operate a remote server, external database, telemetry service, or analytics pipeline. All data processing occurs exclusively within the local browser process.
 2. **Session Gating & Role-Based Access:** The extension functions strictly within authenticated browser tabs where the user already holds a valid Church Account and an authorized calling (e.g. Bishopric, Clerk, Presidency).
-3. **Transient Memory Processing:** With the exception of the short-lived photo cache, user-approved attendance nicknames, and catalog API keys—which are encrypted at rest using AES-256-GCM with keys derived from a user-configured Security PIN—data is processed in transient JavaScript heap memory and discarded when the tab or modal closes.
+3. **Transient Memory Processing:** With the exception of the short-lived photo cache, user-approved attendance nicknames (encrypted at rest when a Security PIN is configured), catalog API keys (always encrypted at rest with a Security PIN), and the Trip Planner working set described in 2.8, data is processed in transient JavaScript heap memory and discarded when the tab or modal closes.
 4. **Zero AI Ingestion of Live PII:** Development and test suites utilize 100% synthetic mock names and dummy data. Real member records are never fed into external AI models.
-5. **Client-Side PIN Encryption-at-Rest:** Sensitive values saved on-device (clerical attendance nicknames and third-party routing API keys) are encrypted in `browser.storage.local` using standard Web Crypto AES-256-GCM with PBKDF2 key derivation (200,000 iterations). Access is protected by a user-configured 4–8 digit PIN, ensuring data cannot be retrieved in plaintext from the device disk or by unauthorized local computer users. Unlocked keys reside exclusively in volatile session memory and are flushed upon browser exit or manual session lock.
+5. **Client-Side PIN Encryption-at-Rest:** Third-party routing API keys are always encrypted in `browser.storage.local`, and attendance nicknames are encrypted once a Security PIN is configured, using standard Web Crypto AES-256-GCM with PBKDF2 key derivation (200,000 iterations). Access is protected by a user-configured 4–8 digit PIN, ensuring data cannot be retrieved in plaintext from the device disk or by unauthorized local computer users. Unlocked keys reside exclusively in volatile session memory and are flushed upon browser exit or manual session lock.
 
 ---
 
@@ -59,6 +59,7 @@ This document provides the definitive architectural justification and privacy pr
 - **Storage & Network:** Analyzes point-in-polygon coordinates in browser memory via Turf.js. Zero external geocoding calls.
 - **Precautions Taken:**
   - Requires explicit user confirmation before initiating reload/audit.
+  - If the Directory APIs fail to load, the audit reports the failure instead of showing every household as inside the boundary.
   - Session-only pending flag; auto-cleans session storage upon completion.
   - Prompts users with a Handbook 33.8 data stewardship warning before downloading the audit CSV.
 - **Handbook Alignment:** Fulfills ward boundary alignment duties without exposing member data to external mapping tools.
@@ -86,10 +87,12 @@ This document provides the definitive architectural justification and privacy pr
 - **Precautions Taken:**
   - Detailed diagnostic audit log modal showing every member matched, marked, or unmatched, explicitly noting nickname resolutions.
   - Prompts users with a Handbook 33.8 data stewardship warning before downloading the audit log CSV, then returns to the logs modal and completion summary.
-  - Strict fuzzy-matching thresholds preventing misattribution.
+  - **Exact-Only Auto-Marking:** Only exact name matches (middle names ignored) are marked automatically. Close matches are shown as suggestions that a person must confirm, and members who share a name are never auto-marked.
+  - **Fail-Safe Page Verification:** Before any click, the action confirms the Members tab, month, class, and Sunday are selected; if any cannot be confirmed it stops without marking anything. Each click targets the button whose label names that member, date, and class.
+  - **One Click per Member, Verified:** Each member is clicked at most once per run, every mark is verified afterwards, and dropped marks are retried before review. Pressing Escape stops further clicks and logs any already sent as saved or unconfirmed.
   - **Never Automatic:** Nickname mappings are never applied automatically during the initial auto-mark pass; they require human one-click confirmation in the unmatched review dialog, and LCR marking for those matches is deferred until the user presses Continue.
   - **Single Visitor Write:** Visitor counts from headcount setup and unmatched visitor designations are applied to LCR once after Continue—not incrementally during review.
-  - **Full Data Stewardship & PIN Encryption:** Nicknames stored in `browser.storage.local` are encrypted at rest with AES-256-GCM using keys derived from a user-configured Security PIN. Users can view, individual-delete specific aliases (preserving member mappings if other aliases remain), or clear all locally saved nicknames via the in-page "Manage Nicknames" control or via More → Manage Aliases in the extension popup. Popup access requires both active Church LCR host verification and PIN authentication; stored aliases are never loaded or displayed without unlocking.
+  - **Full Data Stewardship & PIN Encryption:** Once a Security PIN is configured, nicknames stored in `browser.storage.local` are encrypted at rest with AES-256-GCM using keys derived from that PIN (nicknames saved before a PIN existed are encrypted when it is created). Users can view, individual-delete specific aliases (preserving member mappings if other aliases remain), or clear all locally saved nicknames via the in-page "Manage Nicknames" control or via More → Manage Aliases in the extension popup. Popup access requires both active Church LCR host verification and PIN authentication; stored aliases are never loaded or displayed without unlocking.
 - **Handbook Alignment:** Reduces administrative burden on secretaries while ensuring accurate quarterly reporting and maintaining strict data confidentiality (General Handbook 33.8 and 38.8.31).
 
 ---
@@ -111,14 +114,16 @@ This document provides the definitive architectural justification and privacy pr
 - **Storage & Network:**
   - **Preferred:** Church Directory `GET /api/v4/households?unit=` using the signed-in Church Account session. Matching is performed locally by name. Matched rows receive Church `latitude` / `longitude` and are never sent to a third-party geocoder.
   - **Fallback:** Unmatched rows send **street address strings only** to Nominatim, LocationIQ, or Mapbox. Member names, phones, emails, UUIDs, and unit numbers are never attached to those requests. Results are cached locally by address (`geocode_cache`).
-  - **Basemap:** Carto Voyager raster tiles (`z/x/y` only). Optional Mapbox Streets tiles if a stored Mapbox key is present.
-  - **Optional road routing:** Mapbox Matrix and Directions receive coordinates only.
+  - **Basemap:** USGS National Map (US) or Esri raster tiles (`z/x/y` only), on screen and in PDF maps. Mapbox Streets tiles if a saved Mapbox key is present.
+  - **Optional road routing:** Mapbox Matrix (travel times) and one Mapbox Directions request per group (road path) receive coordinates only.
+  - **PDF export:** Generated entirely in the browser (one page per group: map, numbered stops, and the columns the user picks) and saved as a local download.
   - **Storage keys:** `tripPlanningData`, `tripPlanningHeaders`, `geocode_cache`, `trip_planner_starting_address` (last group starting address the user saved, offered when setting another group's start), `trip_planner_pdf_fields` (the column names chosen for the PDF export; no member data), and catalog API keys in `lcr_api_keys`.
 - **Precautions Taken:**
   - Church coordinates are preferred so residential addresses are not disclosed to third-party geocoders when a Directory match exists.
   - Geocode and routing requests never include member identity fields.
   - Catalog API keys (Mapbox, LocationIQ) are stored only on this device in `browser.storage.local` and always encrypted at rest with AES-256-GCM (saving a key requires creating or unlocking a Security PIN, and keys are saved only when the user clicks Save); users cannot add custom key names. Popup access to view, edit, or reveal stored keys is strictly gated to active Church LCR domains and requires PIN unlock.
-  - Prompts users with a Handbook 33.8 data stewardship warning before CSV download.
+  - Keys typed into the planner are used only for the current visit unless the user clicks Save.
+  - Prompts users with a Handbook 33.8 data stewardship warning before CSV or PDF download.
 - **Handbook Alignment:** Minimizes third-party disclosure of member addresses while assisting with authorized pastoral visits (Handbook 33.8 and 38.8.31).
 
 ---
