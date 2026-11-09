@@ -3,6 +3,7 @@ import {
   clearAllNicknames,
   escapeHtml,
   getSavedNicknames,
+  groupNicknamesByPerson,
   removeNicknameMapping,
   setHtml,
 } from '@/utils';
@@ -69,7 +70,7 @@ export async function renderAliasesList(tabUrl: string): Promise<void> {
   if (!list) return;
 
   const nicknames = await getSavedNicknames();
-  const groups = groupAliasesByPerson(Object.values(nicknames));
+  const groups = groupNicknamesByPerson(Object.values(nicknames));
 
   if (groups.length === 0) {
     setHtml(
@@ -138,31 +139,4 @@ function matchesAliasGroupSearch(group: Types.NicknamePersonGroup, query: string
   if (!query) return true;
   if (group.canonicalName.toLowerCase().includes(query)) return true;
   return group.aliases.some((item) => item.alias.toLowerCase().includes(query));
-}
-
-/** Groups nickname mappings by canonical member name, sorting people and aliases A–Z. */
-function groupAliasesByPerson(entries: Types.NicknameMapping[]): Types.NicknamePersonGroup[] {
-  const groups = new Map<string, Types.NicknamePersonGroup>();
-
-  for (const item of entries) {
-    const key = item.canonicalName.trim().toLowerCase();
-    const existing = groups.get(key);
-    if (existing) {
-      existing.aliases.push(item);
-      continue;
-    }
-    groups.set(key, { canonicalName: item.canonicalName.trim(), aliases: [item] });
-  }
-
-  return [...groups.values()]
-    .map((group) => ({
-      canonicalName: group.canonicalName,
-      aliases: [...group.aliases].sort((a, b) => compareAliasNames(a.alias, b.alias)),
-    }))
-    .sort((a, b) => compareAliasNames(a.canonicalName, b.canonicalName));
-}
-
-/** Case-insensitive alphabetical comparison for member names and aliases. */
-function compareAliasNames(left: string, right: string): number {
-  return left.toLowerCase().localeCompare(right.toLowerCase());
 }

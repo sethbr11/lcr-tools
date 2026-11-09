@@ -1,7 +1,7 @@
-import { callingAssignmentKey, escapeHtml, formatCallingLabel, setHtml } from './utils';
-import { Constants, Dom, Types } from './types';
+import { callingAssignmentKey, setHtml } from './utils';
+import { Dom, Types } from './types';
 import { Templates } from './templates';
-import { hideFixedSearchDropdown, showFixedSearchDropdown } from './callingSearchDropdownHelper';
+import { bindCallingSearchInput } from './callingSearchDropdownHelper';
 
 /* ==========================================================================
    EXPORTED FUNCTIONS
@@ -40,52 +40,17 @@ function bindIgnoreSearch(draft: Types.IgnoredCalling[], catalog: Types.CallingA
   const dropdown = wrap?.querySelector<HTMLElement>(`.${Dom.IGNORE_SEARCH_DROPDOWN}`);
   if (!wrap || !input || !dropdown) return;
 
-  const hide = () => hideFixedSearchDropdown(dropdown, wrap);
-
-  const showMatches = () => {
-    const query = input.value.trim().toLowerCase();
-    if (!query) {
-      hide();
-      return;
+  bindCallingSearchInput(
+    input,
+    wrap,
+    dropdown,
+    catalog,
+    () => draft,
+    (assignment) => {
+      draft.push({ ...assignment, enabled: true });
+      renderIgnoreList(draft, catalog);
     }
-
-    const selected = new Set(draft.map(callingAssignmentKey));
-    const matches = catalog
-      .filter((item) => {
-        if (selected.has(callingAssignmentKey(item))) return false;
-        return formatCallingLabel(item).toLowerCase().includes(query);
-      })
-      .slice(0, Constants.CALLING_SEARCH_MAX_RESULTS);
-
-    if (matches.length === 0) {
-      setHtml(
-        dropdown,
-        `<li style="padding: 6px 10px; color: #888; font-size: 13px;">${escapeHtml(Constants.NO_MATCHING_CALLINGS)}</li>`
-      );
-      showFixedSearchDropdown(dropdown, input);
-      return;
-    }
-
-    setHtml(dropdown, matches.map(Templates.searchItem).join(''));
-    showFixedSearchDropdown(dropdown, input);
-    dropdown.querySelectorAll<HTMLElement>(`.${Dom.GROUP_SEARCH_ITEM}`).forEach((item) => {
-      item.addEventListener('click', () => {
-        const calling = item.getAttribute(Dom.DATA_CALLING) || '';
-        const organization = item.getAttribute(Dom.DATA_ORGANIZATION) || '';
-        if (!calling) return;
-        draft.push({ calling, organization, enabled: true });
-        input.value = '';
-        hide();
-        renderIgnoreList(draft, catalog);
-      });
-    });
-  };
-
-  input.addEventListener('input', showMatches);
-  input.addEventListener('focus', showMatches);
-  input.addEventListener('keydown', (event) => {
-    if (event.key === 'Escape') hide();
-  });
+  );
 }
 
 /** Wires per-row ignore toggles and remove buttons. */

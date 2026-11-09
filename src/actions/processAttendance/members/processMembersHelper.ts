@@ -24,7 +24,6 @@ export async function processMembersAgainstRoll(
   let newlyMarked = 0;
   let alreadyMarked = 0;
   const unmatchedList: Types.UnmatchedRecord[] = [];
-  const wardNames = wardMembers.map((m) => m.fullName);
 
   // prettier-ignore
   Utils.showLoadingIndicator(`Processing ${attendees.length} attendees on LCR...`, 'Press ESC to cancel');
@@ -43,27 +42,8 @@ export async function processMembersAgainstRoll(
       continue;
     }
 
-    const isAmbiguous = exactIndices.length > 1;
-    const suggestion = isAmbiguous ? null : Utils.suggestMemberMatch(fullName, wardNames);
-    unmatchedList.push({
-      firstName: attendee.firstName,
-      lastName: attendee.lastName,
-      fullName,
-      date: targetDate,
-      suggestedMemberName: suggestion ?? undefined,
-    });
     // prettier-ignore
-    const detail = isAmbiguous
-      ? `Multiple ward members named ${wardMembers[exactIndices[0]].fullName} — choose manually`
-      : `Attendee not found on roll: ${fullName}${suggestion ? ` (possible match: ${suggestion})` : ''}`;
-    Utils.pushAttendanceLog(logs, {
-      date: targetDate,
-      action: 'UNMATCHED',
-      target: fullName,
-      firstName: attendee.firstName,
-      lastName: attendee.lastName,
-      lcrUpdateStatus: detail,
-    });
+    Utils.recordUnmatchedAttendee(attendee, exactIndices, wardMembers, targetDate, false, unmatchedList, logs);
   }
 
   // Step 2: Click quickly, then verify every mark and re-click any LCR dropped

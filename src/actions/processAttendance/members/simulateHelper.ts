@@ -29,7 +29,6 @@ export async function simulateMemberRollProcessing(
     let hasTestedToggle = false;
     const unmatchedList: Types.UnmatchedRecord[] = [];
     const logs: Types.AttendanceLogEntry[] = [];
-    const wardNames = wardMembers.map((m) => m.fullName);
 
     for (let i = 0; i < attendees.length; i++) {
       if (Utils.isAborted()) break;
@@ -85,27 +84,8 @@ export async function simulateMemberRollProcessing(
           });
         }
       } else {
-        const isAmbiguous = exactIndices.length > 1;
-        const suggestion = isAmbiguous ? null : Utils.suggestMemberMatch(fullName, wardNames);
-        unmatchedList.push({
-          firstName: attendee.firstName,
-          lastName: attendee.lastName,
-          fullName,
-          date: targetDate,
-          suggestedMemberName: suggestion ?? undefined,
-        });
         // prettier-ignore
-        const detail = isAmbiguous
-          ? `Unmatched (Simulated) - Multiple ward members named ${wardMembers[exactIndices[0]].fullName} — choose manually`
-          : `Unmatched (Simulated)${suggestion ? ` - possible match: ${suggestion}` : ''}`;
-        Utils.pushAttendanceLog(logs, {
-          date: targetDate,
-          action: 'UNMATCHED',
-          target: fullName,
-          firstName: attendee.firstName,
-          lastName: attendee.lastName,
-          lcrUpdateStatus: detail,
-        });
+        Utils.recordUnmatchedAttendee(attendee, exactIndices, wardMembers, targetDate, true, unmatchedList, logs);
       }
     }
 

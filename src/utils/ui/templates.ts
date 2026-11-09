@@ -102,10 +102,7 @@ export const Templates = {
     allowMultiple?: boolean;
   }): string => `
     <div style="background:#fff;padding:24px;border-radius:8px;max-width:480px;width:90%;box-sizing:border-box;">
-      <h3 style="margin-top:0;color:#00509e;">${escapeHtml(options.title)}</h3>
-      <p style="font-size: 13px; color: #555; margin-bottom: 12px;">
-        ${escapeHtml(options.prompt)}
-      </p>
+      ${dialogHeader(options.title, options.prompt)}
       ${
         options.allowMultiple
           ? `
@@ -138,10 +135,7 @@ export const Templates = {
     confirmText: string;
   }): string => `
     <div style="background:#fff;padding:24px;border-radius:8px;max-width:480px;width:90%;box-sizing:border-box;">
-      <h3 style="margin-top:0;color:#00509e;">${escapeHtml(options.title)}</h3>
-      <p style="font-size: 13px; color: #555; margin-bottom: 12px;">
-        ${escapeHtml(options.prompt)}
-      </p>
+      ${dialogHeader(options.title, options.prompt)}
       <input
         type="text"
         id="lcr-filename-input"
@@ -189,3 +183,16 @@ export const Templates = {
     <button class="lcr-tools-modal-close-btn" style="background: none; border: none; font-size: 24px; cursor: pointer; color: #666; line-height: 1;" aria-label="Close modal">×</button>
   `,
 };
+
+/* ==========================================================================
+   HELPER FUNCTIONS
+   ========================================================================== */
+
+/** Renders the shared title and prompt paragraph used at the top of small picker dialogs. */
+function dialogHeader(title: string, prompt: string): string {
+  return `
+      <h3 style="margin-top:0;color:#00509e;">${escapeHtml(title)}</h3>
+      <p style="font-size: 13px; color: #555; margin-bottom: 12px;">
+        ${escapeHtml(prompt)}
+      </p>`;
+}

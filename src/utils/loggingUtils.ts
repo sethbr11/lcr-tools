@@ -1,5 +1,5 @@
 import { Constants, Types } from '@/types';
-import { formatCSVCell } from './coreUtils';
+import { toCSV } from './coreUtils';
 import { downloadFile } from './fileUtils';
 
 let activeLogger: Types.ActionLogger | null = null;
@@ -98,17 +98,7 @@ export function createActionLogger(
     },
 
     exportToCSV() {
-      const headers = ['Timestamp', 'Action', 'Target', 'Level', 'Details'];
-      const rows = entries.map((e) => [
-        e.timestamp || '',
-        e.action,
-        e.target || '',
-        e.level || 'INFO',
-        typeof e.details === 'object' ? JSON.stringify(e.details) : e.details,
-      ]);
-      const headerLine = headers.map(formatCSVCell).join(',');
-      const rowLines = rows.map((r) => r.map(formatCSVCell).join(','));
-      return [headerLine, ...rowLines].join('\r\n');
+      return logEntriesToCsv(entries);
     },
   };
 
@@ -148,21 +138,27 @@ export function exportLogsToCSV(
   if (loggerOrEntries && 'exportToCSV' in loggerOrEntries) {
     csv = loggerOrEntries.exportToCSV();
   } else if (Array.isArray(loggerOrEntries)) {
-    const headers = ['Timestamp', 'Action', 'Target', 'Level', 'Details'];
-    const rows = loggerOrEntries.map((e) => [
-      e.timestamp || '',
-      e.action,
-      e.target || '',
-      e.level || 'INFO',
-      typeof e.details === 'object' ? JSON.stringify(e.details) : e.details,
-    ]);
-    const headerLine = headers.map(formatCSVCell).join(',');
-    const rowLines = rows.map((r) => r.map(formatCSVCell).join(','));
-    csv = [headerLine, ...rowLines].join('\r\n');
+    csv = logEntriesToCsv(loggerOrEntries);
   } else if (activeLogger) {
     csv = activeLogger.exportToCSV();
   } else {
     return;
   }
   downloadFile(csv, filename, 'text/csv;charset=utf-8;');
+}
+
+/* ==========================================================================
+   HELPER FUNCTIONS
+   ========================================================================== */
+
+/** Serializes log entries to CSV with Timestamp, Action, Target, Level, and Details columns. */
+function logEntriesToCsv(entries: Types.LogEntry[]): string {
+  const rows = entries.map((e) => [
+    e.timestamp || '',
+    e.action,
+    e.target || '',
+    e.level || 'INFO',
+    typeof e.details === 'object' ? JSON.stringify(e.details) : String(e.details ?? ''),
+  ]);
+  return toCSV([...Constants.LOG_CSV_HEADERS], rows);
 }

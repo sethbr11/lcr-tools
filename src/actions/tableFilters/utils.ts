@@ -181,7 +181,31 @@ export function detectDefaultMonth(
 }
 
 /**
- * Evaluates whether a table contains at least one filterable column or vacancy rule.
+ * Checks whether a column should get no filter control: too many distinct values for a
+ * dropdown, or no options at all (range-based columns are always kept).
+ *
+ * @param colName - Column header text.
+ * @param filterType - Inferred filter type for the column.
+ * @param options - Distinct values found in the column.
+ * @returns True when the column should be skipped.
+ */
+export function shouldSkipColumn(
+  colName: string,
+  filterType: Types.FilterType,
+  options: string[]
+): boolean {
+  const isRangeBased =
+    filterType === 'number' || filterType === 'date' || filterType === 'month-day';
+  const maxAllowedValues = isCategoricalColumn(colName)
+    ? Constants.MAX_CATEGORY_DROPDOWN_VALUES
+    : Constants.MAX_DROPDOWN_UNIQUE_VALUES;
+
+  if (!isRangeBased && options.length > maxAllowedValues) return true;
+  return options.length === 0 && !isRangeBased;
+}
+
+/**
+ * Checks whether a table has at least one column worth filtering or vacant calling rows.
  *
  * @param table - HTML table element to inspect.
  * @returns True if the table has filterable columns or vacant calling rows.
@@ -199,16 +223,7 @@ export function isTableFilterable(table: HTMLTableElement): boolean {
 
     const options = getColumnFilterOptions(table, indices[i]);
     const filterType = inferColumnFilterType(colName, options, table, indices[i]);
-    const isRangeBased =
-      filterType === 'number' || filterType === 'date' || filterType === 'month-day';
-    const maxAllowedValues = isCategoricalColumn(colName)
-      ? Constants.MAX_CATEGORY_DROPDOWN_VALUES
-      : Constants.MAX_DROPDOWN_UNIQUE_VALUES;
-
-    if (!isRangeBased && options.length > maxAllowedValues) continue;
-    if (options.length === 0 && !isRangeBased) continue;
-
-    return true;
+    if (!shouldSkipColumn(colName, filterType, options)) return true;
   }
 
   return false;

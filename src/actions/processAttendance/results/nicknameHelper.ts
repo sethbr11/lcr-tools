@@ -67,7 +67,7 @@ export async function displayManageNicknamesModal(onUpdated?: () => void): Promi
   const renderList = async () => {
     if (!listContainer) return;
     const nicknames = await Utils.getSavedNicknames();
-    const groups = groupNicknamesByPerson(Object.values(nicknames));
+    const groups = Utils.groupNicknamesByPerson(Object.values(nicknames));
 
     if (groups.length === 0) {
       Utils.setHtml(listContainer, getNicknameEmptyListHtml());
@@ -114,30 +114,4 @@ export async function displayManageNicknamesModal(onUpdated?: () => void): Promi
     });
 
   await renderList();
-}
-
-/* ==========================================================================
-   HELPER FUNCTIONS
-   ========================================================================== */
-
-/** Groups nickname mappings by canonical member name, sorting people and aliases A–Z. */
-function groupNicknamesByPerson(entries: Types.NicknameMapping[]): Types.NicknamePersonGroup[] {
-  const groups = new Map<string, Types.NicknamePersonGroup>();
-
-  for (const item of entries) {
-    const key = item.canonicalName.trim().toLowerCase();
-    const existing = groups.get(key);
-    if (existing) {
-      existing.aliases.push(item);
-      continue;
-    }
-    groups.set(key, { canonicalName: item.canonicalName.trim(), aliases: [item] });
-  }
-
-  return [...groups.values()]
-    .map((group) => ({
-      canonicalName: group.canonicalName,
-      aliases: [...group.aliases].sort((a, b) => a.alias.localeCompare(b.alias)),
-    }))
-    .sort((a, b) => a.canonicalName.localeCompare(b.canonicalName));
 }

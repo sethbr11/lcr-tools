@@ -168,15 +168,7 @@ export function setupTableSelector(
       if (tableNameEl) {
         tableNameEl.textContent = `Table: ${Constants.ALL_TABLES_LABEL} (${tables.length})`;
       }
-      const updated = buildTableFilterControls(allTables);
-      const controlsContainer = document.getElementById(Dom.FILTER_CONTROLS_ID);
-      if (controlsContainer) {
-        setHtml(controlsContainer, updated.controlsHtml);
-      }
-      setupTableFilterHandlers(getTarget, updated.rules);
-      window.__LCR_TABLE_FILTERS_STATE__ = updated.rules;
-      applyFilterRules(getTarget(), updated.rules);
-      onModeChanged('all', updated.rules);
+      rebuildFilterControls(allTables, getTarget, onModeChanged, 'all');
     } else {
       const newIdx = parseInt(val, 10);
       if (!isNaN(newIdx) && tables[newIdx]) {
@@ -187,15 +179,7 @@ export function setupTableSelector(
           tableNameEl.textContent = `Table: ${targetInfo.name}`;
         }
         tableEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
-        const updated = buildTableFilterControls(tableEl);
-        const controlsContainer = document.getElementById(Dom.FILTER_CONTROLS_ID);
-        if (controlsContainer) {
-          setHtml(controlsContainer, updated.controlsHtml);
-        }
-        setupTableFilterHandlers(getTarget, updated.rules);
-        window.__LCR_TABLE_FILTERS_STATE__ = updated.rules;
-        applyFilterRules(getTarget(), updated.rules);
-        onModeChanged(newIdx, updated.rules);
+        rebuildFilterControls(tableEl, getTarget, onModeChanged, newIdx);
       }
     }
   });
@@ -204,6 +188,22 @@ export function setupTableSelector(
 /* ==========================================================================
    HELPER FUNCTIONS
    ========================================================================== */
+
+/** Rebuilds the filter controls for a new target, rewires them, and reapplies the rules. */
+function rebuildFilterControls(
+  target: HTMLTableElement | HTMLTableElement[],
+  getTarget: () => HTMLTableElement | HTMLTableElement[],
+  onModeChanged: (mode: 'all' | number, newRules: Map<number, Types.FilterRule>) => void,
+  mode: 'all' | number
+): void {
+  const updated = buildTableFilterControls(target);
+  const controlsContainer = document.getElementById(Dom.FILTER_CONTROLS_ID);
+  if (controlsContainer) setHtml(controlsContainer, updated.controlsHtml);
+  setupTableFilterHandlers(getTarget, updated.rules);
+  window.__LCR_TABLE_FILTERS_STATE__ = updated.rules;
+  applyFilterRules(getTarget(), updated.rules);
+  onModeChanged(mode, updated.rules);
+}
 
 /** Binds listeners for numeric min/max filter inputs. */
 function bindNumberFilter(

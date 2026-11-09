@@ -55,6 +55,8 @@ export const Constants = {
   PHOTO_CACHE_TTL_MS: 24 * 60 * 60 * 1000,
   /** Default filename for diagnostic CSV log export. */
   DEFAULT_LOG_FILENAME: 'lcr_action_log.csv',
+  /** Column headers for action log CSV exports. */
+  LOG_CSV_HEADERS: ['Timestamp', 'Action', 'Target', 'Level', 'Details'],
   /** Abbreviated calendar month names in chronological order. */
   // prettier-ignore
   SHORT_MONTH_NAMES: ['jan','feb','mar','apr','may','jun','jul','aug','sep','oct','nov','dec'],

@@ -213,6 +213,58 @@ export function sortAttendeesAlphabetically<T extends Types.AttendeeName>(attend
   });
 }
 
+/**
+ * Records an attendee who was not auto-marked: queues them for review (with a close-match
+ * suggestion when the name is not shared by several members) and logs why.
+ *
+ * @param attendee - Attendee from the pasted roster.
+ * @param exactIndices - Indices of ward members whose names match exactly (0 or 2+).
+ * @param wardMembers - Ward members on the loaded roll.
+ * @param targetDate - ISO target Sunday date string (YYYY-MM-DD).
+ * @param isSimulation - Whether the log should say this was a simulation.
+ * @param unmatchedList - Review queue the record is appended to.
+ * @param logs - Action log the UNMATCHED entry is appended to.
+ */
+export function recordUnmatchedAttendee(
+  attendee: Types.AttendeeName,
+  exactIndices: number[],
+  wardMembers: Types.WardMember[],
+  targetDate: string,
+  isSimulation: boolean,
+  unmatchedList: Types.UnmatchedRecord[],
+  logs: Types.AttendanceLogEntry[]
+): void {
+  const fullName = `${attendee.firstName} ${attendee.lastName}`.trim();
+  const sharedName = exactIndices.length > 1 ? wardMembers[exactIndices[0]].fullName : null;
+  const suggestion = sharedName
+    ? null
+    : suggestMemberMatch(
+        fullName,
+        wardMembers.map((m) => m.fullName)
+      );
+  unmatchedList.push({
+    firstName: attendee.firstName,
+    lastName: attendee.lastName,
+    fullName,
+    date: targetDate,
+    suggestedMemberName: suggestion ?? undefined,
+  });
+
+  const ambiguous = `Multiple ward members named ${sharedName} — choose manually`;
+  // prettier-ignore
+  const detail = isSimulation
+    ? `Unmatched (Simulated)${sharedName ? ` - ${ambiguous}` : suggestion ? ` - possible match: ${suggestion}` : ''}`
+    : sharedName ? ambiguous : `Attendee not found on roll: ${fullName}${suggestion ? ` (possible match: ${suggestion})` : ''}`;
+  pushAttendanceLog(logs, {
+    date: targetDate,
+    action: 'UNMATCHED',
+    target: fullName,
+    firstName: attendee.firstName,
+    lastName: attendee.lastName,
+    lcrUpdateStatus: detail,
+  });
+}
+
 /* ==========================================================================
    HELPER FUNCTIONS
    ========================================================================== */

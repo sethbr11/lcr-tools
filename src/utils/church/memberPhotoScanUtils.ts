@@ -32,8 +32,7 @@ export async function scanDirectoryMemberPhotos(): Promise<Types.MemberPhotoScan
 export async function scanLcrMemberPhotos(
   rows: HTMLTableRowElement[]
 ): Promise<Types.MemberPhotoScanResult> {
-  const withPhotos: Types.MemberPhotoStatus[] = [];
-  const withoutPhotos: Types.MemberPhotoStatus[] = [];
+  const result: Types.MemberPhotoScanResult = { withPhotos: [], withoutPhotos: [] };
   const membersToFetch: Types.MemberRowInfo[] = [];
   const newCacheEntries: Record<string, Types.PhotoCacheEntry> = {};
   const seenMemberIds = new Set<string>();
@@ -49,18 +48,21 @@ export async function scanLcrMemberPhotos(
       : undefined;
 
     if (cached?.hasPhoto && cached.photoUrl) {
-      withPhotos.push(statusFromRow(info, true, toAbsolutePhotoUrl(cached.photoUrl)));
+      recordPhotoStatus(
+        result,
+        null,
+        statusFromRow(info, true, toAbsolutePhotoUrl(cached.photoUrl))
+      );
       continue;
     }
     if (cached?.hasPhoto === false) {
-      withoutPhotos.push(statusFromRow(info, false, undefined, cached));
+      recordPhotoStatus(result, null, statusFromRow(info, false, undefined, cached));
       continue;
     }
 
     const img = row.querySelector<HTMLImageElement>(Dom.MEMBER_PHOTO_IMG);
     if (img?.src && !Regex.PLACEHOLDER_PHOTO_SRC.test(img.src)) {
-      withPhotos.push(statusFromRow(info, true, img.src));
-      newCacheEntries[info.memberId] = cacheEntryFromStatus(statusFromRow(info, true, img.src));
+      recordPhotoStatus(result, newCacheEntries, statusFromRow(info, true, img.src));
       continue;
     }
 
@@ -76,26 +78,16 @@ export async function scanLcrMemberPhotos(
         const tokenUrl = card?.photoMetadata?.tokenUrl;
         if (tokenUrl) {
           const photoUrl = `${tokenUrl}${Constants.LCR_PHOTO_LARGE_SUFFIX}`;
-          const status = statusFromRow(member, true, photoUrl);
-          withPhotos.push(status);
-          newCacheEntries[member.memberId] = cacheEntryFromStatus(status);
+          recordPhotoStatus(result, newCacheEntries, statusFromRow(member, true, photoUrl));
         } else if (card !== null) {
-          const status = statusFromRow(member, false);
-          withoutPhotos.push(status);
-          newCacheEntries[member.memberId] = cacheEntryFromStatus(status);
+          recordPhotoStatus(result, newCacheEntries, statusFromRow(member, false));
         }
       },
-      (_done, current, total) => {
-        showLoadingIndicator(`Checking photos (${current}/${total})...`);
-      }
+      showPhotoScanProgress
     );
   }
 
-  if (Object.keys(newCacheEntries).length > 0) {
-    await updatePhotoCache(newCacheEntries);
-  }
-
-  return { withPhotos, withoutPhotos };
+  return finishPhotoScan(result, newCacheEntries);
 }
 
 /* ==========================================================================
@@ -104,7 +96,7 @@ export async function scanLcrMemberPhotos(
 
 /** Loads Church Directory household members that are not photo-private. */
 async function collectDirectoryHouseholdCandidates(): Promise<Types.MemberPhotoStatus[]> {
-  const unitNumber = resolveDirectoryUnitNumber();
+  const unitNumber = resolveCurrentUnitNumber();
   if (!unitNumber) return [];
 
   const endpoint = `${Constants.DIRECTORY_HOUSEHOLDS_ENDPOINT}?unit=${encodeURIComponent(unitNumber)}`;
@@ -131,8 +123,7 @@ async function classifyDirectoryPhotoStatuses(
   candidates: Types.MemberPhotoStatus[]
 ): Promise<Types.MemberPhotoScanResult> {
   const cache = await getPhotoCache();
-  const withPhotos: Types.MemberPhotoStatus[] = [];
-  const withoutPhotos: Types.MemberPhotoStatus[] = [];
+  const result: Types.MemberPhotoScanResult = { withPhotos: [], withoutPhotos: [] };
   const newCacheEntries: Record<string, Types.PhotoCacheEntry> = {};
 
   await processInBatches(
@@ -141,27 +132,18 @@ async function classifyDirectoryPhotoStatuses(
     async (member) => {
       const cached = cache[member.memberId];
       if (cached?.hasPhoto && cached.photoUrl) {
-        withPhotos.push({
-          ...member,
-          hasPhoto: true,
-          photoUrl: toAbsolutePhotoUrl(cached.photoUrl),
-        });
+        // prettier-ignore
+        recordPhotoStatus(result, null, { ...member, hasPhoto: true, photoUrl: toAbsolutePhotoUrl(cached.photoUrl) });
         return;
       }
       if (cached?.hasPhoto === false) {
-        withoutPhotos.push({ ...member, hasPhoto: false, photoUrl: undefined });
+        recordPhotoStatus(result, null, { ...member, hasPhoto: false, photoUrl: undefined });
         return;
       }
 
       // Check if candidate already has verified photo status from household payload
-      if (member.hasPhoto && member.photoUrl) {
-        withPhotos.push(member);
-        newCacheEntries[member.memberId] = cacheEntryFromStatus(member);
-        return;
-      }
-      if (member.hasPhoto === false && !member.photoUrl) {
-        withoutPhotos.push(member);
-        newCacheEntries[member.memberId] = cacheEntryFromStatus(member);
+      if ((member.hasPhoto && member.photoUrl) || (member.hasPhoto === false && !member.photoUrl)) {
+        recordPhotoStatus(result, newCacheEntries, member);
         return;
       }
 
@@ -169,27 +151,13 @@ async function classifyDirectoryPhotoStatuses(
         member.photoUrl ||
         `${Constants.CHURCH_DIRECTORY_URL}${Constants.DIRECTORY_PHOTOS_ENDPOINT}/${encodeURIComponent(member.memberId)}`;
       const exists = await directoryPhotoExists(photoUrl);
-      if (exists) {
-        const status = { ...member, hasPhoto: true, photoUrl };
-        withPhotos.push(status);
-        newCacheEntries[member.memberId] = cacheEntryFromStatus(status);
-        return;
-      }
-
-      const missing = { ...member, hasPhoto: false, photoUrl: undefined };
-      withoutPhotos.push(missing);
-      newCacheEntries[member.memberId] = cacheEntryFromStatus(missing);
+      // prettier-ignore
+      recordPhotoStatus(result, newCacheEntries, exists ? { ...member, hasPhoto: true, photoUrl } : { ...member, hasPhoto: false, photoUrl: undefined });
     },
-    (_done, current, total) => {
-      showLoadingIndicator(`Checking photos (${current}/${total})...`);
-    }
+    showPhotoScanProgress
   );
 
-  if (Object.keys(newCacheEntries).length > 0) {
-    await updatePhotoCache(newCacheEntries);
-  }
-
-  return { withPhotos, withoutPhotos };
+  return finishPhotoScan(result, newCacheEntries);
 }
 
 /** Returns whether the Church Directory portrait endpoint has a real photo for the member. */
@@ -303,9 +271,28 @@ function parseHouseholdsToCandidates(
   return members;
 }
 
-/** Extracts unit number from pathname, search parameters, or NEXT_DATA. */
-function resolveDirectoryUnitNumber(): string | null {
-  return resolveCurrentUnitNumber();
+/** Files a status under with/without photos and, when a cache map is given, queues it for caching. */
+function recordPhotoStatus(
+  result: Types.MemberPhotoScanResult,
+  newCacheEntries: Record<string, Types.PhotoCacheEntry> | null,
+  status: Types.MemberPhotoStatus
+): void {
+  (status.hasPhoto ? result.withPhotos : result.withoutPhotos).push(status);
+  if (newCacheEntries) newCacheEntries[status.memberId] = cacheEntryFromStatus(status);
+}
+
+/** Batch progress callback that updates the loader with the photo check count. */
+function showPhotoScanProgress(_done: number, current: number, total: number): void {
+  showLoadingIndicator(`Checking photos (${current}/${total})...`);
+}
+
+/** Saves newly learned photo statuses to the shared cache and returns the scan result. */
+async function finishPhotoScan(
+  result: Types.MemberPhotoScanResult,
+  newCacheEntries: Record<string, Types.PhotoCacheEntry>
+): Promise<Types.MemberPhotoScanResult> {
+  if (Object.keys(newCacheEntries).length > 0) await updatePhotoCache(newCacheEntries);
+  return result;
 }
 
 /** Builds a photo-status record from an LCR table row and optional cache names. */

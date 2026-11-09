@@ -97,18 +97,8 @@ export function applyFilterRules(
 
     // In multi-table mode, hide empty card sections when filters are active
     if (isMulti) {
-      const card = table.closest(Dom.EDEN_TABLE_CONTAINER_SELECTOR) || table;
-      const section =
-        card.parentElement?.classList.contains(Dom.EDEN_STACK_CLASS) &&
-        card.parentElement.querySelectorAll('table').length === 1
-          ? card.parentElement
-          : (card as HTMLElement);
-
-      if (hasActiveRule && visibleInThisTable === 0) {
-        (section as HTMLElement).style.display = 'none';
-      } else {
-        (section as HTMLElement).style.display = '';
-      }
+      getTableSection(table).style.display =
+        hasActiveRule && visibleInThisTable === 0 ? 'none' : '';
     }
 
     // Update table footer count display if footer count element is present
@@ -144,13 +134,7 @@ export function resetAllFilters(target: HTMLTableElement | HTMLTableElement[]): 
     }
 
     if (isMulti) {
-      const card = table.closest(Dom.EDEN_TABLE_CONTAINER_SELECTOR) || table;
-      const section =
-        card.parentElement?.classList.contains(Dom.EDEN_STACK_CLASS) &&
-        card.parentElement.querySelectorAll('table').length === 1
-          ? card.parentElement
-          : (card as HTMLElement);
-      (section as HTMLElement).style.display = '';
+      getTableSection(table).style.display = '';
     }
 
     // Restore table footer count to original
@@ -173,6 +157,19 @@ export function resetAllFilters(target: HTMLTableElement | HTMLTableElement[]): 
 /* ==========================================================================
    HELPER FUNCTIONS
    ========================================================================== */
+
+/** Returns the card section wrapping a table (its stack section when it holds only this table). */
+function getTableSection(table: HTMLTableElement): HTMLElement {
+  const card = (table.closest(Dom.EDEN_TABLE_CONTAINER_SELECTOR) as HTMLElement | null) || table;
+  const parent = card.parentElement;
+  if (
+    parent?.classList.contains(Dom.EDEN_STACK_CLASS) &&
+    parent.querySelectorAll('table').length === 1
+  ) {
+    return parent;
+  }
+  return card;
+}
 
 /**
  * Locates the footer count element within an HTML table or its enclosing card container.
