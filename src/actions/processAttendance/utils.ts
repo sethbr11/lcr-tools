@@ -4,60 +4,104 @@
  */
 
 export * from '@/utils';
-import { fuzzyNameMatch, hideLoadingIndicator, parseFullName, setAborted, sleep } from '@/utils';
-import { Constants, Types } from './types';
+import {
+  hideLoadingIndicator,
+  levenshteinDistance,
+  parseFullName,
+  setAborted,
+  sleep,
+} from '@/utils';
+import { Constants, Regex, Types } from './types';
 
 /* ==========================================================================
    EXPORTED FUNCTIONS
    ========================================================================== */
 
 /**
- * Finds the closest matching member name among a candidate list of ward member names.
- * Accurately matches both "First Last" and "Last, First" permutations.
+ * Finds every candidate whose name is an exact match for the target after normalization.
+ * Case, extra whitespace, punctuation (other than the "Last, First" comma), and middle names are
+ * ignored, and "First Last" matches "Last, First" when the first given name and last name are equal.
  *
- * @param targetName - Attendee name to resolve.
- * @param candidateNames - List of ward member full names.
- * @returns Best matching candidate name or null if no confident match.
+ * @param target - Attendee name to resolve.
+ * @param candidates - List of ward member full names.
+ * @returns All exactly matching candidates (empty when none match).
  */
-export function matchMemberName(targetName: string, candidateNames: string[]): string | null {
-  if (!targetName) return null;
+export function findExactMemberMatches(target: string, candidates: string[]): string[] {
+  if (!target) return [];
 
-  const targetClean = targetName.trim().toLowerCase();
+  const targetFull = normalizeNameText(target);
+  const targetParts = normalizedNameParts(target);
 
-  // Step 1: Exact string match
-  const exact = candidateNames.find((c) => c.trim().toLowerCase() === targetClean);
-  if (exact) return exact;
+  return candidates.filter((candidate) => {
+    if (normalizeNameText(candidate) === targetFull) return true;
+    const candParts = normalizedNameParts(candidate);
+    return (
+      !!targetParts.firstName &&
+      !!targetParts.lastName &&
+      candParts.firstName === targetParts.firstName &&
+      candParts.lastName === targetParts.lastName
+    );
+  });
+}
 
-  // Step 2: Component-level comparison (First Name + Last Name)
-  const targetParts = parseFullName(targetName);
-  const targetFirst = targetParts.firstName.toLowerCase();
-  const targetLast = targetParts.lastName.toLowerCase();
+/**
+ * Suggests a single near-miss candidate for manual confirmation; never an auto-match.
+ * A candidate qualifies when last names are equal (or nearly equal for long surnames) and
+ * first names are equal, prefix-related, or nearly equal. Ties and exact matches yield null.
+ *
+ * @param target - Attendee name with no exact roll match.
+ * @param candidates - List of ward member full names.
+ * @returns The unique best-scoring candidate, or null when ambiguous or nothing qualifies.
+ */
+export function suggestMemberMatch(target: string, candidates: string[]): string | null {
+  const targetParts = normalizedNameParts(target);
+  if (!targetParts.firstName || !targetParts.lastName) return null;
 
-  if (targetFirst && targetLast) {
-    for (const candidate of candidateNames) {
-      const candParts = parseFullName(candidate);
-      if (
-        candParts.firstName.toLowerCase() === targetFirst &&
-        candParts.lastName.toLowerCase() === targetLast
-      ) {
-        return candidate;
-      }
+  const exact = new Set(findExactMemberMatches(target, candidates));
+  let best: string | null = null;
+  let bestScore = Infinity;
+  let tied = false;
+
+  for (const candidate of candidates) {
+    if (exact.has(candidate)) continue;
+    const candParts = normalizedNameParts(candidate);
+    if (!candParts.firstName || !candParts.lastName) continue;
+
+    const lastDist = lastNameDistance(targetParts.lastName, candParts.lastName);
+    const firstDist = firstNameDistance(targetParts.firstName, candParts.firstName);
+    if (lastDist === null || firstDist === null) continue;
+
+    const score = lastDist + firstDist;
+    if (score < bestScore) {
+      best = candidate;
+      bestScore = score;
+      tied = false;
+    } else if (score === bestScore) {
+      tied = true;
     }
   }
 
-  // Step 3: Fuzzy matching with reversed formats
-  const targetReversed =
-    targetFirst && targetLast ? `${targetParts.lastName}, ${targetParts.firstName}` : '';
-  const targetDirect =
-    targetFirst && targetLast ? `${targetParts.firstName} ${targetParts.lastName}` : '';
+  return tied ? null : best;
+}
 
-  for (const candidate of candidateNames) {
-    if (fuzzyNameMatch(targetName, candidate)) return candidate;
-    if (targetReversed && fuzzyNameMatch(targetReversed, candidate)) return candidate;
-    if (targetDirect && fuzzyNameMatch(targetDirect, candidate)) return candidate;
-  }
-
-  return null;
+/**
+ * Resolves the ward roll indices of every member whose name exactly matches the attendee.
+ * Indices (not names) are returned so members sharing a name stay distinguishable.
+ *
+ * @param target - Attendee name to resolve.
+ * @param wardMembers - Discovered ward members from the active attendance roll.
+ * @returns Indices into wardMembers of all exact matches (empty when none match).
+ */
+export function findExactMemberIndices(target: string, wardMembers: Types.WardMember[]): number[] {
+  const indicesByName = new Map<string, number[]>();
+  wardMembers.forEach((member, index) => {
+    indicesByName.set(member.fullName, [...(indicesByName.get(member.fullName) ?? []), index]);
+  });
+  const names = findExactMemberMatches(
+    target,
+    wardMembers.map((m) => m.fullName)
+  );
+  return [...new Set(names)].flatMap((name) => indicesByName.get(name) ?? []);
 }
 
 /**
@@ -169,6 +213,58 @@ export function sortAttendeesAlphabetically<T extends Types.AttendeeName>(attend
   });
 }
 
+/**
+ * Records an attendee who was not auto-marked: queues them for review (with a close-match
+ * suggestion when the name is not shared by several members) and logs why.
+ *
+ * @param attendee - Attendee from the pasted roster.
+ * @param exactIndices - Indices of ward members whose names match exactly (0 or 2+).
+ * @param wardMembers - Ward members on the loaded roll.
+ * @param targetDate - ISO target Sunday date string (YYYY-MM-DD).
+ * @param isSimulation - Whether the log should say this was a simulation.
+ * @param unmatchedList - Review queue the record is appended to.
+ * @param logs - Action log the UNMATCHED entry is appended to.
+ */
+export function recordUnmatchedAttendee(
+  attendee: Types.AttendeeName,
+  exactIndices: number[],
+  wardMembers: Types.WardMember[],
+  targetDate: string,
+  isSimulation: boolean,
+  unmatchedList: Types.UnmatchedRecord[],
+  logs: Types.AttendanceLogEntry[]
+): void {
+  const fullName = `${attendee.firstName} ${attendee.lastName}`.trim();
+  const sharedName = exactIndices.length > 1 ? wardMembers[exactIndices[0]].fullName : null;
+  const suggestion = sharedName
+    ? null
+    : suggestMemberMatch(
+        fullName,
+        wardMembers.map((m) => m.fullName)
+      );
+  unmatchedList.push({
+    firstName: attendee.firstName,
+    lastName: attendee.lastName,
+    fullName,
+    date: targetDate,
+    suggestedMemberName: suggestion ?? undefined,
+  });
+
+  const ambiguous = `Multiple ward members named ${sharedName} — choose manually`;
+  // prettier-ignore
+  const detail = isSimulation
+    ? `Unmatched (Simulated)${sharedName ? ` - ${ambiguous}` : suggestion ? ` - possible match: ${suggestion}` : ''}`
+    : sharedName ? ambiguous : `Attendee not found on roll: ${fullName}${suggestion ? ` (possible match: ${suggestion})` : ''}`;
+  pushAttendanceLog(logs, {
+    date: targetDate,
+    action: 'UNMATCHED',
+    target: fullName,
+    firstName: attendee.firstName,
+    lastName: attendee.lastName,
+    lcrUpdateStatus: detail,
+  });
+}
+
 /* ==========================================================================
    HELPER FUNCTIONS
    ========================================================================== */
@@ -180,4 +276,48 @@ export function formatLogTimestamp(date: Date = new Date()): string {
   const m = pad(date.getMinutes());
   const s = pad(date.getSeconds());
   return `${h}:${m}:${s}`;
+}
+
+/** Lowercases, strips punctuation except the Last, First comma, and collapses whitespace. */
+function normalizeNameText(name: string): string {
+  return name
+    .toLowerCase()
+    .replace(Regex.NAME_PUNCTUATION, '')
+    .split(',')
+    .map((part) => part.split(Regex.WHITESPACE).filter(Boolean).join(' '))
+    .join(', ');
+}
+
+/**
+ * Parses a name into first and last components, each normalized for comparison.
+ * Only the first given name is kept: LCR stores "Last, First Middle", but attendance rosters
+ * rarely include middle names, so middle names and initials are ignored on both sides.
+ */
+function normalizedNameParts(name: string): ReturnType<typeof parseFullName> {
+  const parts = parseFullName(name ?? '');
+  const givenNames = normalizeNameText(parts.firstName).replace(Regex.COMMA_GLOBAL, '');
+  return {
+    firstName: givenNames.split(' ')[0] ?? '',
+    lastName: normalizeNameText(parts.lastName).replace(Regex.COMMA_GLOBAL, ''),
+  };
+}
+
+/** Last-name distance: 0 when equal, 1 for long surnames one edit apart, else null. */
+function lastNameDistance(a: string, b: string): number | null {
+  if (a === b) return 0;
+  const bothLong =
+    a.length >= Constants.FUZZY_LAST_NAME_MIN_LENGTH &&
+    b.length >= Constants.FUZZY_LAST_NAME_MIN_LENGTH;
+  return bothLong && levenshteinDistance(a, b) <= 1 ? 1 : null;
+}
+
+/** First-name distance: 0 when equal, 0.5 for a prefix of 3+ chars, edit distance 1 for 4+ chars, else null. */
+function firstNameDistance(a: string, b: string): number | null {
+  if (a === b) return 0;
+  const [shorter, longer] = a.length <= b.length ? [a, b] : [b, a];
+  if (shorter.length >= Constants.FUZZY_PREFIX_MIN_LENGTH && longer.startsWith(shorter)) return 0.5;
+  const bothLong =
+    a.length >= Constants.FUZZY_FIRST_NAME_MIN_LENGTH &&
+    b.length >= Constants.FUZZY_FIRST_NAME_MIN_LENGTH;
+  return bothLong && levenshteinDistance(a, b) <= 1 ? 1 : null;
 }

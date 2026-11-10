@@ -1,0 +1,49 @@
+/* Shared light-only theme for extension pages (popup and Trip Planner).
+   The UI is designed light-only. `color-scheme: light` keeps Chrome and Firefox from recoloring
+   native controls in dark mode, but Safari still applies dark system colors to form controls on
+   extension pages, so every control also gets explicit light colors here. */
+
+:root {
+  color-scheme: light;
+}
+
+/* :where() keeps these at zero specificity: they beat browser defaults, never page styles */
+:where(
+  select,
+  textarea,
+  input:not([type='checkbox'], [type='radio'], [type='range'], [type='color'])
+) {
+  color-scheme: light;
+  background-color: #ffffff;
+  color: #1a202c;
+}
+
+/* Safari ignores background colors on native selects, so draw our own closed state and chevron */
+:where(select:not([multiple])) {
+  -webkit-appearance: none;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' fill='none' stroke='%234a5568' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+  background-size: 12px 8px;
+}
+
+/* Higher specificity than page `select { padding }` rules so text never runs under the chevron */
+select:not([multiple]) {
+  padding-right: 32px;
+}
+
+:where(select option) {
+  background-color: #ffffff;
+  color: #1a202c;
+}
+
+:where(::placeholder) {
+  color: #94a3b8;
+  opacity: 1;
+}
+
+:where(select:disabled, textarea:disabled, input:disabled) {
+  background-color: #f1f5f9;
+  color: #64748b;
+}

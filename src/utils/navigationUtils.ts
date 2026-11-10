@@ -9,14 +9,18 @@ import { Dom, Constants, Regex, Types } from '@/types';
  * Navigates table pagination back to the first page if not already there.
  *
  * @param delay - Milliseconds to pause following button click.
+ * @param table - Optional table to watch, so the first page is read only after it renders.
  */
 export async function navigateToFirstPage(
-  delay: number = Constants.DEFAULT_PAGINATION_DELAY_MS
+  delay: number = Constants.DEFAULT_PAGINATION_DELAY_MS,
+  table?: Element
 ): Promise<void> {
   const firstBtn = findFirstAvailableButton(Dom.PAGINATION_SELECTORS.firstPageButtons);
   if (firstBtn && !firstBtn.disabled && firstBtn.offsetParent !== null) {
+    const firstRowBefore = table ? getFirstRowText(table) : '';
     firstBtn.click();
-    await sleep(delay);
+    if (table) await waitForTableRowsToChange(table, firstRowBefore);
+    else await sleep(delay);
   }
 }
 
@@ -233,7 +237,7 @@ export async function scrollToTop(delay: number = 500): Promise<void> {
  */
 export async function loadAllPaginatedTableRows(
   table: HTMLTableElement,
-  maxPages: number = 20
+  maxPages: number = 200
 ): Promise<number> {
   const tbody = table.querySelector('tbody');
   if (!tbody) return 0;
@@ -247,16 +251,10 @@ export async function loadAllPaginatedTableRows(
       collectedRows.push(row.cloneNode(true) as HTMLTableRowElement);
     }
 
-    const firstRowText = currentRows[0]?.textContent || '';
+    const firstRowText = getFirstRowText(tbody);
     const advanced = await goToNextPage(400);
     if (!advanced) break;
-
-    // Wait for tbody rows to update
-    for (let i = 0; i < 15; i++) {
-      await sleep(200);
-      const newFirstRow = tbody.querySelector('tr')?.textContent || '';
-      if (newFirstRow && newFirstRow !== firstRowText) break;
-    }
+    if (!(await waitForTableRowsToChange(tbody, firstRowText))) break;
 
     pageCount++;
   }
@@ -284,6 +282,42 @@ export async function loadAllPaginatedTableRows(
 }
 
 /**
+ * Reads the text of a table's first body row, used to detect when a new page has rendered.
+ *
+ * @param container - Table, tbody, or other element containing the rows.
+ * @returns Trimmed text of the first row, or '' when there are no rows.
+ */
+export function getFirstRowText(container: Element): string {
+  const row = container.matches('tbody')
+    ? container.querySelector('tr')
+    : container.querySelector(Dom.TABLE_BODY_ROWS);
+  return (row?.textContent || '').trim();
+}
+
+/**
+ * Waits until a table's first row differs from the one shown before paging, so the next page is
+ * read only after it has actually rendered (LCR loads pages asynchronously).
+ *
+ * @param container - Table, tbody, or other element containing the rows.
+ * @param previousFirstRow - First-row text captured before clicking "next".
+ * @param timeoutMs - Maximum time to wait.
+ * @returns True when the rows changed, false when the page never updated.
+ */
+export async function waitForTableRowsToChange(
+  container: Element,
+  previousFirstRow: string,
+  timeoutMs: number = Constants.TABLE_ROWS_CHANGE_TIMEOUT_MS
+): Promise<boolean> {
+  const deadline = Date.now() + timeoutMs;
+  while (Date.now() < deadline) {
+    const current = getFirstRowText(container);
+    if (current && current !== previousFirstRow) return true;
+    await sleep(Constants.TABLE_ROWS_CHANGE_POLL_MS);
+  }
+  return false;
+}
+
+/**
  * Detects and expands a 'Months to show' dropdown (such as on Birthday List) to display all months.
  *
  * @param targetCount - Target number of months to display (default: 12).
@@ -292,9 +326,9 @@ export async function loadAllPaginatedTableRows(
  * @returns Promise resolving to true if dropdown was found and adjusted, false otherwise.
  */
 export async function expandMonthsToShow(
-  targetCount: number = 12,
+  targetCount: number = Constants.MONTHS_TO_SHOW_DEFAULT,
   targetTable?: HTMLTableElement | null,
-  timeoutMs: number = 2000
+  timeoutMs: number = Constants.MONTHS_TO_SHOW_TIMEOUT_MS
 ): Promise<boolean> {
   const selects = Array.from(document.querySelectorAll<HTMLSelectElement>('select'));
   const monthsSelect = selects.find((s) =>
@@ -316,14 +350,14 @@ export async function expandMonthsToShow(
     return null;
   };
 
-  const initialRows = getLiveTable()?.querySelectorAll('tbody tr').length ?? 0;
+  const initialRows = getLiveTable()?.querySelectorAll(Dom.TABLE_BODY_ROWS).length ?? 0;
   setSelectValue(monthsSelect, targetValue);
 
   const startTime = Date.now();
   while (Date.now() - startTime < timeoutMs) {
-    await sleep(100);
+    await sleep(Constants.MONTHS_TO_SHOW_POLL_MS);
     const liveTable = getLiveTable();
-    const currentRows = liveTable?.querySelectorAll('tbody tr').length ?? 0;
+    const currentRows = liveTable?.querySelectorAll(Dom.TABLE_BODY_ROWS).length ?? 0;
     if (currentRows !== initialRows && currentRows > 0) break;
   }
 

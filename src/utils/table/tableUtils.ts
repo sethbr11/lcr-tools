@@ -117,25 +117,19 @@ export function getRelevantHeaderCells(table: HTMLTableElement): Types.RelevantH
 }
 
 /**
- * Collects a unique, alphabetically sorted array of non-empty cell values for a given column index.
+ * Returns the body cell at a column index for every row that has one.
  *
  * @param table - HTML table element.
  * @param columnIndex - Zero-based index of the target column.
- * @returns Array of unique string values found in that column.
+ * @returns Cells in row order (rows too short to reach the column are skipped).
  */
-export function getUniqueValues(table: HTMLTableElement, columnIndex: number): string[] {
-  const values = new Set<string>();
-  const rows = Array.from(table.querySelectorAll('tbody tr')).filter((r) => isVisible(r));
-
-  for (const row of rows) {
-    const cells = Array.from(row.querySelectorAll('td'));
-    if (cells[columnIndex]) {
-      const val = getCellValue(cells[columnIndex]).trim();
-      if (val) values.add(val);
-    }
-  }
-
-  return Array.from(values).sort();
+export function getColumnCells(table: HTMLTableElement, columnIndex: number): HTMLElement[] {
+  const cells: HTMLElement[] = [];
+  table.querySelectorAll(Dom.TABLE_BODY_ROWS).forEach((row) => {
+    const cell = row.querySelectorAll('td')[columnIndex];
+    if (cell) cells.push(cell);
+  });
+  return cells;
 }
 
 /**
@@ -154,27 +148,6 @@ export function parseHeaderDate(dateStr: string): Date | null {
 
   const monthIndex = md.month - 1;
   let year = currentYear;
-  if (monthIndex === 11 && currentMonth === 0) year--;
-  else if (monthIndex === 0 && currentMonth === 11) year++;
-
-  return new Date(year, monthIndex, md.day);
-}
-
-/**
- * Parses month-day string into full Date object using current/nearest year.
- *
- * @param dateStr - Month-day string representation.
- * @returns Parsed Date object or null if string cannot be parsed.
- */
-export function parseMonthDayToDate(dateStr: string): Date | null {
-  const md = parseMonthDay(dateStr);
-  if (!md) return null;
-
-  const now = new Date();
-  let year = now.getFullYear();
-  const currentMonth = now.getMonth();
-  const monthIndex = md.month - 1;
-
   if (monthIndex === 11 && currentMonth === 0) year--;
   else if (monthIndex === 0 && currentMonth === 11) year++;
 
@@ -209,12 +182,7 @@ export function cleanCellContent(element: HTMLElement): string {
   clone
     .querySelectorAll(Dom.BLOCK_CELL_SELECTOR)
     .forEach((el) => el.insertAdjacentText('afterend', ' '));
-  return (
-    clone.textContent
-      ?.replace(/\u00A0/g, ' ')
-      .replace(Regex.MULTIPLE_SPACES, ' ')
-      .trim() || ''
-  );
+  return clone.textContent?.replace(Regex.MULTIPLE_SPACES, ' ').trim() || '';
 }
 
 /** Inspects cell for checkmarks, boolean icons, or interactive attendance toggles. */

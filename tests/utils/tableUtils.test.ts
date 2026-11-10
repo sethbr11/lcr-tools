@@ -4,7 +4,7 @@ import {
   getTableDisplayName,
   getCellValue,
   getRelevantHeaderCells,
-  getUniqueValues,
+  getColumnCells,
   getAttendanceColumnOptions,
   isAttendanceCellAttended,
   isAttendanceColumn,
@@ -162,24 +162,19 @@ describe('tableUtils', () => {
     });
   });
 
-  describe('getUniqueValues', () => {
-    it('should collect unique values from a column index', () => {
+  describe('getColumnCells', () => {
+    it('returns the cell at a column for each row, skipping rows too short to reach it', () => {
       const table = document.createElement('table');
       table.innerHTML = `
         <tbody>
-          <tr><td>Apple</td></tr>
-          <tr><td>Banana</td></tr>
-          <tr><td>Apple</td></tr>
+          <tr><td>Smith, John</td><td>Yes</td></tr>
+          <tr><td>Doe, Jane</td></tr>
+          <tr><td>Member 1</td><td>No</td></tr>
         </tbody>
       `;
-      document.body.appendChild(table);
 
-      table.querySelectorAll('tr').forEach((tr) => {
-        Object.defineProperty(tr, 'offsetWidth', { value: 100 });
-      });
-
-      const values = getUniqueValues(table, 0);
-      expect(values).toEqual(['Apple', 'Banana']);
+      const cells = getColumnCells(table, 1);
+      expect(cells.map((c) => c.textContent)).toEqual(['Yes', 'No']);
     });
   });
 

@@ -7,6 +7,10 @@ import * as Base from '@/types';
 export namespace Types {
   /** Re-export base ActionResult */
   export type ActionResult<T = unknown> = Base.Types.ActionResult<T>;
+  /** Re-export base MemberPhotoScanResult */
+  export type MemberPhotoScanResult = Base.Types.MemberPhotoScanResult;
+  /** Result returned by every Member Flashcards exit path. */
+  export type FlashcardsActionResult = ActionResult<MemberFlashcardsResult>;
   /** Re-export base ActionDefinition */
   export type ActionDefinition = Base.Types.ActionDefinition;
   /** Re-export base StandardModalOptions */
@@ -47,6 +51,14 @@ export const Constants = {
   ...Base.Constants,
   /** Display name used in flashcard toasts and maintenance notifications. */
   ACTION_NAME: 'Member Flashcards',
+  /** Toast shown when the user aborts Member Flashcards. */
+  CANCELLED_TOAST: 'Member flashcards cancelled.',
+  /** Toast shown when the unit directory has no member photos. */
+  NO_DIRECTORY_PHOTOS_TOAST: 'No member photos found in unit directory.',
+  /** Toast shown when the LCR page has no member photos. */
+  NO_PAGE_PHOTOS_TOAST: 'No member photos found on this page.',
+  /** Toast shown when the action is run away from a directory page. */
+  WRONG_PAGE_TOAST: 'Please visit the Member Directory or Church Directory to use Flashcards.',
   /** Number of neighboring flashcards whose portraits are preloaded around the current card. */
   FLASHCARD_PRELOAD_RADIUS: 2,
 } as const;

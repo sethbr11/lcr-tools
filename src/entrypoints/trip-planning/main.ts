@@ -1,9 +1,10 @@
 import { browser } from 'wxt/browser';
 import { isSessionUnlocked } from '@/utils/security/cryptoUtils';
 import { getStoredApiKeys } from '@/utils/security/apiKeyStorageUtils';
-import { showToast } from '@/actions/tripPlanning/utils';
+import { showConfirmationModal, showToast } from '@/actions/tripPlanning/utils';
 import { Constants, Dom, Types } from '@/actions/tripPlanning/types';
 import { showTripPinModal } from '@/actions/tripPlanning/ui/pinModalHelper';
+import { fillSavedApiKey, setupApiKeyField } from '@/actions/tripPlanning/ui/apiKeyFieldHelper';
 import { clusterAddresses } from '@/actions/tripPlanning/routing/clusteringHelper';
 import { exportTripCsv } from '@/actions/tripPlanning/export/exportHelper';
 import { displayFailedGeocodes } from '@/actions/tripPlanning/ui/failureFixerHelper';
@@ -11,6 +12,7 @@ import { geocodePendingRecords } from '@/actions/tripPlanning/geocoding/geocodin
 import { showTripLogsModal } from '@/actions/tripPlanning/ui/logsModalHelper';
 import {
   drawMarkers,
+  clearRoutes,
   drawRoutes,
   initTripMap,
   refreshTripBasemap,
@@ -18,6 +20,8 @@ import {
 } from '@/actions/tripPlanning/ui/mapHelper';
 import { optimizeRoutes } from '@/actions/tripPlanning/routing/routingHelper';
 import {
+  clearClusterStartAddresses,
+  getClusterStartAddresses,
   getTripState,
   logTripStatus,
   setTripState,
@@ -26,13 +30,12 @@ import {
 } from '@/actions/tripPlanning/ui/stateHelper';
 import {
   getPlannerApiKey,
+  getProviderKeyId,
   getSelectedClusterStrategy,
   getSelectedMetric,
   getSelectedProvider,
-  persistPlannerApiKey,
   setButtonEnabled,
   setGeocodeProgress,
-  setupApiKeyVisibilityToggle,
   setupPlannerChrome,
   updateProviderControls,
 } from '@/actions/tripPlanning/ui/uiHelper';
@@ -50,13 +53,17 @@ export async function initTripPlanner(): Promise<void> {
   storedKeys = await getStoredApiKeys();
   initTripMap(storedKeys.mapbox || '');
   setupPlannerChrome();
-  setupApiKeyVisibilityToggle(() => {
-    void updateProviderControls(storedKeys);
-  });
+  setupApiKeyField(
+    () => getProviderKeyId(getSelectedProvider()),
+    () => {
+      void refreshSavedKeysAndControls();
+    }
+  );
   bindPlannerActions();
   await updateProviderControls(storedKeys);
-  await loadStoredStartingAddress();
   await loadStoredMembers();
+  // Pick the keyless basemap (USGS or Esri) now that member locations are known
+  if (!storedKeys.mapbox) refreshTripBasemap('');
 }
 
 /* ==========================================================================
@@ -112,11 +119,11 @@ function bindPlannerActions(): void {
   document.getElementById(Dom.EXPORT_CSV_BTN_ID)?.addEventListener('click', () => {
     void exportTripCsv();
   });
+  document.getElementById(Dom.EXPORT_PDF_BTN_ID)?.addEventListener('click', () => {
+    void handleExportPdf();
+  });
   document.getElementById(Dom.VIEW_LOGS_BTN_ID)?.addEventListener('click', () => {
     showTripLogsModal();
-  });
-  document.getElementById(Dom.SAVE_STARTING_ADDRESS_BTN_ID)?.addEventListener('click', () => {
-    void handleSaveStartingAddress();
   });
   document.getElementById(Dom.GEOCODE_PROVIDER_ID)?.addEventListener('change', () => {
     void updateProviderControls(storedKeys);
@@ -129,33 +136,6 @@ function bindPlannerActions(): void {
   });
 }
 
-/** Loads saved default starting address from extension storage if available. */
-async function loadStoredStartingAddress(): Promise<void> {
-  try {
-    if (!browser?.storage?.local) return;
-    const stored = await browser.storage.local.get(Constants.STORAGE_STARTING_ADDRESS_KEY);
-    const address = stored[Constants.STORAGE_STARTING_ADDRESS_KEY];
-    if (typeof address === 'string' && address.trim()) {
-      const input = document.getElementById(Dom.STARTING_ADDRESS_ID) as HTMLInputElement | null;
-      if (input && !input.value) {
-        input.value = address.trim();
-      }
-    }
-  } catch (error) {
-    console.error('LCR Tools: Failed to load stored starting address:', error);
-  }
-}
-
-/** Persists current starting address input into extension storage as default. */
-async function handleSaveStartingAddress(): Promise<void> {
-  const input = document.getElementById(Dom.STARTING_ADDRESS_ID) as HTMLInputElement | null;
-  const address = input?.value.trim() || '';
-  if (browser?.storage?.local) {
-    await browser.storage.local.set({ [Constants.STORAGE_STARTING_ADDRESS_KEY]: address });
-  }
-  showToast(Constants.STARTING_ADDRESS_SAVED_TOAST, { type: 'success' });
-}
-
 /** Runs fallback geocoding for members still missing coordinates. */
 async function handleGeocode(): Promise<void> {
   const provider = getSelectedProvider();
@@ -166,9 +146,9 @@ async function handleGeocode(): Promise<void> {
     return;
   }
 
-  await persistPlannerApiKey(provider);
-  storedKeys = await getStoredApiKeys();
-  if (storedKeys.mapbox) refreshTripBasemap(storedKeys.mapbox);
+  // Keys are only saved through the Save button; a typed Mapbox key is used for this visit
+  const sessionMapboxKey = getSessionMapboxKey();
+  if (sessionMapboxKey) refreshTripBasemap(sessionMapboxKey);
   await updateProviderControls(storedKeys);
 
   const { records, geocoded: currentGeocoded } = getTripState();
@@ -190,8 +170,12 @@ async function handleGeocode(): Promise<void> {
       '{count}',
       String(pendingCount)
     ).replace('{provider}', providerName);
-    // eslint-disable-next-line no-alert
-    const confirmed = window.confirm(confirmMessage);
+    const confirmed = await showConfirmationModal({
+      title: 'Send addresses for geocoding?',
+      message: confirmMessage,
+      confirmText: 'Continue',
+      cancelText: 'Cancel',
+    });
     if (!confirmed) {
       logTripStatus('Geocoding cancelled by user.');
       return;
@@ -204,6 +188,7 @@ async function handleGeocode(): Promise<void> {
   await geocodePendingRecords(provider, apiKey, (percent) => setGeocodeProgress(percent, true));
 
   const { geocoded, failedGeocodes } = getTripState();
+  if (!storedKeys.mapbox) refreshTripBasemap('');
   drawMarkers(geocoded, false);
   displayFailedGeocodes(provider, getPlannerApiKey);
   setButtonEnabled(Dom.CLUSTER_BTN_ID, geocoded.length > 0);
@@ -213,12 +198,19 @@ async function handleGeocode(): Promise<void> {
   );
 }
 
+/** Loads the PDF export (and jsPDF) only when needed, keeping the planner page bundle small. */
+async function handleExportPdf(): Promise<void> {
+  const { exportTripPdf } = await import('@/actions/tripPlanning/export/pdfExportHelper');
+  await exportTripPdf(getSessionMapboxKey());
+}
+
 /** Clusters geocoded members using the selected strategy. */
 function handleCluster(): void {
   const strategy = getSelectedClusterStrategy();
   const countInput = document.getElementById(Dom.CLUSTER_COUNT_ID) as HTMLInputElement | null;
   const minInput = document.getElementById(Dom.MIN_CLUSTER_SIZE_ID) as HTMLInputElement | null;
   const maxInput = document.getElementById(Dom.MAX_CLUSTER_SIZE_ID) as HTMLInputElement | null;
+  const countMinInput = document.getElementById(Dom.COUNT_MIN_SIZE_ID) as HTMLInputElement | null;
 
   const rawCount = parseInt(countInput?.value || '', 10);
   const rawMin = parseInt(minInput?.value || '', 10);
@@ -226,12 +218,17 @@ function handleCluster(): void {
   const count = Number.isNaN(rawCount) ? Constants.CLUSTER_COUNT_DEFAULT : rawCount;
   const min = Number.isNaN(rawMin) ? Constants.CLUSTER_MIN_SIZE_DEFAULT : rawMin;
   const max = Number.isNaN(rawMax) ? Constants.CLUSTER_MAX_SIZE_DEFAULT : rawMax;
+  const rawCountMin = parseInt(countMinInput?.value || '', 10);
+  const countMin = Number.isNaN(rawCountMin) ? 1 : rawCountMin;
 
-  clusterAddresses(strategy, count, min, max);
+  clusterAddresses(strategy, count, min, max, countMin);
+  clearClusterStartAddresses();
+  clearRoutes();
   const { clustered } = getTripState();
   drawMarkers(clustered, true);
   updateClusterList(clustered);
   setButtonEnabled(Dom.OPTIMIZE_BTN_ID, clustered.length > 0);
+  setButtonEnabled(Dom.EXPORT_PDF_BTN_ID, clustered.length > 0);
   const optimizeBtn = document.getElementById(Dom.OPTIMIZE_BTN_ID);
   if (optimizeBtn) optimizeBtn.title = '';
 }
@@ -243,26 +240,33 @@ async function handleOptimize(): Promise<void> {
     optimizeBtn.disabled = true;
     optimizeBtn.textContent = 'Optimizing...';
   }
+  // Re-clustering or geocoding mid-run would leave routes built from the old groups
+  const lockedDuringOptimize = [Dom.CLUSTER_BTN_ID, Dom.GEOCODE_BTN_ID, Dom.EXPORT_PDF_BTN_ID];
+  lockedDuringOptimize.forEach((id) => setButtonEnabled(id, false));
 
   try {
     const metric = getSelectedMetric();
     const provider = getSelectedProvider();
-    const mapboxKey = storedKeys.mapbox || (provider === 'mapbox' ? getPlannerApiKey() : '');
+    const mapboxKey = getSessionMapboxKey();
     const geocodeKey =
       provider === 'nominatim' ? '' : getPlannerApiKey() || storedKeys[provider] || '';
-    const startInput = document.getElementById(Dom.STARTING_ADDRESS_ID) as HTMLInputElement | null;
     const routes = await optimizeRoutes(
       metric,
       mapboxKey,
       provider,
       geocodeKey,
-      startInput?.value.trim() || ''
+      '',
+      getClusterStartAddresses()
     );
     if (!routes) return;
     drawRoutes(routes);
     updateClusterList(getTripState().clustered, routes);
     setButtonEnabled(Dom.EXPORT_CSV_BTN_ID, true);
   } finally {
+    const hasClusters = getTripState().clustered.length > 0;
+    setButtonEnabled(Dom.CLUSTER_BTN_ID, getTripState().geocoded.length > 0);
+    setButtonEnabled(Dom.GEOCODE_BTN_ID, true);
+    setButtonEnabled(Dom.EXPORT_PDF_BTN_ID, hasClusters);
     if (optimizeBtn) {
       optimizeBtn.disabled = false;
       optimizeBtn.textContent = 'Optimize Routes';
@@ -294,7 +298,7 @@ function applyUnlockedKeys(keys: Types.StoredApiKeys, targetKeyId: Types.KnownAp
   const currentProvider = getSelectedProvider();
 
   if (apiKeyInput && keys[targetKeyId] && (currentProvider === targetKeyId || !apiKeyInput.value)) {
-    apiKeyInput.value = keys[targetKeyId] || '';
+    fillSavedApiKey(keys[targetKeyId] || '');
   }
 
   void updateProviderControls(keys);
@@ -302,6 +306,18 @@ function applyUnlockedKeys(keys: Types.StoredApiKeys, targetKeyId: Types.KnownAp
   if (keys.mapbox) {
     refreshTripBasemap(keys.mapbox);
   }
+}
+
+/** Mapbox key for this visit: the saved (unlocked) key, else a typed but unsaved Mapbox key. */
+function getSessionMapboxKey(): string {
+  if (storedKeys.mapbox) return storedKeys.mapbox;
+  return getSelectedProvider() === 'mapbox' ? getPlannerApiKey() : '';
+}
+
+/** Re-reads saved keys (e.g. after Save unlocked the session) and refreshes key controls. */
+async function refreshSavedKeysAndControls(): Promise<void> {
+  storedKeys = await getStoredApiKeys();
+  await updateProviderControls(storedKeys);
 }
 
 document.addEventListener('DOMContentLoaded', () => {

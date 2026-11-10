@@ -3,6 +3,7 @@ import { runProcessAttendance } from '@/actions/processAttendance';
 import * as MarkHelper from '@/actions/processAttendance/lcr/markHelper';
 import { sortAttendeesAlphabetically } from '@/actions/processAttendance/utils';
 import { Dom, Types } from '@/actions/processAttendance/types';
+import { waitForElement } from '../helpers/waitFor';
 
 describe('processAttendance - alphabetical sorting and live scrolling', () => {
   describe('sortAttendeesAlphabetically', () => {
@@ -47,17 +48,14 @@ describe('processAttendance - alphabetical sorting and live scrolling', () => {
     });
   });
 
-  describe('markMemberPresent scrolling behavior', () => {
-    it('should smoothly scroll to member row and center it before marking', async () => {
+  describe('clickAttendanceButton scrolling behavior', () => {
+    it('should smoothly scroll to the member row and center it before clicking', () => {
       const tr = document.createElement('tr');
       const btn = document.createElement('button');
       btn.className = 'attendanceButton';
       btn.setAttribute('aria-pressed', 'false');
-      btn.addEventListener('click', () => {
-        btn.setAttribute('aria-pressed', 'true');
-      });
       tr.appendChild(btn);
-
+      const clickSpy = vi.spyOn(btn, 'click');
       const scrollSpy = vi.fn();
       tr.scrollIntoView = scrollSpy;
 
@@ -70,39 +68,9 @@ describe('processAttendance - alphabetical sorting and live scrolling', () => {
         row: tr,
       };
 
-      const outcome = await MarkHelper.markMemberPresent(member);
-
+      expect(MarkHelper.clickAttendanceButton(member)).toBe('clicked');
       expect(scrollSpy).toHaveBeenCalledWith({ behavior: 'smooth', block: 'center' });
-      expect(outcome).toBe('marked');
-      expect(member.isPresent).toBe(true);
-    });
-
-    it('should allow suppressing scroll behavior when shouldScroll is false', async () => {
-      const tr = document.createElement('tr');
-      const btn = document.createElement('button');
-      btn.className = 'attendanceButton';
-      btn.setAttribute('aria-pressed', 'false');
-      btn.addEventListener('click', () => {
-        btn.setAttribute('aria-pressed', 'true');
-      });
-      tr.appendChild(btn);
-
-      const scrollSpy = vi.fn();
-      tr.scrollIntoView = scrollSpy;
-
-      const member: Types.WardMember = {
-        fullName: 'Smith, John',
-        firstName: 'John',
-        lastName: 'Smith',
-        isPresent: false,
-        pageNum: 1,
-        row: tr,
-      };
-
-      const outcome = await MarkHelper.markMemberPresent(member, false);
-
-      expect(scrollSpy).not.toHaveBeenCalled();
-      expect(outcome).toBe('marked');
+      expect(clickSpy).toHaveBeenCalledTimes(1);
     });
   });
 
@@ -207,10 +175,8 @@ describe('processAttendance - alphabetical sorting and live scrolling', () => {
       const processBtn = overlay?.querySelector(`#${Dom.PROCESS_BTN_ID}`) as HTMLButtonElement;
       processBtn.click();
 
-      await new Promise((r) => setTimeout(r, 80));
-      (document.querySelector(`#${Dom.REVIEW_CONTINUE_ID}`) as HTMLButtonElement)?.click();
-      await new Promise((r) => setTimeout(r, 80));
-      (document.querySelector(`#${Dom.COMPLETION_DONE_ID}`) as HTMLButtonElement)?.click();
+      (await waitForElement<HTMLButtonElement>(`#${Dom.REVIEW_CONTINUE_ID}`)).click();
+      (await waitForElement<HTMLButtonElement>(`#${Dom.COMPLETION_DONE_ID}`)).click();
 
       const result = await actionPromise;
 
@@ -228,14 +194,10 @@ describe('processAttendance - alphabetical sorting and live scrolling', () => {
       rowAdams.scrollIntoView = vi.fn();
       rowSmith.scrollIntoView = vi.fn();
 
-      // Hold the first mark open so Escape can fire mid-run (no arbitrary race on finished work).
-      let releaseMark: (() => void) | undefined;
-      const markGate = new Promise<void>((resolve) => {
-        releaseMark = resolve;
-      });
-      const markSpy = vi.spyOn(MarkHelper, 'markMemberPresent').mockImplementation(async () => {
-        await markGate;
-        return 'marked';
+      // Press Escape as the first click lands, so the abort happens mid-batch.
+      const markSpy = vi.spyOn(MarkHelper, 'clickAttendanceButton').mockImplementation(() => {
+        window.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+        return 'clicked';
       });
 
       const actionPromise = runProcessAttendance();
@@ -262,8 +224,6 @@ describe('processAttendance - alphabetical sorting and live scrolling', () => {
       processBtn.click();
 
       await vi.waitFor(() => expect(markSpy).toHaveBeenCalled());
-      window.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
-      releaseMark?.();
 
       await vi.waitFor(() =>
         expect(document.getElementById(Dom.COMPLETION_OVERLAY_ID)).not.toBeNull()
@@ -279,6 +239,7 @@ describe('processAttendance - alphabetical sorting and live scrolling', () => {
       expect(result.error).toBe('Processing cancelled by user');
       expect(document.getElementById(Dom.REVIEW_OVERLAY_ID)).toBeNull();
       expect(document.getElementById(Dom.COMPLETION_OVERLAY_ID)).toBeNull();
+      expect(markSpy).toHaveBeenCalledTimes(1);
 
       markSpy.mockRestore();
     });

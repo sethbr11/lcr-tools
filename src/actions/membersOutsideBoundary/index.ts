@@ -35,7 +35,7 @@ export async function runMembersOutsideBoundary(
     const households = await extractDirectoryHouseholds();
 
     if (households.length === 0) {
-      showToast('No household coordinate data found.', { type: 'warning' });
+      showToast(Constants.AUDIT_LOAD_FAILED, { type: 'warning' });
       return { success: false, error: 'No data' };
     }
 

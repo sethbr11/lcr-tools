@@ -9,8 +9,10 @@ import {
 import { Constants } from '@/types';
 
 describe('apiKeyStorageUtils', () => {
-  beforeEach(() => {
+  beforeEach(async () => {
     vi.restoreAllMocks();
+    const { lockSession } = await import('@/utils/security/cryptoUtils');
+    await lockSession();
     vi.spyOn(browser.storage.local, 'get').mockImplementation(async () => ({}));
     vi.spyOn(browser.storage.local, 'set').mockImplementation(async () => undefined);
   });
@@ -22,6 +24,8 @@ describe('apiKeyStorageUtils', () => {
   });
 
   it('drops unknown ids when reading stored keys', async () => {
+    const { setUnlockedPin } = await import('@/utils/security/cryptoUtils');
+    await setUnlockedPin('1234');
     vi.spyOn(browser.storage.local, 'get').mockImplementation(async () => ({
       [Constants.API_KEYS_STORAGE_KEY]: {
         mapbox: 'mb-token',
@@ -31,6 +35,31 @@ describe('apiKeyStorageUtils', () => {
     }));
     const keys = await getStoredApiKeys();
     expect(keys).toEqual({ mapbox: 'mb-token' });
+  });
+
+  it('never saves a key unencrypted when no PIN is unlocked', async () => {
+    const setSpy = vi.spyOn(browser.storage.local, 'set');
+    expect(await saveApiKey('mapbox', 'mb-token')).toBe(false);
+    expect(setSpy).not.toHaveBeenCalled();
+  });
+
+  it('keeps keys saved before a PIN existed locked until a PIN is unlocked', async () => {
+    const stored: Record<string, unknown> = {
+      [Constants.API_KEYS_STORAGE_KEY]: { mapbox: 'legacy-token' },
+    };
+    vi.spyOn(browser.storage.local, 'get').mockImplementation(async () => ({ ...stored }));
+    vi.spyOn(browser.storage.local, 'set').mockImplementation(async (value) => {
+      Object.assign(stored, value);
+    });
+
+    expect(await getStoredApiKeys()).toEqual({});
+
+    const { setUnlockedPin } = await import('@/utils/security/cryptoUtils');
+    await setUnlockedPin('1234');
+    expect(await getStoredApiKeys()).toEqual({ mapbox: 'legacy-token' });
+    const rewritten = stored[Constants.API_KEYS_STORAGE_KEY] as Record<string, unknown>;
+    expect(rewritten.mapbox).toBeUndefined();
+    expect(typeof rewritten.ciphertext).toBe('string');
   });
 
   it('ignores save attempts for unknown identifiers', async () => {
@@ -48,6 +77,8 @@ describe('apiKeyStorageUtils', () => {
       Object.assign(stored, value);
     });
 
+    const { setUnlockedPin } = await import('@/utils/security/cryptoUtils');
+    await setUnlockedPin('1234');
     await saveApiKey('locationiq', 'liq-token');
     expect(await getStoredApiKeys()).toEqual({ locationiq: 'liq-token' });
     await clearApiKey('locationiq');

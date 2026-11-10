@@ -53,8 +53,8 @@ export const Constants = {
   FILENAME_CANCEL_BTN_TEXT: 'Cancel',
   /** Default filename for multi-table ZIP export archives. */
   DEFAULT_ZIP_EXPORT_NAME: 'reports.zip',
-  /** Safety upper bound on total paginated page requests. */
-  MAX_PAGINATION_PAGES: 25,
+  /** Safety upper bound on total paginated page requests (a warning is shown if it is reached). */
+  MAX_PAGINATION_PAGES: 200,
 } as const;
 
 /* ==========================================================================

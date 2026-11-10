@@ -5,6 +5,10 @@ import { Constants, Dom } from './types';
  * HTML templates for tableFilters action UI components.
  */
 
+/* ==========================================================================
+   EXPORTED FUNCTIONS
+   ========================================================================== */
+
 export const Templates = {
   /** Renders table scope pill badge indicating which tables possess this column. */
   scopeBadge: (badgeText: string): string => `

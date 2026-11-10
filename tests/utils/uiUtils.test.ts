@@ -117,6 +117,13 @@ describe('uiUtils', () => {
       document.getElementById('lcr-tools-confirm-btn')?.click();
       await expect(promise).resolves.toBe(true);
     });
+
+    it('should show the cancelled toast and resolve false on Cancel', async () => {
+      const promise = confirmDataStewardshipDownload();
+      document.getElementById('lcr-tools-cancel-btn')?.click();
+      await expect(promise).resolves.toBe(false);
+      expect(document.body.textContent).toContain('Download cancelled.');
+    });
   });
 
   describe('removeElement', () => {

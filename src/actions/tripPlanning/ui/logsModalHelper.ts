@@ -1,4 +1,10 @@
-import { confirmDataStewardshipDownload, downloadFile, escapeHtml, showToast } from '../utils';
+import {
+  confirmDataStewardshipDownload,
+  downloadFile,
+  escapeHtml,
+  setHtml,
+  showToast,
+} from '../utils';
 import { Constants, Dom, Types } from '../types';
 import { getTripLogs } from './stateHelper';
 
@@ -27,7 +33,9 @@ export function showTripLogsModal(): void {
     )
     .join('');
 
-  overlay.innerHTML = `
+  setHtml(
+    overlay,
+    `
     <div class="trip-modal-card">
       <div class="trip-modal-header">
         <h2 class="trip-modal-title">${Constants.LOGS_MODAL_TITLE}</h2>
@@ -53,7 +61,8 @@ export function showTripLogsModal(): void {
         <button type="button" class="lcr-tools-btn lcr-tools-btn-primary" id="${Dom.LOGS_MODAL_DONE_ID}" style="width: auto; margin: 0;">Done</button>
       </div>
     </div>
-  `;
+  `
+  );
 
   document.body.appendChild(overlay);
 
@@ -80,11 +89,7 @@ export function showTripLogsModal(): void {
  * @param logs - Array of trip log entries to download.
  */
 export async function downloadTripLogs(logs: Types.TripLogEntry[]): Promise<void> {
-  const confirmed = await confirmDataStewardshipDownload();
-  if (!confirmed) {
-    showToast(Constants.STEWARDSHIP_CANCELLED_TOAST, { type: 'info' });
-    return;
-  }
+  if (!(await confirmDataStewardshipDownload())) return;
 
   const lines = logs.map((log) => `[${log.timestamp}] ${log.message}`).join('\n');
   downloadFile(lines, Constants.LOG_FILENAME, 'text/plain;charset=utf-8;');

@@ -41,6 +41,10 @@ export const Regex = {
   CHURCH_FULL_NAME: /The Church of Jesus Christ of Latter-day Saints/gi,
   /** Context: Stripping characters that are unsafe or invalid for filenames. */
   FILENAME_SANITIZE: /[^a-zA-Z0-9_\- ]/g,
+  /** Context: Collapsing runs of underscores or hyphens in generated filenames. */
+  FILENAME_SEPARATOR_RUN: /[_-]{2,}/g,
+  /** Context: Trimming underscores or hyphens from both ends of generated filenames. */
+  FILENAME_EDGE_SEPARATORS: /^[_-]+|[_-]+$/g,
   /** Context: Extracting member UUID token from member-profile anchor URL. */
   MEMBER_PROFILE_UUID: /member-profile\/([a-f0-9-]+)/,
   /** Context: Stripping trailing count parentheses such as '(14)' from sub-heading text. */
@@ -73,8 +77,8 @@ export const Regex = {
   TRAILING_UNIT_NUMBER: /\((\d{2,8})\)\s*$/,
   /** Context: Extracting 2 to 8 digit Church unit number from any parentheses in unit text. */
   PAREN_UNIT_NUMBER: /\((\d{2,8})\)/,
-  /** Context: Extracting 2 to 8 digit Church unit number from dedicated URL path segment (e.g. '/12345' or '/unit/12345'). */
-  UNIT_PATH_SEGMENT: /(?:^|\/)(?:unit\/)?(\d{2,8})(?:\/|$)/,
+  /** Context: Extracting 2 to 8 digit Church unit number from first URL path segment (e.g. '/12345' or '/unit/12345'). */
+  UNIT_PATH_SEGMENT: /^\/(?:unit\/)?(\d{2,8})(?:\/|$)/,
   /** Context: Extracting 2 to 8 digit Church unit number from labeled prefix (e.g. 'Unit 1234' or '#1234'). */
   LABELED_UNIT_NUMBER: /(?:unit|#)\s*(\d{2,8})\b/i,
   /** Context: Validating standalone 2 to 8 digit numeric string. */

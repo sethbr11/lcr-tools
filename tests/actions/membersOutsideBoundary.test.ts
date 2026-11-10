@@ -3,6 +3,45 @@ import { runMembersOutsideBoundary } from '@/actions/membersOutsideBoundary';
 import { Constants } from '@/actions/membersOutsideBoundary/types';
 import * as fileUtils from '@/utils/fileUtils';
 
+/** Mocks the Church Directory boundary and households APIs for unit 12345. */
+function mockDirectoryApis(
+  households: Array<{ name: string; address: string; lat: number; lng: number }>
+) {
+  Object.defineProperty(window, 'location', {
+    value: new URL('https://directory.churchofjesuschrist.org/12345'),
+    writable: true,
+    configurable: true,
+  });
+  const boundary = {
+    type: 'Polygon',
+    coordinates: [
+      [
+        [0, 0],
+        [10, 0],
+        [10, 10],
+        [0, 10],
+        [0, 0],
+      ],
+    ],
+  };
+  vi.spyOn(globalThis, 'fetch').mockImplementation(async (input) => {
+    const url = String(input);
+    if (url.includes('boundary')) return { ok: true, json: async () => boundary } as Response;
+    if (url.includes('households')) {
+      return {
+        ok: true,
+        json: async () =>
+          households.map((h) => ({
+            name: h.name,
+            address: h.address,
+            coordinates: { latitude: h.lat, longitude: h.lng },
+          })),
+      } as Response;
+    }
+    return { ok: false } as Response;
+  });
+}
+
 describe('membersOutsideBoundary - functional user expectations', () => {
   beforeEach(() => {
     document.body.innerHTML = '';
@@ -20,14 +59,34 @@ describe('membersOutsideBoundary - functional user expectations', () => {
       configurable: true,
     });
 
-    const container = document.createElement('div');
-    container.innerHTML = `
-      <div class="household-item">
-        <span class="household-name">Smith, John & Mary</span>
-        <span class="household-address">123 Main St</span>
-      </div>
-    `;
-    document.body.appendChild(container);
+    vi.spyOn(globalThis, 'fetch').mockImplementation(async (input) =>
+      String(input).includes('boundary')
+        ? ({
+            ok: true,
+            json: async () => ({
+              type: 'Polygon',
+              coordinates: [
+                [
+                  [0, 0],
+                  [10, 0],
+                  [10, 10],
+                  [0, 10],
+                  [0, 0],
+                ],
+              ],
+            }),
+          } as Response)
+        : ({
+            ok: true,
+            json: async () => [
+              {
+                name: 'Smith, John & Mary',
+                address: '123 Main St',
+                coordinates: { latitude: 5, longitude: 5 },
+              },
+            ],
+          } as Response)
+    );
 
     const result = await runMembersOutsideBoundary();
     expect(result.success).toBe(true);
@@ -41,19 +100,10 @@ describe('membersOutsideBoundary - functional user expectations', () => {
     // Set pending flag as if page just reloaded
     sessionStorage.setItem(Constants.AUDIT_PENDING_KEY, 'true');
 
-    // Populate mock DOM household cards
-    const container = document.createElement('div');
-    container.innerHTML = `
-      <div class="household-item">
-        <span class="household-name">Smith, John & Mary</span>
-        <span class="household-address">123 Main St</span>
-      </div>
-      <div class="household-item">
-        <span class="household-name">Johnson, Robert</span>
-        <span class="household-address">456 Elm St</span>
-      </div>
-    `;
-    document.body.appendChild(container);
+    mockDirectoryApis([
+      { name: 'Smith, John & Mary', address: '123 Main St', lat: 5, lng: 5 },
+      { name: 'Johnson, Robert', address: '456 Elm St', lat: 6, lng: 6 },
+    ]);
 
     const result = await runMembersOutsideBoundary();
 
@@ -89,7 +139,7 @@ describe('membersOutsideBoundary - functional user expectations', () => {
       expect(downloadCsvSpy).toHaveBeenCalledTimes(1);
     });
     const [csvContent, filename] = downloadCsvSpy.mock.calls[0];
-    expect(csvContent).toContain('"Name","Status","Address","Latitude","Longitude"');
+    expect(csvContent).toContain('Name,Status,Address,Latitude,Longitude');
     expect(csvContent).toContain('Smith, John & Mary');
     expect(csvContent).toContain('123 Main St');
     expect(filename).toBe('boundary_audit_results.csv');
@@ -99,14 +149,7 @@ describe('membersOutsideBoundary - functional user expectations', () => {
     const downloadCsvSpy = vi.spyOn(fileUtils, 'downloadCsv').mockImplementation(() => {});
     sessionStorage.setItem(Constants.AUDIT_PENDING_KEY, 'true');
 
-    const container = document.createElement('div');
-    container.innerHTML = `
-      <div class="household-item">
-        <span class="household-name">Smith, John & Mary</span>
-        <span class="household-address">123 Main St</span>
-      </div>
-    `;
-    document.body.appendChild(container);
+    mockDirectoryApis([{ name: 'Smith, John & Mary', address: '123 Main St', lat: 5, lng: 5 }]);
 
     await runMembersOutsideBoundary();
 
@@ -123,6 +166,22 @@ describe('membersOutsideBoundary - functional user expectations', () => {
     });
     expect(downloadCsvSpy).not.toHaveBeenCalled();
     expect(document.querySelector('#lcr-tools-boundary-audit-modal')).not.toBeNull();
+  });
+
+  it('reports a load failure instead of marking everyone inside when the APIs fail', async () => {
+    Object.defineProperty(window, 'location', {
+      value: new URL('https://directory.churchofjesuschrist.org/12345'),
+      writable: true,
+      configurable: true,
+    });
+    document.body.innerHTML = `<div class="household-item"><span class="household-name">Smith</span></div>`;
+    vi.spyOn(globalThis, 'fetch').mockResolvedValue({ ok: false, status: 500 } as Response);
+
+    const result = await runMembersOutsideBoundary();
+
+    expect(result.success).toBe(false);
+    expect(document.querySelector('#lcr-tools-boundary-audit-modal')).toBeNull();
+    expect(document.body.textContent).toContain("Couldn't load the ward boundary");
   });
 
   it('should fetch boundary GeoJSON and households from Church APIs and accurately classify locations', async () => {

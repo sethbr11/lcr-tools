@@ -114,6 +114,23 @@ export async function decryptData<T>(payload: Types.EncryptedPayload, pin: strin
 }
 
 /**
+ * Decrypts a stored payload with the PIN unlocked for this browser session.
+ *
+ * @param payload - Encrypted envelope read from storage.
+ * @returns Decrypted value, or null when the session is locked or decryption fails.
+ */
+export async function decryptWithSessionPin<T>(payload: Types.EncryptedPayload): Promise<T | null> {
+  const pin = await getUnlockedPin();
+  if (!pin) return null;
+  try {
+    return await decryptData<T>(payload, pin);
+  } catch (err) {
+    console.error('LCR Tools: Failed to decrypt stored data with session PIN:', err);
+    return null;
+  }
+}
+
+/**
  * Generates an encrypted verification sentinel payload used to authenticate future PIN entries.
  *
  * @param pin - User security PIN string.

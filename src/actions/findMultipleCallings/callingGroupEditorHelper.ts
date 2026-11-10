@@ -1,12 +1,11 @@
 // prettier-ignore
-import { callingAssignmentKey, closeModal, createStandardModal, escapeHtml, formatCallingLabel } from './utils';
+import { callingAssignmentKey, closeModal, createStandardModal, setHtml } from './utils';
 import { getCallingGroups, saveCallingGroups } from './callingGroupStorageHelper';
 import { getIgnoredCallings, saveIgnoredCallings } from './callingIgnoreStorageHelper';
 import { bindIgnoredCallingsEditor } from './callingIgnoreEditorHelper';
 import {
+  bindCallingSearchInput,
   clearPortaledSearchDropdowns,
-  hideFixedSearchDropdown,
-  showFixedSearchDropdown,
 } from './callingSearchDropdownHelper';
 import { Constants, Dom, Types } from './types';
 import { Templates } from './templates';
@@ -71,7 +70,7 @@ function renderGroupList(draft: Types.CallingGroup[], catalog: Types.CallingAssi
   clearPortaledSearchDropdowns();
   const list = document.getElementById(Dom.GROUPS_LIST_ID);
   if (!list) return;
-  list.innerHTML = draft.map(Templates.groupCard).join('');
+  setHtml(list, draft.map(Templates.groupCard).join(''));
   bindEditorEvents(draft, catalog);
 }
 
@@ -129,56 +128,24 @@ function bindCallingSearch(
   const dropdown = wrap?.querySelector<HTMLElement>(`.${Dom.GROUP_SEARCH_DROPDOWN}`);
   if (!input || !wrap || !dropdown) return;
 
-  const hide = () => hideFixedSearchDropdown(dropdown, wrap);
-
-  const showMatches = () => {
-    const query = input.value.trim().toLowerCase();
-    if (!query) {
-      hide();
-      return;
+  bindCallingSearchInput(
+    input,
+    wrap,
+    dropdown,
+    catalog,
+    () => group.members,
+    (assignment) => {
+      group.members.push(assignment);
+      replaceChips(card, group);
     }
-
-    const selected = new Set(group.members.map(callingAssignmentKey));
-    const matches = catalog
-      .filter((item) => {
-        if (selected.has(callingAssignmentKey(item))) return false;
-        return formatCallingLabel(item).toLowerCase().includes(query);
-      })
-      .slice(0, Constants.CALLING_SEARCH_MAX_RESULTS);
-
-    if (matches.length === 0) {
-      dropdown.innerHTML = `<li style="padding: 6px 10px; color: #888; font-size: 13px;">${escapeHtml(Constants.NO_MATCHING_CALLINGS)}</li>`;
-      showFixedSearchDropdown(dropdown, input);
-      return;
-    }
-
-    dropdown.innerHTML = matches.map(Templates.searchItem).join('');
-    showFixedSearchDropdown(dropdown, input);
-    dropdown.querySelectorAll<HTMLElement>(`.${Dom.GROUP_SEARCH_ITEM}`).forEach((item) => {
-      item.addEventListener('click', () => {
-        const calling = item.getAttribute(Dom.DATA_CALLING) || '';
-        const organization = item.getAttribute(Dom.DATA_ORGANIZATION) || '';
-        if (!calling) return;
-        group.members.push({ calling, organization });
-        input.value = '';
-        hide();
-        replaceChips(card, group);
-      });
-    });
-  };
-
-  input.addEventListener('input', showMatches);
-  input.addEventListener('focus', showMatches);
-  input.addEventListener('keydown', (event) => {
-    if (event.key === 'Escape') hide();
-  });
+  );
 }
 
 /** Replaces the chips container for a group after a calling is added or removed. */
 function replaceChips(card: HTMLElement, group: Types.CallingGroup): void {
   const chips = card.querySelector(`.${Dom.GROUP_CHIPS}`);
   if (!chips) return;
-  chips.innerHTML = Templates.groupChips(group.members);
+  setHtml(chips, Templates.groupChips(group.members));
   bindChipRemoval(card, group);
 }
 

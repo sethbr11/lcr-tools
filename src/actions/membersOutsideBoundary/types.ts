@@ -72,6 +72,13 @@ export namespace Types {
    ========================================================================== */
 
 export const Constants = {
+  /** Column headers for the boundary audit CSV export. */
+  AUDIT_CSV_HEADERS: ['Name', 'Status', 'Address', 'Latitude', 'Longitude'],
+  /** Filename stem for the boundary audit CSV (a filter suffix may follow). */
+  AUDIT_CSV_FILENAME_STEM: 'boundary_audit_results',
+  /** Shown when the ward boundary or households could not be loaded from the Church Directory. */
+  AUDIT_LOAD_FAILED:
+    "Couldn't load the ward boundary or households from the Church Directory. Make sure the directory has finished loading and you're signed in, then try again.",
   ...Base.Constants,
   /** Session storage key signaling a pending boundary audit on page reload. */
   AUDIT_PENDING_KEY: 'LCR_AUDIT_PENDING',

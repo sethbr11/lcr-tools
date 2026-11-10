@@ -5,6 +5,7 @@ import { decrementUnmatchedCount, updateSkippedBar } from './unmatchedSkipHelper
 import { applyQueuedMatch, queueVisitorAssignment } from './queuedStatusHelper';
 import {
   getMemberDropdownItemHtml,
+  getUnmatchedFuzzySuggestHtml,
   getUnmatchedNicknameSuggestHtml,
   getUnmatchedTableRowHtml,
   getUnmatchedVisitorButtonHtml,
@@ -47,7 +48,7 @@ export function renderUnmatchedTable(
   visitorAssigned: Types.UnmatchedRecord[],
   onVisitorCountChanged: () => void
 ): Types.RefreshUnmatchedNicknames {
-  tbody.innerHTML = '';
+  tbody.replaceChildren();
   const skippedList: Types.SkippedUnmatchedItem[] = [];
   let nicknames = savedNicknames;
   const { floatingDropdown, setActiveSelection } = mountMemberSearchDropdown(overlay, wardMembers);
@@ -110,8 +111,7 @@ function mountMemberSearchDropdown(
         `.${Dom.DROPDOWN_ITEM}`
       ) as HTMLElement | null;
       if (!target || !activeSelection) return;
-      const memberName = target.dataset.name || '';
-      const member = wardMembers.find((m) => m.fullName === memberName);
+      const member = wardMembers[Number(target.getAttribute(Dom.MEMBER_INDEX_ATTR))];
       floatingDropdown.style.display = 'none';
       if (member) {
         const handler = activeSelection;
@@ -185,12 +185,18 @@ function bindUnmatchedRow(
   const suggestedMember = suggestedCanonical
     ? wardMembers.find((m) => m.fullName === suggestedCanonical)
     : null;
-  const nicknameBoxHtml = suggestedMember
+  const fuzzyCandidates = rec.suggestedMemberName
+    ? wardMembers.filter((m) => m.fullName === rec.suggestedMemberName)
+    : [];
+  const fuzzyMember = !suggestedMember && fuzzyCandidates.length === 1 ? fuzzyCandidates[0] : null;
+  const suggestionBoxHtml = suggestedMember
     ? getUnmatchedNicknameSuggestHtml(idx, Utils.escapeHtml(suggestedMember.fullName))
-    : '';
+    : fuzzyMember
+      ? getUnmatchedFuzzySuggestHtml(idx, Utils.escapeHtml(fuzzyMember.fullName))
+      : '';
 
   // prettier-ignore
-  tr.innerHTML = getUnmatchedTableRowHtml(idx, rec.date, Utils.escapeHtml(rec.fullName), nicknameBoxHtml, suggestedMember ? 'none' : 'block', visitorActionHtml);
+  Utils.setHtml(tr, getUnmatchedTableRowHtml(idx, Utils.escapeHtml(rec.date), Utils.escapeHtml(rec.fullName), suggestionBoxHtml, suggestedMember ? 'none' : 'block', visitorActionHtml));
 
   const queuedCtx: Types.QueuedRowContext = { tr, rec, overlay, logs, rebindRow };
 
@@ -217,6 +223,19 @@ function bindUnmatchedRow(
     });
   }
 
+  if (fuzzyMember) {
+    tr.querySelector<HTMLButtonElement>(`.${Dom.FUZZY_BTN}`)?.addEventListener('click', () => {
+      applyQueuedMatch(
+        queuedCtx,
+        pendingMatches,
+        fuzzyMember,
+        false,
+        false,
+        `Queued match using suggested possible match: ${fuzzyMember.fullName}`
+      );
+    });
+  }
+
   const searchInput = tr.querySelector<HTMLInputElement>(`.${Dom.SEARCH_INPUT}`);
   const nicknameCheck = tr.querySelector<HTMLInputElement>(`.${Dom.NICKNAME_CHECK}`);
 
@@ -229,7 +248,10 @@ function bindUnmatchedRow(
       return;
     }
 
-    const matches = wardMembers.filter((m) => m.fullName.toLowerCase().includes(query)).slice(0, 5);
+    const matches = wardMembers
+      .map((member, index) => ({ member, index }))
+      .filter(({ member }) => member.fullName.toLowerCase().includes(query))
+      .slice(0, 5);
 
     if (matches.length === 0) {
       floatingDropdown.style.display = 'none';
@@ -237,9 +259,14 @@ function bindUnmatchedRow(
       return;
     }
 
-    floatingDropdown.innerHTML = matches
-      .map((m) => getMemberDropdownItemHtml(Utils.escapeHtml(m.fullName)))
-      .join('');
+    Utils.setHtml(
+      floatingDropdown,
+      matches
+        .map(({ member, index }) =>
+          getMemberDropdownItemHtml(Utils.escapeHtml(member.fullName), index)
+        )
+        .join('')
+    );
     Utils.positionDropdown(floatingDropdown, searchInput, matches.length);
 
     setActiveSelection(async (member: Types.WardMember) => {

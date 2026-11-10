@@ -1,6 +1,6 @@
-import JSZip from 'jszip';
+import { zipSync, strToU8 } from 'fflate';
 import { Regex, Types } from '@/types';
-import { formatCSVCell } from './coreUtils';
+import { formatDate } from './coreUtils';
 import { showToast } from './ui/uiUtils';
 
 /* ==========================================================================
@@ -72,16 +72,17 @@ export async function downloadCsvZip(
     return;
   }
 
-  const zip = new JSZip();
+  const zipData: Record<string, Uint8Array> = {};
   const usedNames = new Set<string>();
 
   for (const file of files) {
     const uniqueName = resolveUniqueFilename(file.filename || 'report.csv', usedNames);
     usedNames.add(uniqueName);
-    zip.file(uniqueName, file.csvContent);
+    zipData[uniqueName] = strToU8(file.csvContent);
   }
 
-  const blob = await zip.generateAsync({ type: 'blob' });
+  const zipped = zipSync(zipData);
+  const blob = new Blob([zipped as Uint8Array<ArrayBuffer>], { type: 'application/zip' });
   downloadFile(blob, zipName, 'application/zip', showNotification);
 }
 
@@ -93,32 +94,17 @@ export async function downloadCsvZip(
  * @returns Clean, formatted filename.
  */
 export function generateFilename(extension: string = 'csv', suffix?: string): string {
-  let baseName = document.title || 'lcr_export';
-  baseName = baseName
-    .replace(Regex.CHURCH_LCR_TITLE, '')
-    .replace(Regex.LCR_ACRONYM, '')
-    .replace(Regex.CHURCH_FULL_NAME, '')
-    .replace(Regex.FILENAME_SANITIZE, '')
-    .trim()
-    .replace(Regex.MULTIPLE_SPACES, '_')
-    .toLowerCase();
+  const title = normalizeFilenamePart(document.title || '') || 'lcr_export';
+  const normalizedSuffix = normalizeFilenamePart(suffix || '');
+  const isRedundant =
+    !normalizedSuffix ||
+    normalizedSuffix === title ||
+    `_${title}_`.includes(`_${normalizedSuffix}_`);
 
-  if (!baseName) baseName = 'lcr_report';
+  const dateTag = formatDate(new Date(), 'YYYY-MM-DD');
+  const suffixPart = isRedundant ? '' : `_${normalizedSuffix}`;
 
-  const dateTag = new Date().toISOString().slice(0, 10);
-  const suffixPart = suffix ? `_${suffix}` : '';
-
-  return `${baseName}${suffixPart}_${dateTag}.${extension}`;
-}
-
-/**
- * Re-export CSV cell formatting function from coreUtils for backwards compatibility.
- *
- * @param value - Cell value to escape.
- * @returns Escaped CSV cell string.
- */
-export function formatCsvCell(value: unknown): string {
-  return formatCSVCell(value);
+  return `${title}${suffixPart}_${dateTag}.${extension}`;
 }
 
 /**
@@ -152,4 +138,23 @@ function resolveUniqueFilename(name: string, used: Set<string>): string {
     counter++;
   }
   return `${base}_${counter}${ext}`;
+}
+
+/**
+ * Strips branding, sanitizes, and snake_cases text for use in a filename (no slashes or symbols).
+ *
+ * @param text - Raw text such as a page or table title.
+ * @returns Lowercase filename-safe text, possibly empty.
+ */
+export function normalizeFilenamePart(text: string): string {
+  return text
+    .replace(Regex.CHURCH_LCR_TITLE, '')
+    .replace(Regex.LCR_ACRONYM, '')
+    .replace(Regex.CHURCH_FULL_NAME, '')
+    .replace(Regex.FILENAME_SANITIZE, '')
+    .trim()
+    .replace(Regex.MULTIPLE_SPACES, '_')
+    .toLowerCase()
+    .replace(Regex.FILENAME_SEPARATOR_RUN, '_')
+    .replace(Regex.FILENAME_EDGE_SEPARATORS, '');
 }

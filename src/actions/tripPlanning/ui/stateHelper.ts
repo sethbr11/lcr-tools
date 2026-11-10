@@ -7,6 +7,8 @@ let optimized: Types.OptimizedRoute[] = [];
 let failedGeocodes: Types.FailedGeocode[] = [];
 let originalHeaders: string[] = [];
 let tripLogs: Types.TripLogEntry[] = [];
+/** Per-cluster starting addresses that override the default starting address. */
+let clusterStartAddresses: Record<number, string> = {};
 
 /* ==========================================================================
    EXPORTED FUNCTIONS
@@ -38,6 +40,7 @@ export function getTripLogs(): Types.TripLogEntry[] {
 
 /** Refreshes header statistic cards from current planner state. */
 export function updateTripStats(): void {
+  capClusterSizeInputs(geocoded.length);
   setStat(Dom.STAT_TOTAL_ID, String(records.length));
   setStat(Dom.STAT_GEOCODED_ID, `${geocoded.length}/${records.length}`);
 
@@ -100,9 +103,65 @@ export function getClusterColors(): readonly string[] {
   return Dom.CLUSTER_COLORS;
 }
 
+/**
+ * Returns the starting address chosen for one cluster, or '' to use the default.
+ *
+ * @param clusterId - Zero-based cluster identifier.
+ * @returns The cluster's own starting address, or an empty string.
+ */
+export function getClusterStartAddress(clusterId: number): string {
+  return clusterStartAddresses[clusterId] || '';
+}
+
+/**
+ * Sets (or clears, when blank) a starting address for one cluster.
+ *
+ * @param clusterId - Zero-based cluster identifier.
+ * @param address - Address typed by the user; blank reverts to the default.
+ */
+export function setClusterStartAddress(clusterId: number, address: string): void {
+  const trimmed = address.trim();
+  if (trimmed) clusterStartAddresses = { ...clusterStartAddresses, [clusterId]: trimmed };
+  else {
+    const { [clusterId]: _removed, ...rest } = clusterStartAddresses;
+    clusterStartAddresses = rest;
+  }
+}
+
+/**
+ * Returns all per-cluster starting addresses keyed by cluster id.
+ *
+ * @returns Copy of the cluster-to-address overrides.
+ */
+export function getClusterStartAddresses(): Record<number, string> {
+  return { ...clusterStartAddresses };
+}
+
+/** Clears per-cluster starting addresses (cluster ids change whenever members are re-clustered). */
+export function clearClusterStartAddresses(): void {
+  clusterStartAddresses = {};
+}
+
 /* ==========================================================================
    HELPER FUNCTIONS
    ========================================================================== */
+
+/** Caps the group count and group size inputs at the number of people available to group. */
+function capClusterSizeInputs(people: number): void {
+  const cap = Math.max(1, people);
+  const ids = [
+    Dom.CLUSTER_COUNT_ID,
+    Dom.COUNT_MIN_SIZE_ID,
+    Dom.MIN_CLUSTER_SIZE_ID,
+    Dom.MAX_CLUSTER_SIZE_ID,
+  ];
+  for (const id of ids) {
+    const input = document.getElementById(id) as HTMLInputElement | null;
+    if (!input) continue;
+    input.max = String(cap);
+    if (people > 0 && Number(input.value) > cap) input.value = String(cap);
+  }
+}
 
 /** Writes a statistic value when the target element exists. */
 function setStat(id: string, value: string): void {
@@ -123,4 +182,5 @@ export function resetTripState(): void {
   failedGeocodes = [];
   originalHeaders = [];
   tripLogs = [];
+  clusterStartAddresses = {};
 }

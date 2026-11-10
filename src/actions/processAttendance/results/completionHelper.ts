@@ -1,4 +1,5 @@
 import { ensureAttendanceStylesInjected, getCompletionModalHtml } from '../templates';
+import { setHtml } from '../utils';
 import { Dom, Types } from '../types';
 import { displayLogsModal } from './logsHelper';
 
@@ -26,7 +27,7 @@ export async function displayCompletionModal(
   document.getElementById(Dom.COMPLETION_OVERLAY_ID)?.remove();
 
   const container = document.createElement('div');
-  container.innerHTML = getCompletionModalHtml(metrics, targetClass, targetDate, isSimulation);
+  setHtml(container, getCompletionModalHtml(metrics, targetClass, targetDate, isSimulation));
   const overlay = container.firstElementChild as HTMLElement;
   document.body.appendChild(overlay);
 

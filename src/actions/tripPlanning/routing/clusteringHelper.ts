@@ -1,6 +1,8 @@
 import * as turf from '@turf/turf';
 import type { Feature, Point } from 'geojson';
-import { Constants, Types } from '../types';
+import { Types } from '../types';
+// prettier-ignore
+import { bestKMeans, capacitatedClusters, countClusters, projectToPlane, repairMinimumSizes } from './kMeansHelper';
 import { getTripState, logTripStatus, setTripState, updateTripStats } from '../ui/stateHelper';
 
 /* ==========================================================================
@@ -14,12 +16,14 @@ import { getTripState, logTripStatus, setTripState, updateTripStats } from '../u
  * @param clusterCount - Target number of groups when using byCount.
  * @param minSize - Minimum members per group when using bySize.
  * @param maxSize - Maximum members per group when using bySize.
+ * @param countMinSize - Optional minimum members per group when using byCount (1 = no minimum).
  */
 export function clusterAddresses(
   strategy: Types.ClusterStrategy,
   clusterCount: number,
   minSize: number,
-  maxSize: number
+  maxSize: number,
+  countMinSize: number = 1
 ): void {
   const { geocoded } = getTripState();
   if (geocoded.length === 0) {
@@ -27,20 +31,47 @@ export function clusterAddresses(
     return;
   }
 
-  const points = turf.featureCollection(
-    geocoded.map((row) => turf.point([row.lng, row.lat], { ...row }))
-  ) as { type: 'FeatureCollection'; features: Types.ClusterFeature[] };
+  // Step 1: Project to a planar space so distances are not skewed by longitude convergence
+  const xy = projectToPlane(geocoded);
 
-  let clusteredFeatures: Types.ClusterFeature[];
+  // Step 2: Assign every member to a cluster
+  // Every size limit is capped at the number of people being grouped
+  const total = geocoded.length;
+  let assignments: number[];
   if (strategy === 'byCount') {
-    const k = Math.max(1, Math.min(clusterCount, geocoded.length));
-    logTripStatus(`Clustering with strategy: byCount. Aiming for ${k} clusters.`);
-    clusteredFeatures = turf.clustersKmeans(points, { numberOfClusters: k })
-      .features as Types.ClusterFeature[];
+    const k = clampInt(clusterCount, 1, total);
+    const groupMin = clampInt(countMinSize, 1, Math.floor(total / k));
+    if (groupMin < Math.round(countMinSize)) {
+      logTripStatus(
+        `A minimum of ${countMinSize} per group is not possible with ${k} groups of ${total} people; using ${groupMin}.`
+      );
+    }
+    logTripStatus(
+      `Clustering with strategy: byCount. Aiming for ${k} clusters${groupMin > 1 ? ` of at least ${groupMin}` : ''}.`
+    );
+    const result = bestKMeans(xy, k, logTripStatus);
+    assignments = result.assignments;
+    if (groupMin > 1) {
+      repairMinimumSizes(xy, assignments, result.centroids, groupMin, logTripStatus);
+    }
   } else {
-    clusteredFeatures = clusterBySize(points.features, minSize, maxSize);
+    const max = clampInt(maxSize, 1, total);
+    const min = clampInt(minSize, 1, max);
+    if (max !== Math.round(maxSize) || min !== Math.round(minSize)) {
+      logTripStatus(`Group sizes adjusted to ${min}-${max} for ${total} people.`);
+    }
+    assignments = capacitatedClusters(xy, min, max, logTripStatus);
   }
+  logTripStatus(`Cluster sizes: ${countClusters(assignments).join(', ')}.`);
 
+  // Step 3: Build features, renumber geographically, and publish state
+  const clusteredFeatures = geocoded.map(
+    (row, index) =>
+      turf.point([row.lng, row.lat], {
+        ...row,
+        cluster: assignments[index],
+      }) as Types.ClusterFeature
+  );
   const finalFeatures = getGeographicallySortedClusters(clusteredFeatures);
   const clustered = finalFeatures.map((feature) => feature.properties);
   const finalCount = new Set(
@@ -55,131 +86,11 @@ export function clusterAddresses(
    HELPER FUNCTIONS
    ========================================================================== */
 
-/** Balances k-means clusters toward min/max membership using steal/shed passes. */
-function clusterBySize(
-  seedFeatures: Types.ClusterFeature[],
-  minSize: number,
-  maxSize: number
-): Types.ClusterFeature[] {
-  if (minSize > maxSize || minSize < 1) {
-    logTripStatus('Invalid min/max cluster size.');
-    return seedFeatures;
-  }
-
-  const collection = turf.featureCollection(seedFeatures);
-  const initialK = Math.max(1, Math.round(seedFeatures.length / ((minSize + maxSize) / 2)));
-  logTripStatus(`Initial guess: ${initialK} clusters.`);
-  let features = turf.clustersKmeans(collection, { numberOfClusters: initialK })
-    .features as Types.ClusterFeature[];
-
-  let iteration = 0;
-  while (iteration < Constants.CLUSTER_SIZE_MAX_ITERATIONS) {
-    iteration += 1;
-    let changesMade = false;
-    let clusterMap = getClusterMap(features);
-    const centroids = getClusterCentroids(clusterMap);
-    const sortedIds = Object.keys(clusterMap).sort(
-      (left, right) => clusterMap[left].length - clusterMap[right].length
-    );
-
-    for (const clusterId of sortedIds) {
-      const cluster = clusterMap[clusterId];
-      if (!cluster || cluster.length >= minSize) continue;
-      const stolen = stealNearestPoint(clusterId, cluster, clusterMap, minSize);
-      if (!stolen) continue;
-      changesMade = true;
-      clusterMap = getClusterMap(features);
-    }
-
-    const reverseIds = Object.keys(clusterMap).sort(
-      (left, right) => clusterMap[right].length - clusterMap[left].length
-    );
-    for (const clusterId of reverseIds) {
-      const cluster = clusterMap[clusterId];
-      if (!cluster || cluster.length <= maxSize) continue;
-      const shed = shedFarthestPoint(clusterId, cluster, clusterMap, centroids, maxSize);
-      if (!shed) continue;
-      changesMade = true;
-      clusterMap = getClusterMap(features);
-      Object.assign(centroids, getClusterCentroids(clusterMap));
-    }
-
-    if (!changesMade) {
-      logTripStatus(`Clusters are stable after ${iteration} iterations.`);
-      break;
-    }
-  }
-
-  return features;
-}
-
-/** Moves the nearest extra point from another cluster into an undersized group. */
-function stealNearestPoint(
-  clusterId: string,
-  cluster: Types.ClusterFeature[],
-  clusterMap: Record<string, Types.ClusterFeature[]>,
-  minSize: number
-): boolean {
-  let bestCandidate: Types.ClusterFeature | null = null;
-  let bestDist = Infinity;
-  let sourceClusterId: string | null = null;
-
-  for (const otherId of Object.keys(clusterMap)) {
-    if (otherId === clusterId || clusterMap[otherId].length <= minSize) continue;
-    for (const origin of cluster) {
-      for (const candidate of clusterMap[otherId]) {
-        const distance = turf.distance(origin, candidate);
-        if (distance >= bestDist) continue;
-        bestDist = distance;
-        bestCandidate = candidate;
-        sourceClusterId = otherId;
-      }
-    }
-  }
-
-  if (!bestCandidate || sourceClusterId === null) return false;
-  logTripStatus(
-    `Stealing point "${bestCandidate.properties.name}" from cluster ${sourceClusterId} for undersized cluster ${clusterId}`
-  );
-  bestCandidate.properties.cluster = parseInt(clusterId, 10);
-  return true;
-}
-
-/** Moves the farthest member of an oversized cluster to the nearest eligible neighbor. */
-function shedFarthestPoint(
-  clusterId: string,
-  cluster: Types.ClusterFeature[],
-  clusterMap: Record<string, Types.ClusterFeature[]>,
-  centroids: Record<string, Feature<Point>>,
-  maxSize: number
-): boolean {
-  const centroid = centroids[clusterId];
-  if (!centroid) return false;
-  let farthestPoint: Types.ClusterFeature | null = null;
-  let maxDist = -1;
-  for (const point of cluster) {
-    const distance = turf.distance(point, centroid);
-    if (distance <= maxDist) continue;
-    maxDist = distance;
-    farthestPoint = point;
-  }
-  if (!farthestPoint) return false;
-
-  let nearestClusterId: string | null = null;
-  let minClusterDist = Infinity;
-  for (const otherId of Object.keys(centroids)) {
-    if (otherId === clusterId || clusterMap[otherId].length >= maxSize) continue;
-    const distance = turf.distance(farthestPoint, centroids[otherId]);
-    if (distance >= minClusterDist) continue;
-    minClusterDist = distance;
-    nearestClusterId = otherId;
-  }
-  if (!nearestClusterId) return false;
-  logTripStatus(
-    `Shedding point "${farthestPoint.properties.name}" from oversized cluster ${clusterId} to cluster ${nearestClusterId}`
-  );
-  farthestPoint.properties.cluster = parseInt(nearestClusterId, 10);
-  return true;
+/** Rounds a user-entered number and clamps it to [low, high] (non-numbers become low). */
+function clampInt(value: number, low: number, high: number): number {
+  const rounded = Math.round(value);
+  if (!Number.isFinite(rounded)) return low;
+  return Math.max(low, Math.min(rounded, Math.max(low, high)));
 }
 
 /** Groups Turf features by current cluster identifier. */

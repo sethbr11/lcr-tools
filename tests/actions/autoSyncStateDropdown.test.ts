@@ -315,7 +315,8 @@ describe('autoSyncStateDropdown', () => {
       const select = document.getElementById('_r_state_') as HTMLSelectElement;
       select.value = '44';
 
-      await vi.advanceTimersByTimeAsync(350);
+      // Page changes are batched (150 ms) before the settle and toggle cycle; step time like a browser
+      for (let step = 0; step < 10; step += 1) await vi.advanceTimersByTimeAsync(100);
 
       expect(select.getAttribute(Dom.SYNCED_DATA_ATTR)).toBe('true');
       teardown();

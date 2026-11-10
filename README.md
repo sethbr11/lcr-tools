@@ -2,7 +2,7 @@
 
 [![CI Testing](https://github.com/sethbr11/lcr-tools/actions/workflows/tests.yml/badge.svg)](https://github.com/sethbr11/lcr-tools/actions/workflows/tests.yml)
 [![Chrome Web Store](https://img.shields.io/chrome-web-store/v/camjilfjkjmgcpmnheoeoomfndedpmbn.svg)](https://chromewebstore.google.com/detail/lcr-tools/camjilfjkjmgcpmnheoeoomfndedpmbn)
-[![Version](https://img.shields.io/badge/version-2.0.1-blue.svg)](package.json)
+[![Version](https://img.shields.io/badge/version-2.0.2-blue.svg)](package.json)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 
 A modern, cross-browser extension for Chrome (Manifest V3), Firefox (Manifest V2), and Safari (Manifest V2) that enhances and streamlines functionality on the Church of Jesus Christ of Latter-day Saints **Leader and Clerk Resources (LCR)** platform.
@@ -13,7 +13,7 @@ A modern, cross-browser extension for Chrome (Manifest V3), Firefox (Manifest V2
 
 - **Attendance Processing**: Automatically parses pasted attendance rosters or CSV files, matches names against ward rosters, checks off attendances for target Sunday dates, and breaks down unmatched names and visitors.
 - **Report Data Export**: Automatically detects tabular data across LCR report pages and exports them as clean CSV files or multi-table ZIP archives.
-- **Trip Route Planning**: Extracts newly moved-in members, prefers Church Directory household coordinates, clusters remaining locations with Turf.js, and visualizes routes on a Leaflet map.
+- **Trip Route Planning**: Extracts newly moved-in members, prefers Church Directory household coordinates, groups members (keeping households together) into visit groups, orders each group's stops from its own starting address, and shows the routes on a Leaflet map with a per-group PDF export.
 - **Members with Multiple Callings**: Analyzes organizational rosters to discover members holding simultaneous callings, presenting an interactive review dialog with CSV export.
 - **Ward Boundary Audit**: Evaluates household geolocations against unit boundary polygons, identifying members residing outside ward boundaries.
 - **Missing Photo Report**: Quickly audits member directory cards to identify and export records of members without uploaded directory photographs.
@@ -28,6 +28,7 @@ A modern, cross-browser extension for Chrome (Manifest V3), Firefox (Manifest V2
 - **Language**: TypeScript (`v5.8.x`) in Strict Mode (zero-`any` policy)
 - **Mapping & Geospatial**: [Leaflet](https://leafletjs.com/) and [@turf/turf](https://turfjs.org/)
 - **Data Parsing & Archiving**: [PapaParse](https://www.papaparse.com/) and [JSZip](https://stuk.github.io/jszip/)
+- **PDF Export**: [jsPDF](https://github.com/parallax/jsPDF) (loaded on demand by the Trip Planner)
 - **Testing**: [Vitest](https://vitest.dev/) with JSDOM and `@testing-library/dom`
 - **Formatting**: [Prettier](https://prettier.io/)
 

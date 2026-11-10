@@ -26,6 +26,8 @@ export const Dom = {
   API_KEY_TOGGLE_ID: 'apiKeyToggle',
   /** API key autofill button ID. */
   API_KEY_AUTOFILL_BTN_ID: 'apiKeyAutofillBtn',
+  /** Planner button that saves (or replaces) the typed API key; hidden for autofilled keys. */
+  API_KEY_SAVE_BTN_ID: 'apiKeySaveBtn',
   /** Start geocoding button ID. */
   GEOCODE_BTN_ID: 'geocodeBtn',
   /** Geocode progress container ID. */
@@ -40,6 +42,8 @@ export const Dom = {
   CLUSTER_COUNT_ID: 'clusterCount',
   /** Minimum cluster size input ID. */
   MIN_CLUSTER_SIZE_ID: 'minClusterSize',
+  /** Input id for the optional minimum members per group when clustering by group count. */
+  COUNT_MIN_SIZE_ID: 'countMinSize',
   /** Maximum cluster size input ID. */
   MAX_CLUSTER_SIZE_ID: 'maxClusterSize',
   /** By-count clustering controls container ID. */
@@ -52,12 +56,12 @@ export const Dom = {
   METRIC_MAPBOX_ID: 'metricMapbox',
   /** Road-network distance metric autofill button ID. */
   METRIC_MAPBOX_AUTOFILL_BTN_ID: 'metricMapboxAutofillBtn',
-  /** Optional starting address input ID. */
-  STARTING_ADDRESS_ID: 'startingAddressInput',
-  /** Save default starting address button ID. */
-  SAVE_STARTING_ADDRESS_BTN_ID: 'saveStartingAddressBtn',
   /** Download CSV button ID. */
   EXPORT_CSV_BTN_ID: 'exportCsvBtn',
+  /** Header button that starts the per-group PDF export. */
+  EXPORT_PDF_BTN_ID: 'exportPdfBtn',
+  /** Overlay id of the PDF column chooser modal. */
+  PDF_FIELDS_MODAL_ID: 'tripPdfFieldsModal',
   /** Execution log preformatted element ID. */
   STATUS_ID: 'status',
   /** Execution log header ID. */
@@ -78,6 +82,10 @@ export const Dom = {
   PIN_MODAL_OVERLAY_ID: 'lcr-tools-trip-pin-overlay',
   /** Trip Planner PIN unlock input element ID. */
   PIN_MODAL_INPUT_ID: 'lcr-tools-trip-pin-input',
+  /** Trip Planner PIN confirmation input, shown only when creating a PIN. */
+  PIN_MODAL_CONFIRM_INPUT_ID: 'lcr-tools-trip-pin-confirm',
+  /** Trip Planner PIN modal title element ID. */
+  PIN_MODAL_TITLE_ID: 'lcr-tools-trip-pin-title',
   /** Trip Planner PIN unlock submit button ID. */
   PIN_MODAL_SUBMIT_ID: 'lcr-tools-trip-pin-submit',
   /** Trip Planner PIN unlock modal close button ID. */
@@ -142,6 +150,16 @@ export const Dom = {
   CLUSTER_MEMBERS_CLASS: 'cluster-members',
   /** CSS class for light gray distance number on top right of cluster box. */
   CLUSTER_DISTANCE_CLASS: 'cluster-distance',
+  /** Row inside a cluster card showing (and editing) that cluster's starting address. */
+  CLUSTER_START_CLASS: 'cluster-start',
+  /** "Start:" label inside the cluster starting address row. */
+  CLUSTER_START_LABEL_CLASS: 'cluster-start-label',
+  /** Address text (or "Default") inside the cluster starting address row. */
+  CLUSTER_START_VALUE_CLASS: 'cluster-start-value',
+  /** Text-style buttons (Change / Save / Use default) in the cluster starting address row. */
+  CLUSTER_START_LINK_CLASS: 'cluster-start-link',
+  /** Address input shown while editing a cluster's starting address. */
+  CLUSTER_START_INPUT_CLASS: 'cluster-start-input',
   /** Name attribute for clustering strategy radios. */
   CLUSTER_STRATEGY_NAME: 'clusterStrategy',
   /** Name attribute for distance metric radios. */
@@ -157,4 +175,64 @@ export const Dom = {
   MARKER_START_COLOR: 'limegreen',
   /** Route end marker color. */
   MARKER_END_COLOR: 'red',
+  /** Full-screen backdrop behind Trip Planner modals. */
+  TRIP_MODAL_BACKDROP_CLASS: 'trip-modal-backdrop',
+  /** Card container of Trip Planner modals. */
+  TRIP_MODAL_CARD_CLASS: 'trip-modal-card',
+  /** Header row of Trip Planner modals. */
+  TRIP_MODAL_HEADER_CLASS: 'trip-modal-header',
+  /** Title heading of Trip Planner modals. */
+  TRIP_MODAL_TITLE_CLASS: 'trip-modal-title',
+  /** Close button of Trip Planner modals. */
+  TRIP_MODAL_CLOSE_CLASS: 'trip-close-btn',
+  /** Body section of Trip Planner modals. */
+  TRIP_MODAL_BODY_CLASS: 'trip-modal-body',
+  /** Footer row of Trip Planner modals. */
+  TRIP_MODAL_FOOTER_CLASS: 'trip-modal-footer',
+  /** Inline style that sizes footer buttons to their content. */
+  TRIP_MODAL_BTN_STYLE: 'width: auto; margin: 0;',
+  /** Base class of Trip Planner buttons. */
+  TRIP_BTN_CLASS: 'lcr-tools-btn',
+  /** Tertiary (cancel) button modifier class. */
+  TRIP_BTN_TERTIARY_CLASS: 'lcr-tools-btn-tertiary',
+  /** Primary button modifier class. */
+  TRIP_BTN_PRIMARY_CLASS: 'lcr-tools-btn-primary',
+  /** Card modifier of the PDF columns modal. */
+  PDF_CARD_CLASS: 'trip-pdf-card',
+  /** Description paragraph in the PDF columns modal. */
+  PDF_DESC_CLASS: 'trip-pdf-desc',
+  /** Select all / clear link row in the PDF columns modal. */
+  PDF_QUICK_CLASS: 'trip-pdf-quick',
+  /** Container of the PDF column checkboxes. */
+  PDF_FIELDS_CLASS: 'trip-pdf-fields',
+  /** Label wrapping one PDF column checkbox. */
+  PDF_FIELD_CLASS: 'trip-pdf-field',
+  /** Data attribute naming the action of a PDF modal button. */
+  PDF_ACTION_ATTR: 'data-pdf-action',
+  /** Data attribute holding a PDF column checkbox index. */
+  PDF_FIELD_INDEX_ATTR: 'data-field-index',
+  /** Value of the PDF action attribute that cancels the modal. */
+  PDF_ACTION_CANCEL: 'cancel',
+  /** Value of the PDF action attribute that selects every column. */
+  PDF_ACTION_ALL: 'all',
+  /** Value of the PDF action attribute that clears every column. */
+  PDF_ACTION_NONE: 'none',
+  /** Value of the PDF action attribute that exports the PDF. */
+  PDF_ACTION_EXPORT: 'export',
+  /** Selector matching every PDF modal action button. */
+  PDF_ANY_ACTION_SELECTOR: '[data-pdf-action]',
+  /** Selector matching the PDF modal export button. */
+  PDF_EXPORT_ACTION_SELECTOR: '[data-pdf-action="export"]',
+  /** Selector matching PDF column checkboxes. */
+  PDF_FIELD_CHECKBOX_SELECTOR: 'input[data-field-index]',
+  /** Card modifier of the Trip Planner PIN modal. */
+  PIN_CARD_CLASS: 'trip-pin-card',
+  /** Description paragraph in the PIN modal. */
+  PIN_DESC_CLASS: 'trip-pin-desc',
+  /** Wrapper of one PIN input and its label. */
+  PIN_INPUT_GROUP_CLASS: 'trip-pin-input-group',
+  /** PIN password input. */
+  PIN_INPUT_CLASS: 'trip-pin-input',
+  /** Class combination of the PIN error banner. */
+  PIN_STATUS_CLASS: 'status-banner error',
 } as const;

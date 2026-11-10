@@ -81,6 +81,15 @@ jobs:
             fi
           fi
 
+      - name: Verify release version matches package.json
+        if: steps.check_version.outputs.SHOULD_RELEASE == 'true'
+        run: |
+          PKG_VERSION=$(node -p "require('./package.json').version")
+          if [ "${{ steps.check_version.outputs.VERSION }}" != "$PKG_VERSION" ]; then
+            echo "::error::Release version (${{ steps.check_version.outputs.VERSION }}) does not match package.json version ($PKG_VERSION). Bump package.json before tagging."
+            exit 1
+          fi
+
       - name: Verify formatting, types, and tests
         if: steps.check_version.outputs.SHOULD_RELEASE == 'true'
         run: |
@@ -110,7 +119,7 @@ jobs:
         id: cws_publish
         if: steps.check_version.outputs.SHOULD_RELEASE == 'true' && env.CHROME_CLIENT_ID != '' && env.CHROME_CLIENT_SECRET != '' && env.CHROME_REFRESH_TOKEN != ''
         continue-on-error: true
-        uses: mobilefirstllc/cws-publish@latest
+        uses: mobilefirstllc/cws-publish@569e87bc9a54ad7712ba6dc154a110d88af63b85 # 2.1.1
         with:
           action: ${{ github.event.inputs.action || 'publish' }}
           client_id: ${{ secrets.CHROME_CLIENT_ID }}

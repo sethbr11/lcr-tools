@@ -20,8 +20,10 @@ export namespace Types {
   export type VisitorCounts = Partial<Record<VisitorCategory, number>>;
   /** Supported visitor categories. */
   export type VisitorCategory = 'Men' | 'Women' | 'Young Men' | 'Young Women' | 'Children';
+  /** LCR attendance page control that synchronization could not confirm. */
+  export type SyncAttendancePageStep = 'members-tab' | 'month' | 'class' | 'sunday';
   /** Outcome of synchronizing LCR attendance page controls. */
-  export type SyncAttendancePageStatus = 'ok' | 'aborted';
+  export type SyncAttendancePageStatus = SyncAttendancePageSettled | SyncAttendancePageFailed;
   /** Outcome of attempting to mark a ward member present on the roll. */
   export type MarkPresentOutcome = 'marked' | 'already' | 'error';
   /** Stored nickname to canonical ward member name mapping. */
@@ -83,6 +85,8 @@ export namespace Types {
     fullName: string;
     /** Date of the meeting (YYYY-MM-DD). */
     date: string;
+    /** Fuzzy roll match offered for one-click confirmation, never auto-marked. */
+    suggestedMemberName?: string;
   }
 
   /** Skipped unmatched attendee retained for undo in the results modal. */
@@ -171,6 +175,22 @@ export namespace Types {
     targetClassText: string | null;
   }
 
+  /** Sync outcome when every control was confirmed (`ok`) or the user pressed Escape (`aborted`). */
+  export interface SyncAttendancePageSettled {
+    /** Discriminant marking a fully confirmed or user-aborted sync. */
+    status: 'ok' | 'aborted';
+  }
+
+  /** Sync outcome when an LCR control could not be confirmed, so nothing may be written. */
+  export interface SyncAttendancePageFailed {
+    /** Discriminant marking a failed sync. */
+    status: 'failed';
+    /** Sync step that could not be confirmed. */
+    step: SyncAttendancePageStep;
+    /** User-readable explanation of the failed step. */
+    message: string;
+  }
+
   /** Result payload returned by attendance processing action execution. */
   export interface ProcessAttendanceResult {
     /** Total attendee records processed. */
@@ -191,6 +211,16 @@ export namespace Types {
     updated: string[];
     /** Error message if applying visitor counts failed. */
     error?: string;
+  }
+
+  /** Visitor category whose LCR input was located before any value is typed. */
+  export interface ResolvedVisitorInput {
+    /** Visitor category being written. */
+    category: VisitorCategory;
+    /** Count to type into the input. */
+    count: number;
+    /** LCR number input for the category on the target Sunday. */
+    input: HTMLInputElement;
   }
 
   /** Setup configuration and parsed attendees returned by initial input prompt. */
@@ -287,6 +317,8 @@ export namespace Types {
     visitorsSaved: number;
     /** Whether the run stopped early because the user pressed Escape. */
     aborted: boolean;
+    /** Error message when the visitor count save to LCR failed. */
+    visitorError?: string;
   }
 
   /** Mounted floating member-search dropdown used by the unmatched review table. */
@@ -306,6 +338,33 @@ export namespace Types {
     /** Whether the user aborted mid-batch. */
     aborted: boolean;
   }
+  /** Sunday and class the run is marking, used to pick the right attendance button. */
+  export interface AttendanceTarget {
+    /** ISO target Sunday date (YYYY-MM-DD). */
+    date: string;
+    /** Display name of the selected class or quorum. */
+    className: string | null;
+  }
+  /** An attendance button paired with its parsed "Name, date, class" aria-label. */
+  export interface LabelledAttendanceButton {
+    /** The attendance toggle button. */
+    btn: HTMLButtonElement;
+    /** Label match: index marks where the date starts; groups are [date, class]. */
+    match: RegExpMatchArray;
+  }
+  /** Writes one audit-log entry for a batch-marked member (action and status text). */
+  export type BatchMarkLogFn = (entry: BatchMarkEntry, action: string, status: string) => void;
+  /** Result of clicking (or declining to click) a member's attendance button. */
+  export type ClickAttendanceOutcome = 'clicked' | 'already' | 'busy' | 'error';
+  /** One roll member to mark in a batch, with the roster name that matched it (for the audit log). */
+  export interface BatchMarkEntry {
+    /** Ward member whose attendance button is clicked. */
+    member: WardMember;
+    /** Roster first name that matched the member. */
+    firstName: string;
+    /** Roster last name that matched the member. */
+    lastName: string;
+  }
 }
 
 /* ==========================================================================
@@ -318,43 +377,7 @@ export { Constants } from './constants';
    REGULAR EXPRESSIONS
    ========================================================================== */
 
-export const Regex = {
-  ...Base.Regex,
-  /** Context: Splitting tab delimiter. */
-  TAB_DELIMITER: /\t/,
-  /** Context: Splitting comma delimiter. */
-  COMMA_DELIMITER: /,/,
-  /** Context: Stripping time suffix from timestamps (e.g. 14:01:02 PM). */
-  TIMESTAMP_TIME_STRIP: /\s+\d{1,2}:\d{2}(:\d{2})?(\s*(AM|PM))?$/i,
-  /** Context: Splitting date parts by slash or dash. */
-  DATE_PARTS_SPLIT: /[-/]/,
-  /** Context: YYYY-MM date prefix matching. */
-  YEAR_MONTH_VALUE: /^\d{4}-\d{2}$/,
-  /** Context: Detecting youth Sunday School classes (starts with Course). */
-  YOUTH_COURSE_CLASS: /^course\b/i,
-  /** Context: Detecting Primary classes. */
-  PRIMARY_CLASSES: /^(valiant|ctr|sunbeam|nursery)\b/i,
-  /** Context: Detecting Young Women classes. */
-  YOUNG_WOMEN_CLASSES: /^(gatherers of light|messengers of hope|builders of faith|young women)\b/i,
-  /** Context: Detecting Aaronic Priesthood quorums. */
-  AARONIC_QUORUMS: /^(priests quorum|teachers quorum|deacons quorum|aaronic)\b/i,
-  /** Context: Detecting Elders Quorum class. */
-  ELDERS_QUORUM_CLASS: /^elders quorum\b/i,
-  /** Context: Detecting Relief Society class. */
-  RELIEF_SOCIETY_CLASS: /^relief society\b/i,
-  /** Context: Detecting Adult Sunday School class. */
-  ADULT_SUNDAY_SCHOOL_CLASS: /^adult sunday school\b/i,
-  /** Context: Matching Young Men visitor row labels. */
-  VISITOR_LABEL_YOUNG_MEN: /young\s*men/i,
-  /** Context: Matching Young Women visitor row labels. */
-  VISITOR_LABEL_YOUNG_WOMEN: /young\s*women/i,
-  /** Context: Matching Children visitor row labels. */
-  VISITOR_LABEL_CHILDREN: /children/i,
-  /** Context: Matching Women visitor row labels (also matches Young Women). */
-  VISITOR_LABEL_WOMEN: /women/i,
-  /** Context: Matching Men visitor row labels (also matches Women and Young Men). */
-  VISITOR_LABEL_MEN: /men/i,
-} as const;
+export { Regex } from './regex';
 
 /* ==========================================================================
    DOM

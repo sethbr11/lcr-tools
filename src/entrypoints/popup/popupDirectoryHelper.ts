@@ -1,6 +1,6 @@
 import { browser } from 'wxt/browser';
 import { ACTION_REGISTRY, getActionsForUrl } from '@/actions/registry';
-import { escapeHtml } from '@/utils';
+import { escapeHtml, setHtml } from '@/utils';
 import { Dom, Types } from '@/types';
 import { executeAction } from './popupActionHelper';
 
@@ -76,14 +76,17 @@ export function createActionCard(
         link.target = '_blank';
         link.rel = 'noopener noreferrer';
         link.title = `Open ${page.name}`;
-        link.innerHTML = `
+        setHtml(
+          link,
+          `
           ${escapeHtml(page.name)}
           <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path>
             <polyline points="15 3 21 3 21 9"></polyline>
             <line x1="10" y1="14" x2="21" y2="3"></line>
           </svg>
-        `;
+        `
+        );
         link.addEventListener('click', (e) => {
           e.preventDefault();
           browser.tabs.create({ url: page.url! }).catch(() => {
@@ -107,7 +110,10 @@ export function createActionCard(
   if (action.directoryExcluded && action.directoryExcluded.length > 0) {
     const excludedSection = document.createElement('p');
     excludedSection.className = 'action-card-pages action-card-excluded';
-    excludedSection.innerHTML = `<em>Not available on: ${escapeHtml(action.directoryExcluded.join(', '))}</em>`;
+    setHtml(
+      excludedSection,
+      `<em>Not available on: ${escapeHtml(action.directoryExcluded.join(', '))}</em>`
+    );
     card.appendChild(excludedSection);
   }
 
@@ -168,19 +174,22 @@ export function filterAndRenderDirectory(
     return matchesCategory && matchesQuery;
   });
 
-  listContainer.innerHTML = '';
+  listContainer.replaceChildren();
 
   if (filtered.length === 0) {
     const noResults = document.createElement('div');
     noResults.className = 'no-results-message';
-    noResults.innerHTML = `
+    setHtml(
+      noResults,
+      `
       <svg xmlns="http://www.w3.org/2000/svg" width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
         <circle cx="11" cy="11" r="8"></circle>
         <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
       </svg>
       <h3>No actions found</h3>
       <p>Try adjusting your search or filter criteria</p>
-    `;
+    `
+    );
     listContainer.appendChild(noResults);
     return;
   }

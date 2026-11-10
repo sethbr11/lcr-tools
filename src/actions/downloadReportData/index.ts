@@ -1,5 +1,5 @@
 // prettier-ignore
-import { generateFilename, getPageTables, hideLoadingIndicator, isAborted,
+import { generateFilename, getPageTables, hideLoadingIndicator, isAborted, normalizeFilenamePart,
   promptTableSelection, resetAborted, showToast } from './utils';
 import { exportCsvPayloads, extractPaginatedTableData } from './downloadDataHelper';
 import { Regex, Types } from './types';
@@ -44,9 +44,10 @@ export async function runDownloadReportData(): Promise<
 
       const rows = await extractPaginatedTableData(table);
       if (rows.length > 0) {
+        // ZIP entries use the same cleanup as downloads, so a '/' in a title can't create folders
         const filename =
           selectedTables.length > 1
-            ? `${table.name.replace(Regex.MULTIPLE_SPACES, '_').toLowerCase()}.csv`
+            ? `${normalizeFilenamePart(table.name) || 'table'}.csv`
             : generateFilename('csv', table.name.replace(Regex.MULTIPLE_SPACES, '_'));
 
         csvFiles.push({

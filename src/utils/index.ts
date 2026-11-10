@@ -11,6 +11,7 @@ export * from './navigationUtils';
 export * from './security/cryptoUtils';
 export * from './security/apiKeyStorageUtils';
 export * from './security/storageUtils';
+export * from './security/pinSetupUtils';
 export * from './passiveActionUtils';
 
 export * from './church/directoryPageUtils';
@@ -22,5 +23,6 @@ export * from './ui/maintenanceUtils';
 export * from './ui/modalUtils';
 export * from './ui/templates';
 export * from './ui/uiUtils';
+export * from './ui/htmlUtils';
 
 export * from './table/tableUtils';

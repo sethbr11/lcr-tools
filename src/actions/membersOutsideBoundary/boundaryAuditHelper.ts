@@ -4,7 +4,7 @@ import {
   downloadCsv,
   isPointInsidePolygon,
   resolveCurrentUnitNumber,
-  showToast,
+  toCSV,
 } from './utils';
 import { Constants, Dom, Regex, Types } from './types';
 import { Templates } from './templates';
@@ -65,30 +65,12 @@ export async function extractDirectoryHouseholds(): Promise<Types.AuditedHouseho
         }
       }
     } catch {
-      // Fall through to DOM extraction fallback
+      // Network or parse failure: reported to the user as "could not load" by the caller
     }
   }
 
-  // 3. Fallback: Locate household records in DOM (for mock testing environments)
-  const list: Types.AuditedHousehold[] = [];
-  const rows = document.querySelectorAll('div.household-item, tr[data-household-id]');
-
-  rows.forEach((row, index) => {
-    const nameEl = row.querySelector('.household-name, .member-name');
-    const addressEl = row.querySelector('.household-address, .member-address');
-    const name = (nameEl?.textContent || `Household ${index + 1}`).trim();
-    const address = (addressEl?.textContent || '').trim();
-
-    list.push({
-      name,
-      address,
-      coordinates: { lat: 0, lng: 0 },
-      isInside: true,
-      status: 'inside',
-    });
-  });
-
-  return list;
+  // No fallback: guessing "inside" for households we couldn't locate would make the audit lie
+  return [];
 }
 
 /**
@@ -180,14 +162,9 @@ async function exportAuditCsv(
   households: Types.AuditedHousehold[],
   filter: string = 'all'
 ): Promise<void> {
-  const confirmed = await confirmDataStewardshipDownload();
-  if (!confirmed) {
-    showToast(Constants.STEWARDSHIP_CANCELLED_TOAST, { type: 'info' });
-    return;
-  }
+  if (!(await confirmDataStewardshipDownload())) return;
 
-  const headers = ['Name', 'Status', 'Address', 'Latitude', 'Longitude'];
-  const rows: string[][] = [headers];
+  const rows: string[][] = [];
 
   for (const h of households) {
     const statusLabel =
@@ -201,18 +178,8 @@ async function exportAuditCsv(
     ]);
   }
 
-  const csv = rows
-    .map((r) =>
-      r
-        .map((cell) => {
-          let val = cell;
-          if (Regex.FORMULA_PREFIX.test(val)) val = `'${val}`;
-          return `"${val.replace(Regex.CSV_DOUBLE_QUOTE, '""')}"`;
-        })
-        .join(',')
-    )
-    .join('\r\n');
+  const csv = toCSV([...Constants.AUDIT_CSV_HEADERS], rows);
 
   const suffix = filter === 'all' ? '' : `_${filter}`;
-  downloadCsv(csv, `boundary_audit_results${suffix}.csv`);
+  downloadCsv(csv, `${Constants.AUDIT_CSV_FILENAME_STEM}${suffix}.csv`);
 }

@@ -1,44 +1,101 @@
-import * as Utils from '../utils';
-import { Constants, Dom, Types } from '../types';
+import { Constants, Dom, Regex, Types } from '../types';
+
+/** Sunday and class the run is marking; null until sync confirms them. */
+let attendanceTarget: Types.AttendanceTarget | null = null;
 
 /* ==========================================================================
    EXPORTED FUNCTIONS
    ========================================================================== */
 
 /**
- * Marks attendance for a specific ward member row in LCR.
- * Scrolls the member row into view without a settle sleep, then waits for button state.
+ * Records the confirmed Sunday and class so attendance buttons can be matched by their aria-label.
+ *
+ * @param date - ISO target Sunday date (YYYY-MM-DD), or null to clear the target.
+ * @param className - Display name of the selected class or quorum.
+ */
+export function setAttendanceTarget(date: string | null, className: string | null = null): void {
+  attendanceTarget = date ? { date, className } : null;
+}
+
+/**
+ * Finds the attendance button in a member row for the target Sunday and class.
+ * LCR labels each button "Last, First, YYYY-MM-DD, Class Name", and a row can hold one button per
+ * meeting, so the button is chosen by date (then class) rather than taking the first one.
+ *
+ * @param row - Ward member table row.
+ * @returns The matching button, or null when none (or more than one) matches.
+ */
+export function findAttendanceButton(
+  row: HTMLElement,
+  expectedName?: string
+): HTMLButtonElement | null {
+  const buttons = Array.from(row.querySelectorAll<HTMLButtonElement>(Dom.ATTENDANCE_BUTTON));
+  const allLabelled = buttons
+    .map((btn) => ({
+      btn,
+      match: (btn.getAttribute('aria-label') || '').match(Regex.ATTENDANCE_BUTTON_LABEL),
+    }))
+    .filter((entry): entry is Types.LabelledAttendanceButton => !!entry.match);
+  // The label starts with the member's name; never click a button labelled for someone else
+  const labelled = allLabelled.filter(
+    (entry) => !expectedName || labelNameMatches(entry, expectedName)
+  );
+  if (allLabelled.length > 0 && labelled.length === 0) return null;
+
+  // Legacy markup without dated labels: only safe when the row has a single button
+  if (!attendanceTarget || labelled.length === 0) return buttons.length === 1 ? buttons[0] : null;
+
+  const { date, className } = attendanceTarget;
+  const onDate = labelled.filter((entry) => entry.match[1] === date);
+  const wantedClass = (className || '').trim().toLowerCase();
+  const inClass = onDate.filter((entry) => entry.match[2].trim().toLowerCase() === wantedClass);
+  if (inClass.length === 1) return inClass[0].btn;
+  return onDate.length === 1 ? onDate[0].btn : null;
+}
+
+/**
+ * Clicks a member's attendance button without waiting for LCR to save, for fast batch marking.
+ * Callers confirm the result later with isMemberMarkedPresent.
  *
  * @param member - Target ward member structure.
- * @param shouldScroll - Whether to smoothly scroll to the member row before marking.
- * @returns MarkPresentOutcome of marked, already, or error.
+ * @returns 'clicked'; 'already' when the button shows present; 'busy' when it is still saving, so a
+ *   click would toggle it back off; or 'error' when the button can't be found.
  */
-export async function markMemberPresent(
-  member: Types.WardMember,
-  shouldScroll: boolean = true
-): Promise<Types.MarkPresentOutcome> {
-  if (!member.row || Utils.isAborted()) return 'error';
+export function clickAttendanceButton(member: Types.WardMember): Types.ClickAttendanceOutcome {
+  if (!member.row) return 'error';
+  const btn = findAttendanceButton(member.row, member.fullName);
+  if (!btn) return 'error';
+  if (isButtonPresent(btn)) return 'already';
+  // A button mid-save would be toggled back off by another click
+  if (isButtonBusy(btn)) return 'busy';
 
-  if (shouldScroll && typeof member.row.scrollIntoView === 'function') {
+  if (typeof member.row.scrollIntoView === 'function') {
     member.row.scrollIntoView({ behavior: 'smooth', block: 'center' });
   }
-
-  if (Utils.isAborted()) return 'error';
-
-  const btn = member.row.querySelector<HTMLButtonElement>(Dom.ATTENDANCE_BUTTON);
-  if (!btn) return 'error';
-
-  if (isButtonPresent(btn)) return 'already';
-
   btn.click();
+  return 'clicked';
+}
 
-  const updatedState = await waitForAttendanceButtonState(btn, true);
-  if (updatedState && !Utils.isAborted()) {
-    member.isPresent = true;
-    return 'marked';
-  }
+/**
+ * Reports whether a member's attendance button currently shows present and has finished saving.
+ *
+ * @param member - Target ward member structure.
+ * @returns True when present and idle, false otherwise (including when the button is missing).
+ */
+export function isMemberMarkedPresent(member: Types.WardMember): boolean {
+  const btn = member.row ? findAttendanceButton(member.row, member.fullName) : null;
+  return !!btn && !isButtonBusy(btn) && isButtonPresent(btn);
+}
 
-  return 'error';
+/**
+ * Reports whether a member's attendance button is still saving.
+ *
+ * @param member - Target ward member structure.
+ * @returns True when the button is disabled or showing a progress spinner.
+ */
+export function isMemberMarkBusy(member: Types.WardMember): boolean {
+  const btn = member.row ? findAttendanceButton(member.row, member.fullName) : null;
+  return !!btn && isButtonBusy(btn);
 }
 
 /**
@@ -75,14 +132,14 @@ export function isButtonPresent(btn: HTMLElement): boolean {
    HELPER FUNCTIONS
    ========================================================================== */
 
-/** Polls until the attendance button is idle and matches the expected present state. */
-async function waitForAttendanceButtonState(
-  btn: HTMLButtonElement,
-  expectPresent: boolean
-): Promise<boolean> {
-  return Utils.waitForCondition(
-    () => Utils.isAborted() || (!isButtonBusy(btn) && isButtonPresent(btn) === expectPresent),
-    Constants.MARK_PRESENT_TIMEOUT_MS,
-    Constants.MARK_PRESENT_POLL_MS
-  );
+/** True when the name before the date in a button's label is the expected member's name. */
+function labelNameMatches(entry: Types.LabelledAttendanceButton, expectedName: string): boolean {
+  const label = entry.btn.getAttribute('aria-label') || '';
+  const normalize = (text: string) =>
+    text
+      .toLowerCase()
+      .replace(Regex.NAME_PUNCTUATION, '')
+      .replace(Regex.MULTIPLE_SPACES, ' ')
+      .trim();
+  return normalize(label.slice(0, entry.match.index)) === normalize(expectedName);
 }

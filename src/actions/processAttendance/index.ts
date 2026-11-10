@@ -1,8 +1,9 @@
 import * as Utils from './utils';
-import { Types } from './types';
+import { Constants, Types } from './types';
 import * as Setup from './setup/setupHelper';
 import * as Sync from './lcr/syncHelper';
 import * as Roll from './lcr/rollHelper';
+import * as Mark from './lcr/markHelper';
 import * as ProcessMembers from './members/processMembersHelper';
 import * as Simulate from './members/simulateHelper';
 import * as ClassHelper from './setup/classHelper';
@@ -20,7 +21,7 @@ import * as Completion from './results/completionHelper';
  *   4. Wait for and scan the ward members roll.
  *   5. Auto-match and mark (or simulate) attendees against the ward roll.
  *   6. Present unmatched review modal (queue matches/visitors; Continue).
- *   7. Mark deferred matches alphabetically, then write visitor counts once.
+ *   7. Mark deferred matches alphabetically, then write visitor counts once (failures are reported, not fatal).
  *   8. Present completion modal (View Logs / Finish).
  *
  * @param overrideOptions - Optional pre-configured execution options.
@@ -30,6 +31,7 @@ export async function runProcessAttendance(
   overrideOptions?: Partial<Types.ProcessAttendanceOptions>
 ): Promise<Types.ActionResult<Types.ProcessAttendanceResult>> {
   Utils.resetAborted();
+  Mark.setAttendanceTarget(null);
 
   // Step 1: Verify LCR page setup
   if (!Sync.verifyLcrAttendanceSetup()) {
@@ -91,25 +93,45 @@ export async function runProcessAttendance(
       };
     };
 
-    // Step 3: Synchronize LCR state
-    Utils.showLoadingIndicator('Preparing LCR attendance roll...', 'Press ESC to cancel');
-    // prettier-ignore
-    const syncStatus = await Sync.synchronizeAttendancePage({ targetDate, targetClassValue, targetClassText }, logs);
-    if (syncStatus === 'aborted' || Utils.isAborted()) {
-      return showAbortCompletion(0, 0, attendees.length);
-    }
-
-    // Step 4: Wait for ward members roll to render
-    // prettier-ignore
-    Utils.showLoadingIndicator('Loading attendance roll...', 'Waiting for ward members (Press ESC to cancel)');
-    const wardMembers = await Roll.waitAndLoadWardMembers();
-    if (Utils.isAborted()) return showAbortCompletion(0, 0, attendees.length);
-
-    if (wardMembers.length === 0) {
-      Utils.hideLoadingIndicator();
+    // Steps 3–4: Synchronize LCR state and load the roll; nothing is written yet, so a slow
+    // page can be retried without re-pasting the roster.
+    let wardMembers: Types.WardMember[] = [];
+    for (;;) {
+      Utils.showLoadingIndicator('Preparing LCR attendance roll...', 'Press ESC to cancel');
       // prettier-ignore
-      Utils.showLcrMaintenanceModal('Process Attendance', 'No ward members could be discovered on the active roll. Table row or member card selectors may have changed.');
-      return { success: false, error: 'LCR setup mismatch - no members found' };
+      const syncStatus = await Sync.synchronizeAttendancePage({ targetDate, targetClassValue, targetClassText }, logs);
+      if (syncStatus.status === 'aborted' || Utils.isAborted()) {
+        return showAbortCompletion(0, 0, attendees.length);
+      }
+
+      let failure = syncStatus.status === 'failed' ? syncStatus.message : null;
+      if (!failure) {
+        Mark.setAttendanceTarget(targetDate, targetClassText);
+        // prettier-ignore
+        Utils.showLoadingIndicator('Loading attendance roll...', 'Waiting for ward members (Press ESC to cancel)');
+        wardMembers = await Roll.waitAndLoadWardMembers();
+        if (Utils.isAborted()) return showAbortCompletion(0, 0, attendees.length);
+        if (wardMembers.length === 0) failure = Constants.ROLL_EMPTY_FAILURE;
+      }
+      if (!failure) break;
+
+      Utils.hideLoadingIndicator();
+      const retry = await Utils.showConfirmationModal({
+        title: Constants.ROLL_RETRY_TITLE,
+        message: `${failure} ${Constants.ROLL_RETRY_MESSAGE_SUFFIX}`,
+        confirmText: Constants.ROLL_RETRY_CONFIRM,
+        cancelText: Constants.ROLL_RETRY_CANCEL,
+      });
+      if (!retry) {
+        Utils.showToast(Constants.ROLL_RETRY_CANCELLED_TOAST, { type: 'warning' });
+        return { success: false, error: failure };
+      }
+      Utils.pushAttendanceLog(logs, {
+        date: targetDate,
+        action: 'NAVIGATE',
+        target: 'Retry',
+        lcrUpdateStatus: `Retrying page setup after: ${failure}`,
+      });
     }
 
     // Step 5: Auto-match attendees against ward roll
@@ -180,6 +202,7 @@ export async function runProcessAttendance(
     alreadyMarked += deferred.alreadyMarked;
 
     let visitorsSaved = 0;
+    let visitorError: string | undefined;
     if (isSimulation) {
       Utils.showLoadingIndicator('Testing visitor input...', 'Enter, save, clear, verify');
       const visitorSim = await Simulate.simulateVisitorEntryAndRestore(targetDate);
@@ -208,14 +231,18 @@ export async function runProcessAttendance(
           review.visitorCounts,
           logs
         );
-        if (!visitorResult.success) {
-          Utils.hideLoadingIndicator();
-          Utils.showToast(visitorResult.error || 'Failed to save visitor counts', {
-            type: 'error',
+        if (visitorResult.success) {
+          visitorsSaved = totalVisitors;
+        } else {
+          visitorError = visitorResult.error || 'Visitor save failed';
+          Utils.pushAttendanceLog(logs, {
+            date: targetDate,
+            action: 'ERROR',
+            target: 'Visitor Counts',
+            level: 'ERROR',
+            lcrUpdateStatus: `Visitor counts were not saved: ${visitorError}`,
           });
-          return { success: false, error: visitorResult.error || 'Visitor save failed' };
         }
-        visitorsSaved = totalVisitors;
       }
     }
 
@@ -231,13 +258,15 @@ export async function runProcessAttendance(
       unmatchedRemaining,
       visitorsSaved,
       aborted: false,
+      visitorError,
     };
 
     // prettier-ignore
     await Completion.displayCompletionModal(completionMetrics, activeClassName, targetDate, logs, isSimulation);
 
     return {
-      success: true,
+      success: !visitorError,
+      error: visitorError,
       data: {
         total: attendees.length,
         marked: newlyMarked,

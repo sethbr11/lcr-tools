@@ -42,7 +42,7 @@ export function promptAttendanceSetup(
 
     let isSimulation = initialIsSimulation ?? false;
     const container = document.createElement('div');
-    container.innerHTML = getSetupModalHtml(classOptions, defaultDateStr, isSimulation);
+    Utils.setHtml(container, getSetupModalHtml(classOptions, defaultDateStr, isSimulation));
     const overlay = container.firstElementChild as HTMLElement;
     document.body.appendChild(overlay);
 
@@ -128,35 +128,26 @@ export function promptAttendanceSetup(
             .join('');
 
           // prettier-ignore
-          visitorSplitBox.innerHTML = getVisitorCalcSplitHtml(diff, rawHeadcount, attendeeCount, itemsHtml);
+          Utils.setHtml(visitorSplitBox, getVisitorCalcSplitHtml(diff, rawHeadcount, attendeeCount, itemsHtml));
 
           // Wire + / - buttons
-          visitorSplitBox.querySelectorAll<HTMLButtonElement>(Dom.CALC_DEC).forEach((btn) => {
-            btn.addEventListener('click', () => {
-              const cat = btn.dataset.cat as Types.VisitorCategory;
-              const input = visitorSplitBox.querySelector<HTMLInputElement>(
-                `input[data-cat="${cat}"]`
-              );
-              if (input) {
-                const val = Math.max(0, (parseInt(input.value, 10) || 0) - 1);
+          for (const [selector, delta] of [
+            [Dom.CALC_DEC, -1],
+            [Dom.CALC_INC, 1],
+          ] as const) {
+            visitorSplitBox.querySelectorAll<HTMLButtonElement>(selector).forEach((btn) => {
+              btn.addEventListener('click', () => {
+                const cat = btn.dataset.cat as Types.VisitorCategory;
+                const input = visitorSplitBox.querySelector<HTMLInputElement>(
+                  `input[data-cat="${cat}"]`
+                );
+                if (!input) return;
+                const val = Math.max(0, (parseInt(input.value, 10) || 0) + delta);
                 input.value = String(val);
                 visitorCounts[cat] = val;
-              }
+              });
             });
-          });
-          visitorSplitBox.querySelectorAll<HTMLButtonElement>(Dom.CALC_INC).forEach((btn) => {
-            btn.addEventListener('click', () => {
-              const cat = btn.dataset.cat as Types.VisitorCategory;
-              const input = visitorSplitBox.querySelector<HTMLInputElement>(
-                `input[data-cat="${cat}"]`
-              );
-              if (input) {
-                const val = (parseInt(input.value, 10) || 0) + 1;
-                input.value = String(val);
-                visitorCounts[cat] = val;
-              }
-            });
-          });
+          }
           visitorSplitBox.querySelectorAll<HTMLInputElement>(Dom.CALC_VAL).forEach((input) => {
             input.addEventListener('input', () => {
               const cat = input.dataset.cat as Types.VisitorCategory;
@@ -167,13 +158,13 @@ export function promptAttendanceSetup(
           const singleCat = categories[0] || 'Men';
           visitorCounts = { [singleCat]: diff };
           // prettier-ignore
-          visitorSplitBox.innerHTML = getVisitorCalcSingleHtml(diff, rawHeadcount, attendeeCount, singleCat);
+          Utils.setHtml(visitorSplitBox, getVisitorCalcSingleHtml(diff, rawHeadcount, attendeeCount, singleCat));
         }
         visitorSplitBox.style.display = 'flex';
       } else if (rawHeadcount > 0 && rawHeadcount <= attendeeCount) {
         visitorCounts = {};
         categories.forEach((c) => (visitorCounts[c] = 0));
-        visitorSplitBox.innerHTML = getVisitorCalcZeroHtml(attendeeCount, rawHeadcount);
+        Utils.setHtml(visitorSplitBox, getVisitorCalcZeroHtml(attendeeCount, rawHeadcount));
         visitorSplitBox.style.display = 'flex';
       } else {
         visitorCounts = {};

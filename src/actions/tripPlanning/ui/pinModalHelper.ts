@@ -1,6 +1,9 @@
 import { browser } from 'wxt/browser';
 import {
+  establishSecurityPin,
   getStoredApiKeys,
+  hasSecurityPin,
+  setHtml,
   setUnlockedPin,
   showToast,
   validatePinFormat,
@@ -13,113 +16,165 @@ import { Constants, Dom, Types } from '../types';
    ========================================================================== */
 
 /**
- * Displays the security PIN modal to unlock and autofill stored API keys in Trip Planner.
+ * Unlocks stored API keys for autofill, creating a PIN first when none exists (which also
+ * encrypts any keys saved before PINs were required).
  *
- * @param onUnlocked - Callback invoked with decrypted API keys after successful PIN verification.
+ * @param onUnlocked - Callback invoked with decrypted API keys after the PIN is unlocked.
  */
 export function showTripPinModal(
   onUnlocked: (keys: Types.StoredApiKeys) => Promise<void> | void
 ): void {
-  document.getElementById(Dom.PIN_MODAL_OVERLAY_ID)?.remove();
+  void (async () => {
+    const mode: Types.TripPinMode = (await hasSecurityPin()) ? 'unlock' : 'setup';
+    if (!(await requestTripPin(mode))) return;
+    await onUnlocked(await getStoredApiKeys());
+    showToast(Constants.TRIP_PIN_MODAL_SUCCESS, { type: 'success' });
+  })();
+}
 
-  const overlay = document.createElement('div');
-  overlay.id = Dom.PIN_MODAL_OVERLAY_ID;
-  overlay.className = 'trip-modal-backdrop';
+/**
+ * Shows the PIN dialog for one purpose and resolves once the user finishes or cancels.
+ * 'unlock' and 'save' unlock the session; 'setup' creates a PIN (with confirmation) and unlocks;
+ * 'verify' only checks the PIN (used before revealing a saved key) without other side effects.
+ *
+ * @param mode - Why the PIN is being requested.
+ * @returns True when the PIN was accepted (or created), false when cancelled.
+ */
+export function requestTripPin(mode: Types.TripPinMode): Promise<boolean> {
+  return new Promise((resolve) => {
+    document.getElementById(Dom.PIN_MODAL_OVERLAY_ID)?.remove();
+    const copy = getModeCopy(mode);
+    const overlay = document.createElement('div');
+    overlay.id = Dom.PIN_MODAL_OVERLAY_ID;
+    overlay.className = Dom.TRIP_MODAL_BACKDROP_CLASS;
+    setHtml(overlay, buildPinModalHtml(copy, mode === 'setup'));
+    document.body.appendChild(overlay);
 
-  overlay.innerHTML = `
-    <div class="trip-modal-card trip-pin-card">
-      <div class="trip-modal-header">
-        <h2 class="trip-modal-title">${Constants.TRIP_PIN_MODAL_TITLE}</h2>
-        <button type="button" class="trip-close-btn" id="${Dom.PIN_MODAL_CLOSE_ID}">&times;</button>
-      </div>
-      <div class="trip-modal-body">
-        <p class="trip-pin-desc">${Constants.TRIP_PIN_MODAL_DESC}</p>
-        <div id="${Dom.PIN_MODAL_STATUS_ID}" class="status-banner error" style="display: none;"></div>
-        <div class="trip-pin-input-group">
-          <label for="${Dom.PIN_MODAL_INPUT_ID}">Security PIN:</label>
-          <input
-            type="password"
-            id="${Dom.PIN_MODAL_INPUT_ID}"
-            class="trip-pin-input"
-            maxlength="${Constants.PIN_MAX_LENGTH}"
-            placeholder="••••"
-            autocomplete="off"
-          />
-        </div>
-      </div>
-      <div class="trip-modal-footer">
-        <button type="button" class="lcr-tools-btn lcr-tools-btn-tertiary" id="${Dom.PIN_MODAL_CANCEL_ID}" style="width: auto; margin: 0;">Cancel</button>
-        <button type="button" class="lcr-tools-btn lcr-tools-btn-primary" id="${Dom.PIN_MODAL_SUBMIT_ID}" style="width: auto; margin: 0;">${Constants.TRIP_PIN_MODAL_SUBMIT}</button>
-      </div>
-    </div>
-  `;
+    const input = document.getElementById(Dom.PIN_MODAL_INPUT_ID) as HTMLInputElement | null;
+    const confirmInput = document.getElementById(
+      Dom.PIN_MODAL_CONFIRM_INPUT_ID
+    ) as HTMLInputElement | null;
+    const statusBanner = document.getElementById(Dom.PIN_MODAL_STATUS_ID);
 
-  document.body.appendChild(overlay);
+    const finish = (accepted: boolean): void => {
+      document.removeEventListener('keydown', handleKeyDown);
+      overlay.remove();
+      resolve(accepted);
+    };
+    const handleKeyDown = (e: KeyboardEvent): void => {
+      if (e.key === 'Escape') finish(false);
+      if (e.key === 'Enter') void handleSubmit();
+    };
+    const fail = (message: string, field: HTMLInputElement | null): void => {
+      showPinError(statusBanner, message);
+      field?.focus();
+    };
 
-  const input = document.getElementById(Dom.PIN_MODAL_INPUT_ID) as HTMLInputElement | null;
-  const statusBanner = document.getElementById(Dom.PIN_MODAL_STATUS_ID);
-  const submitBtn = document.getElementById(Dom.PIN_MODAL_SUBMIT_ID) as HTMLButtonElement | null;
-  const closeBtn = document.getElementById(Dom.PIN_MODAL_CLOSE_ID) as HTMLButtonElement | null;
-  const cancelBtn = document.getElementById(Dom.PIN_MODAL_CANCEL_ID) as HTMLButtonElement | null;
-
-  const closeModal = (): void => {
-    document.removeEventListener('keydown', handleKeyDown);
-    overlay.remove();
-  };
-
-  const handleKeyDown = (e: KeyboardEvent): void => {
-    if (e.key === 'Escape') closeModal();
-    if (e.key === 'Enter') void handleSubmit();
-  };
-
-  const handleSubmit = async (): Promise<void> => {
-    const pin = (input?.value || '').trim();
-
-    if (!validatePinFormat(pin)) {
-      showPinError(statusBanner, Constants.PIN_INVALID_LENGTH);
-      input?.focus();
-      return;
-    }
-
-    try {
-      const res = browser?.storage?.local
-        ? await browser.storage.local.get(Constants.PIN_STORAGE_KEY)
-        : {};
-      const sentinel = res[Constants.PIN_STORAGE_KEY] as Types.EncryptedPayload;
-      const valid = sentinel ? await verifyPin(pin, sentinel) : false;
-
-      if (!valid) {
-        showPinError(statusBanner, Constants.PIN_INCORRECT);
-        input?.focus();
-        return;
+    const handleSubmit = async (): Promise<void> => {
+      const pin = (input?.value || '').trim();
+      if (!validatePinFormat(pin)) return fail(Constants.PIN_INVALID_LENGTH, input);
+      try {
+        if (mode === 'setup') {
+          if (pin !== (confirmInput?.value || '').trim()) {
+            return fail(Constants.PIN_MISMATCH, confirmInput);
+          }
+          await establishSecurityPin(pin);
+          return finish(true);
+        }
+        if (!(await isCorrectPin(pin))) return fail(Constants.PIN_INCORRECT, input);
+        if (mode !== 'verify') await setUnlockedPin(pin);
+        finish(true);
+      } catch (error) {
+        console.error('LCR Tools: PIN verification error:', error);
+        fail(Constants.PIN_INCORRECT, input);
       }
+    };
 
-      await setUnlockedPin(pin);
-      const keys = await getStoredApiKeys();
-      closeModal();
-      await onUnlocked(keys);
-      showToast(Constants.TRIP_PIN_MODAL_SUCCESS, { type: 'success' });
-    } catch (error) {
-      console.error('LCR Tools: PIN verification error:', error);
-      showPinError(statusBanner, Constants.PIN_INCORRECT);
-      input?.focus();
-    }
-  };
-
-  submitBtn?.addEventListener('click', () => void handleSubmit());
-  closeBtn?.addEventListener('click', closeModal);
-  cancelBtn?.addEventListener('click', closeModal);
-  overlay.addEventListener('click', (e) => {
-    if (e.target === overlay) closeModal();
+    document.getElementById(Dom.PIN_MODAL_SUBMIT_ID)?.addEventListener('click', () => {
+      void handleSubmit();
+    });
+    document.getElementById(Dom.PIN_MODAL_CLOSE_ID)?.addEventListener('click', () => finish(false));
+    document
+      .getElementById(Dom.PIN_MODAL_CANCEL_ID)
+      ?.addEventListener('click', () => finish(false));
+    overlay.addEventListener('click', (e) => {
+      if (e.target === overlay) finish(false);
+    });
+    document.addEventListener('keydown', handleKeyDown);
+    input?.focus();
   });
-  document.addEventListener('keydown', handleKeyDown);
-
-  input?.focus();
 }
 
 /* ==========================================================================
    HELPER FUNCTIONS
    ========================================================================== */
+
+/** Title, description, and submit label for each PIN dialog purpose. */
+function getModeCopy(mode: Types.TripPinMode): Types.TripPinCopy {
+  switch (mode) {
+    case 'setup':
+      return {
+        title: Constants.TRIP_PIN_SETUP_TITLE,
+        desc: Constants.TRIP_PIN_SETUP_DESC,
+        submit: Constants.TRIP_PIN_SETUP_SUBMIT,
+      };
+    case 'verify':
+      return {
+        title: Constants.TRIP_PIN_VERIFY_TITLE,
+        desc: Constants.TRIP_PIN_VERIFY_DESC,
+        submit: Constants.TRIP_PIN_VERIFY_SUBMIT,
+      };
+    case 'save':
+      return {
+        title: Constants.TRIP_PIN_SAVE_TITLE,
+        desc: Constants.TRIP_PIN_SAVE_DESC,
+        submit: Constants.TRIP_PIN_SAVE_SUBMIT,
+      };
+    default:
+      return {
+        title: Constants.TRIP_PIN_MODAL_TITLE,
+        desc: Constants.TRIP_PIN_MODAL_DESC,
+        submit: Constants.TRIP_PIN_MODAL_SUBMIT,
+      };
+  }
+}
+
+/** Builds the PIN dialog markup, adding a confirmation field when creating a PIN. */
+function buildPinModalHtml(copy: Types.TripPinCopy, withConfirm: boolean): string {
+  const pinField = (id: string, label: string) => `
+        <div class="${Dom.PIN_INPUT_GROUP_CLASS}">
+          <label for="${id}">${label}</label>
+          <input type="password" id="${id}" class="${Dom.PIN_INPUT_CLASS}" inputmode="numeric"
+            maxlength="${Constants.PIN_MAX_LENGTH}" placeholder="••••" autocomplete="off" />
+        </div>`;
+  return `
+    <div class="${Dom.TRIP_MODAL_CARD_CLASS} ${Dom.PIN_CARD_CLASS}">
+      <div class="${Dom.TRIP_MODAL_HEADER_CLASS}">
+        <h2 class="${Dom.TRIP_MODAL_TITLE_CLASS}" id="${Dom.PIN_MODAL_TITLE_ID}">${copy.title}</h2>
+        <button type="button" class="${Dom.TRIP_MODAL_CLOSE_CLASS}" id="${Dom.PIN_MODAL_CLOSE_ID}">&times;</button>
+      </div>
+      <div class="${Dom.TRIP_MODAL_BODY_CLASS}">
+        <p class="${Dom.PIN_DESC_CLASS}">${copy.desc}</p>
+        <div id="${Dom.PIN_MODAL_STATUS_ID}" class="${Dom.PIN_STATUS_CLASS}" style="display: none;"></div>
+        ${pinField(Dom.PIN_MODAL_INPUT_ID, 'Security PIN:')}
+        ${withConfirm ? pinField(Dom.PIN_MODAL_CONFIRM_INPUT_ID, Constants.TRIP_PIN_CONFIRM_LABEL) : ''}
+      </div>
+      <div class="${Dom.TRIP_MODAL_FOOTER_CLASS}">
+        <button type="button" class="${Dom.TRIP_BTN_CLASS} ${Dom.TRIP_BTN_TERTIARY_CLASS}" id="${Dom.PIN_MODAL_CANCEL_ID}" style="${Dom.TRIP_MODAL_BTN_STYLE}">Cancel</button>
+        <button type="button" class="${Dom.TRIP_BTN_CLASS} ${Dom.TRIP_BTN_PRIMARY_CLASS}" id="${Dom.PIN_MODAL_SUBMIT_ID}" style="${Dom.TRIP_MODAL_BTN_STYLE}">${copy.submit}</button>
+      </div>
+    </div>
+  `;
+}
+
+/** Checks a PIN against the stored verification sentinel. */
+async function isCorrectPin(pin: string): Promise<boolean> {
+  const res = browser?.storage?.local
+    ? await browser.storage.local.get(Constants.PIN_STORAGE_KEY)
+    : {};
+  const sentinel = res[Constants.PIN_STORAGE_KEY] as Types.EncryptedPayload | undefined;
+  return sentinel ? verifyPin(pin, sentinel) : false;
+}
 
 /** Displays an error message banner on the Trip Planner PIN modal. */
 function showPinError(element: HTMLElement | null, message: string): void {

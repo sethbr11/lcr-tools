@@ -5,7 +5,7 @@
 export * from '@/utils';
 import { parseDate, parseMonthDay } from '@/utils/coreUtils';
 // prettier-ignore
-import { getAttendanceColumnOptions, getCellValue, getRelevantHeaderCells,
+import { getAttendanceColumnOptions, getCellValue, getColumnCells, getRelevantHeaderCells,
   isAttendanceColumn } from '@/utils/table/tableUtils';
 import { Constants, Regex, Types } from './types';
 
@@ -58,17 +58,12 @@ export function getColumnFilterOptions(table: HTMLTableElement, columnIndex: num
 
   const values = new Set<string>();
   let hasEmptyCell = false;
-  const rows = Array.from(table.querySelectorAll('tbody tr'));
-
-  for (const row of rows) {
-    const cells = Array.from(row.querySelectorAll('td'));
-    if (cells[columnIndex]) {
-      const val = getCellValue(cells[columnIndex] as HTMLElement).trim();
-      if (val && val !== '—' && val !== '-') {
-        values.add(val);
-      } else {
-        hasEmptyCell = true;
-      }
+  for (const cell of getColumnCells(table, columnIndex)) {
+    const val = getCellValue(cell).trim();
+    if (val && val !== '—' && val !== '-') {
+      values.add(val);
+    } else {
+      hasEmptyCell = true;
     }
   }
 
@@ -144,18 +139,10 @@ export function detectDefaultMonth(
   columnIndex: number
 ): number | undefined {
   // 1. Check if all rows in the table belong to a single calendar month
-  const rows = Array.from(table.querySelectorAll('tbody tr'));
   const months = new Set<number>();
-
-  for (const row of rows) {
-    const cells = Array.from(row.querySelectorAll('td'));
-    const cell = cells[columnIndex];
-    if (!cell) continue;
-    const val = getCellValue(cell as HTMLElement).trim();
-    const md = parseMonthDay(val);
-    if (md) {
-      months.add(md.month);
-    }
+  for (const cell of getColumnCells(table, columnIndex)) {
+    const md = parseMonthDay(getCellValue(cell).trim());
+    if (md) months.add(md.month);
   }
 
   if (months.size === 1) {
@@ -181,7 +168,31 @@ export function detectDefaultMonth(
 }
 
 /**
- * Evaluates whether a table contains at least one filterable column or vacancy rule.
+ * Checks whether a column should get no filter control: too many distinct values for a
+ * dropdown, or no options at all (range-based columns are always kept).
+ *
+ * @param colName - Column header text.
+ * @param filterType - Inferred filter type for the column.
+ * @param options - Distinct values found in the column.
+ * @returns True when the column should be skipped.
+ */
+export function shouldSkipColumn(
+  colName: string,
+  filterType: Types.FilterType,
+  options: string[]
+): boolean {
+  const isRangeBased =
+    filterType === 'number' || filterType === 'date' || filterType === 'month-day';
+  const maxAllowedValues = isCategoricalColumn(colName)
+    ? Constants.MAX_CATEGORY_DROPDOWN_VALUES
+    : Constants.MAX_DROPDOWN_UNIQUE_VALUES;
+
+  if (!isRangeBased && options.length > maxAllowedValues) return true;
+  return options.length === 0 && !isRangeBased;
+}
+
+/**
+ * Checks whether a table has at least one column worth filtering or vacant calling rows.
  *
  * @param table - HTML table element to inspect.
  * @returns True if the table has filterable columns or vacant calling rows.
@@ -199,16 +210,7 @@ export function isTableFilterable(table: HTMLTableElement): boolean {
 
     const options = getColumnFilterOptions(table, indices[i]);
     const filterType = inferColumnFilterType(colName, options, table, indices[i]);
-    const isRangeBased =
-      filterType === 'number' || filterType === 'date' || filterType === 'month-day';
-    const maxAllowedValues = isCategoricalColumn(colName)
-      ? Constants.MAX_CATEGORY_DROPDOWN_VALUES
-      : Constants.MAX_DROPDOWN_UNIQUE_VALUES;
-
-    if (!isRangeBased && options.length > maxAllowedValues) continue;
-    if (options.length === 0 && !isRangeBased) continue;
-
-    return true;
+    if (!shouldSkipColumn(colName, filterType, options)) return true;
   }
 
   return false;

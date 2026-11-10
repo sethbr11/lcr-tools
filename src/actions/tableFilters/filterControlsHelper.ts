@@ -5,7 +5,7 @@ import {
   getRelevantHeaderCells,
   getTableDisplayName,
   inferColumnFilterType,
-  isCategoricalColumn,
+  shouldSkipColumn,
   isPersonalColumn,
 } from './utils';
 import { Constants, Dom, Regex, Types } from './types';
@@ -195,23 +195,6 @@ function normalizeFilterOptions(options: string[], filterType: Types.FilterType)
   } else {
     options.sort();
   }
-}
-
-/** Checks whether a column exceeds dropdown thresholds or lacks options. */
-function shouldSkipColumn(
-  colName: string,
-  filterType: Types.FilterType,
-  options: string[]
-): boolean {
-  const isRangeBased =
-    filterType === 'number' || filterType === 'date' || filterType === 'month-day';
-  const maxAllowedValues = isCategoricalColumn(colName)
-    ? Constants.MAX_CATEGORY_DROPDOWN_VALUES
-    : Constants.MAX_DROPDOWN_UNIQUE_VALUES;
-
-  if (!isRangeBased && options.length > maxAllowedValues) return true;
-  if (options.length === 0 && !isRangeBased) return true;
-  return false;
 }
 
 /** Creates a FilterRule data structure with optional saved values. */

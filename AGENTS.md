@@ -7,7 +7,6 @@ This document serves as the single source of truth for AI agents and developers 
 ## 1. Project Overview & Tech Stack
 
 - **Location**: `extension/` (cross-browser extension workspace).
-- **Legacy Reference**: `chrome/` (retained for reference; do not develop in `chrome/`).
 - **Framework**: **WXT** (`v0.21.x`) with **Vite** bundler for unified cross-browser output (`Chrome MV3`, `Firefox MV2`, `Safari MV2`).
 - **Language**: **TypeScript** (Strict mode with `noImplicitAny`, `strictNullChecks`, `noUnusedLocals`, `noUnusedParameters`).
 - **Test Runner**: **Vitest** with JSDOM and `@testing-library/dom`.
@@ -27,6 +26,8 @@ extension/
 ├── .gitignore                # Ignored build outputs and temporary files
 ├── src/
 │   ├── env.d.ts              # Ambient types (Vite client, CSS imports)
+│   ├── styles/
+│   │   └── lightTheme.css    # Shared light-only theme for extension pages (Safari dark-mode controls)
 │   ├── types/
 │   │   └── index.ts          # Shared global Types, Constants, Regex, and Dom
 │   ├── utils/                # Shared utilities across all actions
@@ -46,6 +47,9 @@ extension/
 │   │   │   ├── <helper>.ts   # Domain-specific logic decomposed into separate files
 │   │   │   ├── templates.ts  # HTML template strings (if action renders UI)
 │   │   │   ├── types.ts      # Action-specific Types, Constants, Regex, Dom
+│   │   │   ├── constants.ts  # (optional) Constants split out of types.ts when it nears 400 lines
+│   │   │   ├── regex.ts      # (optional) Regex split out of types.ts
+│   │   │   ├── dom.ts        # (optional) Dom split out of types.ts
 │   │   │   └── utils.ts      # Re-exports @/utils + action-specific utilities
 │   │   └── registry.ts       # Central action metadata registry and URL matching
 │   └── entrypoints/          # WXT entrypoint targets
@@ -53,6 +57,7 @@ extension/
 │       ├── trip-planning/    # Dedicated Leaflet trip planner web app (HTML, TS, CSS)
 │       ├── directory-audit.content.ts # Content script for pending boundary audits
 │       ├── passive-actions.content.ts # Content script for passive automated actions
+│       ├── dev-dom-anonymizer.ts # Dev-only DOM anonymizer (excluded from production builds)
 │       └── action-*.ts       # 4-line unlisted script launchers for tab injection
 └── tests/                    # Vitest functional test suites
     ├── setup.ts              # JSDOM & WebExtension global mocks
@@ -93,6 +98,7 @@ Every action directory **must** adhere to this pattern:
      - `export const Regex = { ...Base.Regex, ... } as const;`
      - `export const Dom = { ...Base.Dom, ... } as const;` (Strictly HTML/DOM elements: DOM element IDs, CSS classes, query selectors, CSS styles like `z-index`, and data attributes).
    - Every type, interface, property, constant, DOM identifier, and regex **must have its own individual, meaningful one-line JSDoc comment** (`/** ... */`). Group comments spanning multiple properties or constants are strictly prohibited.
+   - When `types.ts` would exceed 400 lines, move `Constants`, `Regex`, or `Dom` into sibling `constants.ts`, `regex.ts`, or `dom.ts` files and re-export them from `types.ts` (`export { Constants } from './constants';`). Consumers still import everything from `./types`.
 
 3. **`utils.ts`**:
    - Re-exports all global utilities: `export * from '@/utils';`.

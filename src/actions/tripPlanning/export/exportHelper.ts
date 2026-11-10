@@ -1,4 +1,4 @@
-import { confirmDataStewardshipDownload, downloadCsv, showToast, toCSV } from '../utils';
+import { confirmDataStewardshipDownload, downloadCsv, toCSV } from '../utils';
 import { Constants, Types } from '../types';
 import { formatCleanAddress } from '../geocoding/addressHelper';
 import { getTripState, logTripStatus } from '../ui/stateHelper';
@@ -13,11 +13,7 @@ import { getTripState, logTripStatus } from '../ui/stateHelper';
  * @returns True when the dialog was handled, even if the user cancelled.
  */
 export async function exportTripCsv(): Promise<boolean> {
-  const confirmed = await confirmDataStewardshipDownload();
-  if (!confirmed) {
-    showToast(Constants.STEWARDSHIP_CANCELLED_TOAST, { type: 'info' });
-    return true;
-  }
+  if (!(await confirmDataStewardshipDownload())) return true;
 
   const csv = buildTripCsv();
   downloadCsv(csv, Constants.CSV_FILENAME);
@@ -61,8 +57,8 @@ export function buildTripCsv(): string {
    HELPER FUNCTIONS
    ========================================================================== */
 
-/** Resolves original LCR headers, falling back to Name/Address. */
-function resolveBaseHeaders(state: Types.TripPlannerState): string[] {
+/** Resolves original LCR headers, falling back to Name/Address. Shared with the PDF export. */
+export function resolveBaseHeaders(state: Types.TripPlannerState): string[] {
   if (state.originalHeaders.length > 0) return [...state.originalHeaders];
   const sources: Array<Array<{ columns?: Record<string, string> }>> = [
     state.records,
@@ -148,8 +144,8 @@ function rowFromMember(
   ];
 }
 
-/** Copies original LCR column values onto a dictionary keyed by header. */
-function buildBaseRow(
+/** Copies original LCR column values onto a dictionary keyed by header. Shared with the PDF export. */
+export function buildBaseRow(
   record: Types.TripPlanningMember,
   baseHeaders: string[]
 ): Record<string, string> {

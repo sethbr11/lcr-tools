@@ -1,4 +1,4 @@
-import { escapeHtml } from '../utils';
+import { escapeHtml, setHtml } from '../utils';
 import { Constants, Dom, Types } from '../types';
 import { geocodeAddressMulti } from '../geocoding/geocodingHelper';
 import { drawMarkers, enableMapClickToPin } from './mapHelper';
@@ -34,7 +34,9 @@ export function displayFailedGeocodes(
     const item = document.createElement('div');
     item.className = Dom.FAILURE_ITEM_CLASS;
     item.id = `failure-item-${index}`;
-    item.innerHTML = `
+    setHtml(
+      item,
+      `
       <div class="${Dom.FAILURE_NAME_CLASS}">${escapeHtml(failure.name)}</div>
       <div class="${Dom.FAILURE_REASON_CLASS}">${escapeHtml(failure.reason || 'Not found')}</div>
       <input type="text" class="${Dom.FAILURE_ADDRESS_INPUT_CLASS}" id="fix-addr-${index}" value="${escapeHtml(failure.address || '')}">
@@ -46,7 +48,8 @@ export function displayFailedGeocodes(
         <button type="button" id="pick-map-btn-${index}" class="${Dom.FAILURE_PICK_MAP_CLASS}">${Constants.BUTTON_PICK_MAP_TEXT}</button>
         <button type="button" id="fix-btn-${index}" class="${Dom.FAILURE_BUTTON_CLASS}">${Constants.BUTTON_FIX_TEXT}</button>
       </div>
-    `;
+    `
+    );
     listEl.appendChild(item);
 
     let cancelPick: (() => void) | null = null;

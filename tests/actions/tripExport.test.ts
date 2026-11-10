@@ -2,7 +2,7 @@ import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { buildTripCsv, exportTripCsv } from '@/actions/tripPlanning/export/exportHelper';
 import { resetTripState, setTripState } from '@/actions/tripPlanning/ui/stateHelper';
 import * as uiUtils from '@/utils/ui/uiUtils';
-import { Constants } from '@/types';
+import * as fileUtils from '@/utils/fileUtils';
 
 describe('tripExportHelper', () => {
   beforeEach(() => {
@@ -53,10 +53,10 @@ describe('tripExportHelper', () => {
 
   it('gates CSV download behind the stewardship modal', async () => {
     const confirmSpy = vi.spyOn(uiUtils, 'confirmDataStewardshipDownload').mockResolvedValue(false);
-    const toastSpy = vi.spyOn(uiUtils, 'showToast').mockReturnValue(document.createElement('div'));
+    const downloadSpy = vi.spyOn(fileUtils, 'downloadCsv').mockImplementation(() => {});
     const handled = await exportTripCsv();
     expect(handled).toBe(true);
     expect(confirmSpy).toHaveBeenCalled();
-    expect(toastSpy).toHaveBeenCalledWith(Constants.STEWARDSHIP_CANCELLED_TOAST, { type: 'info' });
+    expect(downloadSpy).not.toHaveBeenCalled();
   });
 });

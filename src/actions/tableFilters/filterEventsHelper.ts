@@ -2,9 +2,11 @@ import {
   autoScrollToLoadContent,
   expandMonthsToShow,
   getCellValue,
+  getColumnCells,
   hideLoadingIndicator,
   loadAllPaginatedTableRows,
   parseMonthDay,
+  setHtml,
   showLoadingIndicator,
   showToast,
 } from './utils';
@@ -167,15 +169,7 @@ export function setupTableSelector(
       if (tableNameEl) {
         tableNameEl.textContent = `Table: ${Constants.ALL_TABLES_LABEL} (${tables.length})`;
       }
-      const updated = buildTableFilterControls(allTables);
-      const controlsContainer = document.getElementById(Dom.FILTER_CONTROLS_ID);
-      if (controlsContainer) {
-        controlsContainer.innerHTML = updated.controlsHtml;
-      }
-      setupTableFilterHandlers(getTarget, updated.rules);
-      window.__LCR_TABLE_FILTERS_STATE__ = updated.rules;
-      applyFilterRules(getTarget(), updated.rules);
-      onModeChanged('all', updated.rules);
+      rebuildFilterControls(allTables, getTarget, onModeChanged, 'all');
     } else {
       const newIdx = parseInt(val, 10);
       if (!isNaN(newIdx) && tables[newIdx]) {
@@ -186,15 +180,7 @@ export function setupTableSelector(
           tableNameEl.textContent = `Table: ${targetInfo.name}`;
         }
         tableEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
-        const updated = buildTableFilterControls(tableEl);
-        const controlsContainer = document.getElementById(Dom.FILTER_CONTROLS_ID);
-        if (controlsContainer) {
-          controlsContainer.innerHTML = updated.controlsHtml;
-        }
-        setupTableFilterHandlers(getTarget, updated.rules);
-        window.__LCR_TABLE_FILTERS_STATE__ = updated.rules;
-        applyFilterRules(getTarget(), updated.rules);
-        onModeChanged(newIdx, updated.rules);
+        rebuildFilterControls(tableEl, getTarget, onModeChanged, newIdx);
       }
     }
   });
@@ -203,6 +189,39 @@ export function setupTableSelector(
 /* ==========================================================================
    HELPER FUNCTIONS
    ========================================================================== */
+
+/** Rebuilds the filter controls for a new target, rewires them, and reapplies the rules. */
+function rebuildFilterControls(
+  target: HTMLTableElement | HTMLTableElement[],
+  getTarget: () => HTMLTableElement | HTMLTableElement[],
+  onModeChanged: (mode: 'all' | number, newRules: Map<number, Types.FilterRule>) => void,
+  mode: 'all' | number
+): void {
+  const updated = buildTableFilterControls(target);
+  const controlsContainer = document.getElementById(Dom.FILTER_CONTROLS_ID);
+  if (controlsContainer) setHtml(controlsContainer, updated.controlsHtml);
+  setupTableFilterHandlers(getTarget, updated.rules);
+  window.__LCR_TABLE_FILTERS_STATE__ = updated.rules;
+  applyFilterRules(getTarget(), updated.rules);
+  onModeChanged(mode, updated.rules);
+}
+
+/** Saves the rules to page state and re-applies them to the current target tables. */
+function commitFilterRules(
+  rules: Map<number, Types.FilterRule>,
+  getTarget: () => HTMLTableElement | HTMLTableElement[]
+): void {
+  window.__LCR_TABLE_FILTERS_STATE__ = rules;
+  applyFilterRules(getTarget(), rules);
+}
+
+/** Runs a handler on both input and change events for each element that exists. */
+function listenForEdits(elements: (HTMLElement | null)[], handler: () => void): void {
+  for (const el of elements) {
+    el?.addEventListener('input', handler);
+    el?.addEventListener('change', handler);
+  }
+}
 
 /** Binds listeners for numeric min/max filter inputs. */
 function bindNumberFilter(
@@ -219,18 +238,9 @@ function bindNumberFilter(
   const handleNumberChange = (): void => {
     rule.minValue = minEl?.value ? parseFloat(minEl.value) : undefined;
     rule.maxValue = maxEl?.value ? parseFloat(maxEl.value) : undefined;
-    window.__LCR_TABLE_FILTERS_STATE__ = rules;
-    applyFilterRules(getTarget(), rules);
+    commitFilterRules(rules, getTarget);
   };
-
-  if (minEl) {
-    minEl.addEventListener('input', handleNumberChange);
-    minEl.addEventListener('change', handleNumberChange);
-  }
-  if (maxEl) {
-    maxEl.addEventListener('input', handleNumberChange);
-    maxEl.addEventListener('change', handleNumberChange);
-  }
+  listenForEdits([minEl, maxEl], handleNumberChange);
 }
 
 /** Binds listeners for date range filter inputs. */
@@ -248,18 +258,9 @@ function bindDateFilter(
   const handleDateChange = (): void => {
     rule.fromDate = fromEl?.value || undefined;
     rule.toDate = toEl?.value || undefined;
-    window.__LCR_TABLE_FILTERS_STATE__ = rules;
-    applyFilterRules(getTarget(), rules);
+    commitFilterRules(rules, getTarget);
   };
-
-  if (fromEl) {
-    fromEl.addEventListener('input', handleDateChange);
-    fromEl.addEventListener('change', handleDateChange);
-  }
-  if (toEl) {
-    toEl.addEventListener('input', handleDateChange);
-    toEl.addEventListener('change', handleDateChange);
-  }
+  listenForEdits([fromEl, toEl], handleDateChange);
 }
 
 /** Binds listeners for month/day calendar filter inputs. */
@@ -287,38 +288,22 @@ function bindMonthDayFilter(
 
     if (newMonth === undefined) {
       if (primaryTable) {
-        const expanded = await expandMonthsToShow(12, primaryTable);
-        if (expanded) {
-          showToast('Expanded table to show all 12 months.', { type: 'info' });
-        }
+        const expanded = await expandMonthsToShow(Constants.MONTHS_TO_SHOW_DEFAULT, primaryTable);
+        if (expanded) showToast(Constants.EXPANDED_MONTHS_TOAST, { type: 'info' });
       }
     } else if (primaryTable) {
-      const currentTableHasMonth = Array.from(primaryTable.querySelectorAll('tbody tr')).some(
-        (row) => {
-          const cell = row.querySelectorAll('td')[colIdx];
-          if (!cell) return false;
-          const md = parseMonthDay(getCellValue(cell as HTMLElement).trim());
-          return md?.month === newMonth;
-        }
+      const currentTableHasMonth = getColumnCells(primaryTable, colIdx).some(
+        (cell) => parseMonthDay(getCellValue(cell).trim())?.month === newMonth
       );
       if (!currentTableHasMonth) {
-        await expandMonthsToShow(12, primaryTable);
+        await expandMonthsToShow(Constants.MONTHS_TO_SHOW_DEFAULT, primaryTable);
       }
     }
 
-    window.__LCR_TABLE_FILTERS_STATE__ = rules;
-    applyFilterRules(getTarget(), rules);
+    commitFilterRules(rules, getTarget);
   };
-
-  if (monthEl) monthEl.addEventListener('change', handleMonthDayChange);
-  if (fromDayEl) {
-    fromDayEl.addEventListener('input', handleMonthDayChange);
-    fromDayEl.addEventListener('change', handleMonthDayChange);
-  }
-  if (toDayEl) {
-    toDayEl.addEventListener('input', handleMonthDayChange);
-    toDayEl.addEventListener('change', handleMonthDayChange);
-  }
+  monthEl?.addEventListener('change', handleMonthDayChange);
+  listenForEdits([fromDayEl, toDayEl], handleMonthDayChange);
 }
 
 /** Binds listeners for dropdown and vacancy select filters. */
@@ -334,8 +319,7 @@ function bindSelectFilter(
   if (el) {
     el.addEventListener('change', () => {
       rule.selectedValue = el.value;
-      window.__LCR_TABLE_FILTERS_STATE__ = rules;
-      applyFilterRules(getTarget(), rules);
+      commitFilterRules(rules, getTarget);
     });
   }
 }

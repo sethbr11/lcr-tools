@@ -1,5 +1,5 @@
 import { escapeHtml } from '../utils';
-import { Dom, Types } from '../types';
+import { Constants, Dom, Types } from '../types';
 
 /* ==========================================================================
    COMPLETION MODAL
@@ -26,10 +26,12 @@ export function getCompletionModalHtml(
     : '';
   const title = aborted ? 'Attendance Processing Stopped' : 'Attendance Process Complete';
   const body = aborted
-    ? 'You stopped processing with Escape. Nothing further was written to LCR. Open View Logs to see what completed before the abort.'
+    ? Constants.ABORTED_COMPLETION_BODY
     : isSimulation
       ? 'Simulation finished. No lasting visitor changes should remain on LCR.'
-      : 'Matched members were marked and visitor counts were saved to LCR in one pass.';
+      : metrics.visitorError
+        ? 'Matched members were marked, but visitor counts were not saved to LCR.'
+        : 'Matched members were marked and visitor counts were saved to LCR in one pass.';
 
   return `
     <div class="lcrx-modal-backdrop" id="${Dom.COMPLETION_OVERLAY_ID}">
@@ -69,6 +71,11 @@ export function getCompletionModalHtml(
           ${
             metrics.unmatchedRemaining > 0
               ? `<p style="margin: 12px 0 0; font-size: 13px; color: #64748b;">${metrics.unmatchedRemaining} unmatched attendee(s) were skipped or left unresolved.</p>`
+              : ''
+          }
+          ${
+            metrics.visitorError
+              ? `<p style="margin: 12px 0 0; font-size: 13px; color: #b91c1c;">Visitor counts were not saved: ${escapeHtml(metrics.visitorError)}</p>`
               : ''
           }
         </div>

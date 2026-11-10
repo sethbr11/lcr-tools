@@ -1,5 +1,6 @@
 import { Dom, Types } from '@/types';
 import { Templates } from './templates';
+import { createBackdrop, setHtml } from './htmlUtils';
 import { removeElement } from './uiUtils';
 
 /* ==========================================================================
@@ -13,31 +14,10 @@ import { removeElement } from './uiUtils';
  * @returns The created modal backdrop container element.
  */
 export function createStandardModal(options: Types.StandardModalOptions): HTMLElement {
-  const {
-    id = Dom.DEFAULT_STANDARD_MODAL_ID,
-    title = '',
-    content = '',
-    alerts = [],
-    buttons = [],
-    onClose,
-    width = '600px',
-  } = options;
+  const { id = Dom.DEFAULT_STANDARD_MODAL_ID, width = '600px' } = options;
 
-  injectModalBaseStyles();
-  closeModal(id);
-
-  const backdrop = document.createElement('div');
-  backdrop.id = id;
-  backdrop.className = 'lcr-tools-modal-backdrop';
-  Object.assign(backdrop.style, {
-    position: 'fixed',
-    top: '0',
-    left: '0',
-    width: '100vw',
-    height: '100vh',
+  const backdrop = createModalBackdrop(id, {
     backgroundColor: 'rgba(0, 0, 0, 0.65)',
-    zIndex: Dom.MODAL_BACKDROP_Z_INDEX,
-    display: 'flex',
     justifyContent: 'center',
     alignItems: 'center',
     fontFamily: 'system-ui, -apple-system, sans-serif',
@@ -59,42 +39,7 @@ export function createStandardModal(options: Types.StandardModalOptions): HTMLEl
     boxSizing: 'border-box',
   });
 
-  // Header with title and close icon
-  const header = createModalHeader(title, () => closeModal(id, onClose));
-  dialog.appendChild(header);
-
-  // Alerts section
-  if (alerts.length > 0) {
-    dialog.appendChild(createAlertsSection(alerts));
-  }
-
-  // Scrollable body content
-  const body = document.createElement('div');
-  Object.assign(body.style, {
-    flex: '1',
-    overflowY: 'auto',
-    marginBottom: '20px',
-  });
-
-  if (typeof content === 'string') {
-    body.innerHTML = content;
-  } else if (content instanceof HTMLElement) {
-    body.appendChild(content);
-  }
-  dialog.appendChild(body);
-
-  // Action buttons footer
-  if (buttons.length > 0) {
-    dialog.appendChild(createFooterButtons(buttons, () => closeModal(id, onClose)));
-  }
-
-  backdrop.appendChild(dialog);
-  backdrop.addEventListener('click', (e) => {
-    if (e.target === backdrop) closeModal(id, onClose);
-  });
-
-  document.body.appendChild(backdrop);
-  return backdrop;
+  return mountModal(backdrop, dialog, { ...options, id }, { marginBottom: '20px' });
 }
 
 /**
@@ -104,33 +49,12 @@ export function createStandardModal(options: Types.StandardModalOptions): HTMLEl
  * @returns The created side drawer element.
  */
 export function createSideModal(options: Types.SideModalOptions): HTMLElement {
-  const {
-    id = Dom.DEFAULT_SIDE_MODAL_ID,
-    title = '',
-    content = '',
-    buttons = [],
-    alerts = [],
-    onClose,
-    width = '420px',
-    side = 'right',
-  } = options;
+  const { id = Dom.DEFAULT_SIDE_MODAL_ID, width = '420px', side = 'right' } = options;
 
-  injectModalBaseStyles();
-  closeModal(id);
-
-  const backdrop = document.createElement('div');
-  backdrop.id = id;
-  backdrop.className = 'lcr-tools-modal-backdrop';
-  Object.assign(backdrop.style, {
-    position: 'fixed',
-    top: '0',
-    left: '0',
-    width: '100vw',
-    height: '100vh',
+  const backdrop = createModalBackdrop(id, {
     backgroundColor: 'rgba(0, 0, 0, 0.4)',
-    zIndex: Dom.MODAL_BACKDROP_Z_INDEX,
-    display: 'flex',
     justifyContent: side === 'right' ? 'flex-end' : 'flex-start',
+    alignItems: 'stretch',
   });
 
   const drawer = document.createElement('div');
@@ -148,30 +72,7 @@ export function createSideModal(options: Types.SideModalOptions): HTMLElement {
     animation: `${side === 'right' ? 'slideInRight' : 'slideInLeft'} 0.25s ease-out`,
   });
 
-  drawer.appendChild(createModalHeader(title, () => closeModal(id, onClose)));
-  if (alerts.length > 0) drawer.appendChild(createAlertsSection(alerts));
-
-  const body = document.createElement('div');
-  body.style.flex = '1';
-  body.style.overflowY = 'auto';
-  if (typeof content === 'string') {
-    body.innerHTML = content;
-  } else if (content instanceof HTMLElement) {
-    body.appendChild(content);
-  }
-  drawer.appendChild(body);
-
-  if (buttons.length > 0) {
-    drawer.appendChild(createFooterButtons(buttons, () => closeModal(id, onClose)));
-  }
-
-  backdrop.appendChild(drawer);
-  backdrop.addEventListener('click', (e) => {
-    if (e.target === backdrop) closeModal(id, onClose);
-  });
-
-  document.body.appendChild(backdrop);
-  return backdrop;
+  return mountModal(backdrop, drawer, { ...options, id }, {});
 }
 
 /**
@@ -220,6 +121,54 @@ export function showStatus(
    HELPER FUNCTIONS
    ========================================================================== */
 
+/** Replaces any modal with this ID and returns a new full-screen backdrop with extra styles. */
+function createModalBackdrop(id: string, style: Partial<CSSStyleDeclaration>): HTMLElement {
+  injectModalBaseStyles();
+  closeModal(id);
+
+  const backdrop = createBackdrop({ zIndex: Dom.MODAL_BACKDROP_Z_INDEX, ...style }, id);
+  return backdrop;
+}
+
+/** Fills a modal panel (header, alerts, scrollable body, buttons) and mounts it on the page. */
+function mountModal(
+  backdrop: HTMLElement,
+  panel: HTMLElement,
+  options: Types.StandardModalOptions,
+  bodyStyle: Partial<CSSStyleDeclaration>
+): HTMLElement {
+  const {
+    id = backdrop.id,
+    title = '',
+    content = '',
+    alerts = [],
+    buttons = [],
+    onClose,
+  } = options;
+  const dismiss = () => closeModal(id, onClose);
+
+  panel.appendChild(createModalHeader(title, dismiss));
+  if (alerts.length > 0) panel.appendChild(createAlertsSection(alerts));
+
+  const body = document.createElement('div');
+  Object.assign(body.style, { flex: '1', overflowY: 'auto', ...bodyStyle });
+  if (typeof content === 'string') {
+    setHtml(body, content);
+  } else if (content instanceof HTMLElement) {
+    body.appendChild(content);
+  }
+  panel.appendChild(body);
+
+  if (buttons.length > 0) panel.appendChild(createFooterButtons(buttons, dismiss));
+
+  backdrop.appendChild(panel);
+  backdrop.addEventListener('click', (e) => {
+    if (e.target === backdrop) dismiss();
+  });
+  document.body.appendChild(backdrop);
+  return backdrop;
+}
+
 /** Builds header bar with title and close button. */
 function createModalHeader(title: string, onDismiss: () => void): HTMLElement {
   const header = document.createElement('div');
@@ -262,7 +211,7 @@ function createModalHeader(title: string, onDismiss: () => void): HTMLElement {
 function createAlertsSection(alerts: Types.ModalAlert[]): HTMLElement {
   const container = document.createElement('div');
   container.style.marginBottom = '12px';
-  container.innerHTML = alerts.map((alert) => Templates.modalAlert(alert)).join('');
+  setHtml(container, alerts.map((alert) => Templates.modalAlert(alert)).join(''));
   return container;
 }
 

@@ -1,6 +1,11 @@
 import { browser } from 'wxt/browser';
 import { Constants, Types } from '@/types';
-import { decryptData, encryptData, getUnlockedPin, isEncryptedPayload } from './cryptoUtils';
+import {
+  decryptWithSessionPin,
+  encryptData,
+  getUnlockedPin,
+  isEncryptedPayload,
+} from './cryptoUtils';
 
 /* ==========================================================================
    EXPORTED FUNCTIONS
@@ -120,14 +125,7 @@ export async function getSavedNicknames(): Promise<Types.NicknameDictionary> {
     if (!raw) return {};
 
     if (isEncryptedPayload(raw)) {
-      const pin = await getUnlockedPin();
-      if (!pin) return {};
-      try {
-        return await decryptData<Types.NicknameDictionary>(raw, pin);
-      } catch (err) {
-        console.error('LCR Tools: Failed to decrypt saved nicknames:', err);
-        return {};
-      }
+      return (await decryptWithSessionPin<Types.NicknameDictionary>(raw)) ?? {};
     }
 
     const dict = (raw as Types.NicknameDictionary) || {};
@@ -220,6 +218,35 @@ export async function clearAllNicknames(): Promise<void> {
   }
 }
 
+/**
+ * Groups nickname mappings by canonical member name, sorting people and aliases A–Z
+ * (case-insensitive).
+ *
+ * @param entries - Saved nickname mappings.
+ * @returns One group per member with that member's aliases.
+ */
+export function groupNicknamesByPerson(
+  entries: Types.NicknameMapping[]
+): Types.NicknamePersonGroup[] {
+  const groups = new Map<string, Types.NicknamePersonGroup>();
+  for (const item of entries) {
+    const key = item.canonicalName.trim().toLowerCase();
+    const existing = groups.get(key);
+    if (existing) {
+      existing.aliases.push(item);
+      continue;
+    }
+    groups.set(key, { canonicalName: item.canonicalName.trim(), aliases: [item] });
+  }
+
+  return [...groups.values()]
+    .map((group) => ({
+      canonicalName: group.canonicalName,
+      aliases: [...group.aliases].sort((a, b) => compareNamesIgnoringCase(a.alias, b.alias)),
+    }))
+    .sort((a, b) => compareNamesIgnoringCase(a.canonicalName, b.canonicalName));
+}
+
 /* ==========================================================================
    HELPER FUNCTIONS
    ========================================================================== */
@@ -257,4 +284,9 @@ async function persistNicknames(nicknames: Types.NicknameDictionary): Promise<vo
   } catch (error) {
     console.error('LCR Tools: Failed to persist nickname mappings:', error);
   }
+}
+
+/** Case-insensitive alphabetical comparison for member names and aliases. */
+function compareNamesIgnoringCase(left: string, right: string): number {
+  return left.toLowerCase().localeCompare(right.toLowerCase());
 }

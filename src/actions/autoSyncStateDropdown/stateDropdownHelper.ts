@@ -163,7 +163,9 @@ export function startStateDropdownWatcher(
 
   const intervalMs = options.pollIntervalMs || Constants.STATE_SYNC_POLL_INTERVAL_MS;
   const pendingTimeouts: ReturnType<typeof setTimeout>[] = [];
+  const announcedWaiting = new WeakSet<HTMLSelectElement>();
   let isSyncing = false;
+  let mutationCheckTimer: ReturnType<typeof setTimeout> | null = null;
 
   const checkAndSync = async (): Promise<void> => {
     if (typeof document === 'undefined' || isSyncing) return;
@@ -178,9 +180,13 @@ export function startStateDropdownWatcher(
 
       const notInteractable = unsynced.filter((s) => !isSelectInteractable(s));
       if (notInteractable.length > 0) {
-        logSyncMessage(
-          `State dropdown found (${notInteractable[0].id || notInteractable[0].name || 'unnamed'}), waiting until interactable (spinner active or field disabled)...`
-        );
+        // Log once per dropdown; this check runs on every poll and page change
+        if (!announcedWaiting.has(notInteractable[0])) {
+          announcedWaiting.add(notInteractable[0]);
+          logSyncMessage(
+            `State dropdown found (${notInteractable[0].id || notInteractable[0].name || 'unnamed'}), waiting until interactable (spinner active or field disabled)...`
+          );
+        }
         return;
       }
 
@@ -205,8 +211,13 @@ export function startStateDropdownWatcher(
     void checkAndSync();
   }, intervalMs);
 
+  // LCR pages mutate constantly (rendering lists, spinners); coalesce bursts into one check
   const observer = new MutationObserver(() => {
-    void checkAndSync();
+    if (mutationCheckTimer) return;
+    mutationCheckTimer = setTimeout(() => {
+      mutationCheckTimer = null;
+      void checkAndSync();
+    }, Constants.STATE_SYNC_MUTATION_DEBOUNCE_MS);
   });
 
   const onDocumentClick = (e: MouseEvent): void => {
@@ -236,6 +247,7 @@ export function startStateDropdownWatcher(
 
   return (): void => {
     clearInterval(timer);
+    if (mutationCheckTimer) clearTimeout(mutationCheckTimer);
     pendingTimeouts.forEach(clearTimeout);
     document.removeEventListener('click', onDocumentClick, true);
     observer.disconnect();

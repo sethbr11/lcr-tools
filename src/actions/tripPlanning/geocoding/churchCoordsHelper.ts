@@ -1,4 +1,4 @@
-import { fuzzyNameMatch, resolveCurrentUnitNumber } from '@/utils';
+import { fetchSessionJson, fuzzyNameMatch, resolveCurrentUnitNumber } from '@/utils';
 import { Constants, Regex, Types } from '../types';
 
 /* ==========================================================================
@@ -57,17 +57,10 @@ async function fetchDirectoryHouseholds(
   fetchImpl: typeof fetch
 ): Promise<Types.DirectoryHouseholdGeo[]> {
   const endpoint = `${Constants.CHURCH_DIRECTORY_URL}${Constants.DIRECTORY_HOUSEHOLDS_ENDPOINT}?unit=${encodeURIComponent(unitNumber)}`;
-  try {
-    const response = await fetchImpl(endpoint, {
-      credentials: 'include',
-      headers: { Accept: 'application/json' },
-    });
-    if (!response.ok) return [];
-    const payload = (await response.json()) as unknown;
-    return Array.isArray(payload) ? (payload as Types.DirectoryHouseholdGeo[]) : [];
-  } catch {
-    return [];
-  }
+  // Run from an LCR page, Chrome applies the page's CORS rules to this cross-site request and
+  // blocks it; that is expected, so fail quietly and let address geocoding take over.
+  const payload = await fetchSessionJson<unknown>(endpoint, fetchImpl, false);
+  return Array.isArray(payload) ? (payload as Types.DirectoryHouseholdGeo[]) : [];
 }
 
 /** Finds the Directory household whose name matches a moved-in member. */

@@ -44,7 +44,7 @@ export function updateSkippedBar(
   }
 
   bar.style.display = 'flex';
-  chipsContainer.innerHTML = '';
+  chipsContainer.replaceChildren();
 
   skippedList.forEach((item, idx) => {
     const chip = document.createElement('button');

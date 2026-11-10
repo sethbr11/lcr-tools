@@ -1,5 +1,6 @@
-import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import {
+  clickSaveButton,
   processClassVisitorCounts,
   setNativeInputValue,
   switchToVisitorsTab,
@@ -261,5 +262,102 @@ describe('attendanceVisitorHelper - Visitors tab automation', () => {
 
     expect(result.success).toBe(true);
     expect((document.getElementById('input-men-6') as HTMLInputElement).value).toBe('19');
+  });
+
+  describe('save safety guards', () => {
+    /** Builds a Visitors tab with the given month option and table rows (no name attributes). */
+    const buildVisitorsPage = (monthValue: string, rows: string): void => {
+      document.body.innerHTML = `
+        <div class="eden-tabs">
+          <button id="tab-VISITORS" role="tab" aria-selected="true">Visitors</button>
+        </div>
+        <select class="eden-form-part-input__control">
+          <option value="${monthValue}" selected>Month</option>
+        </select>
+        <table><tbody>${rows}</tbody></table>
+        <button class="eden-button--primary">Save</button>
+      `;
+    };
+
+    afterEach(() => {
+      vi.useRealTimers();
+    });
+
+    it('fills the "4 Jan" column and never the "14 Jan" column', async () => {
+      buildVisitorsPage(
+        '2027-01',
+        `<tr role="row">
+          <td>Visitors Men</td>
+          <td><span>14 Jan</span><input type="number" id="men-14" value="0" /></td>
+          <td><span>4 Jan</span><input type="number" id="men-4" value="0" /></td>
+        </tr>`
+      );
+
+      const result = await processClassVisitorCounts('Elders Quorum', '2027-01-04', { Men: 5 });
+
+      expect(result.success).toBe(true);
+      expect((document.getElementById('men-4') as HTMLInputElement).value).toBe('5');
+      expect((document.getElementById('men-14') as HTMLInputElement).value).toBe('0');
+    });
+
+    it('types nothing when a category with a count has no input', async () => {
+      buildVisitorsPage(
+        '2026-09',
+        `<tr role="row">
+          <td>Visitors Men</td>
+          <td><span>13 Sep</span><input type="number" id="men-13" value="0" /></td>
+        </tr>`
+      );
+      const saveSpy = vi.fn();
+      document.querySelector(Dom.SAVE_BUTTON)?.addEventListener('click', saveSpy);
+
+      const result = await processClassVisitorCounts('Adult Sunday School', '2026-09-13', {
+        Men: 4,
+        Women: 3,
+        Children: 0,
+      });
+
+      expect(result).toEqual({
+        success: false,
+        updated: [],
+        error: 'Visitor inputs not found for: Women',
+      });
+      expect((document.getElementById('men-13') as HTMLInputElement).value).toBe('0');
+      expect(saveSpy).not.toHaveBeenCalled();
+    });
+
+    it('types nothing when the target month is missing from the dropdown', async () => {
+      buildVisitorsPage(
+        '2026-08',
+        `<tr role="row">
+          <td>Visitors Men</td>
+          <td><span>13 Sep</span><input type="number" id="men-13" value="0" /></td>
+        </tr>`
+      );
+
+      const result = await processClassVisitorCounts('Adult Sunday School', '2026-09-13', {
+        Men: 4,
+      });
+
+      expect(result).toEqual({
+        success: false,
+        updated: [],
+        error: "Could not find 2026-09 in LCR's month dropdown.",
+      });
+      expect((document.getElementById('men-13') as HTMLInputElement).value).toBe('0');
+    });
+
+    it('clickSaveButton resolves false when the save spinner never clears', async () => {
+      vi.useFakeTimers();
+      buildVisitorsPage('2026-09', '');
+      const spinner = document.createElement('div');
+      spinner.setAttribute('role', 'progressbar');
+      document.body.appendChild(spinner);
+
+      const promise = clickSaveButton();
+      await vi.advanceTimersByTimeAsync(5000);
+
+      await expect(promise).resolves.toBe(false);
+    });
   });
 });

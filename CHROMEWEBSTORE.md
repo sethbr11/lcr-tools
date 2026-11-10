@@ -2,8 +2,8 @@
 
 > **Extension ID:** `camjilfjkjmgcpmnheoeoomfndedpmbn`  
 > **Store URL:** [Chrome Web Store Listing](https://chromewebstore.google.com/detail/lcr-tools/camjilfjkjmgcpmnheoeoomfndedpmbn)  
-> **Current Version:** 2.0.1  
-> **Last Updated:** October 2026
+> **Current Version:** 2.0.2  
+> **Last Updated:** November 2026
 
 ---
 
@@ -23,7 +23,7 @@ Updated for the 2026 React (Eden) UI Overhaul! This extension has been modernize
 
 Key Features:
 - Effortless Attendance: Enter Sunday attendance via CSV or formatted roster. Automatically matches member names, handles pagination, and routes visitors to proper organization buckets.
-- Trip Planning: Plan ministering routes and visits for newly moved-in families. Prefers Church Directory household coordinates and only geocodes unmatched addresses.
+- Trip Planning: Plan ministering routes and visits for newly moved-in families, with per-group road routes and a printable PDF for each group. Prefers Church Directory household coordinates and only geocodes unmatched addresses.
 - Advanced Report Export: Download table data directly into clean CSV format for authorized spreadsheet tasks. Includes formula-injection protection and multi-table ZIP archiving.
 - Synchronized Table Filters: Apply powerful column-based search, date filters, and calling status toggles across multi-table pages simultaneously.
 - Name & Face Flashcards: Learn names and faces with interactive study flashcards. Honors member photo privacy opt-outs and automatically manages short-lived local caches.
@@ -32,13 +32,25 @@ Key Features:
 - Missing Photo Tracker: Identify members lacking directory photos to coordinate portrait sessions.
 
 Data Privacy & Security:
-- 100% Client-Side: All processing occurs entirely within your local browser. Zero data is transmitted to external servers or cloud databases.
+- 100% Client-Side: All processing occurs entirely within your local browser. There is no LCR Tools server or cloud database. The only outside requests are optional Trip Planner lookups: street addresses (never names) for geocoding when Church coordinates aren't available, coordinates for road routing, and map tiles.
 - Calling-Gated: Only operates on official Church pages where you are already signed in with authorized access.
 - Zero Tracking: No telemetry, no user tracking, and no credential collection.
 
 Please report issues, suggestions, or feedback to seth@brockefni.com.
 
 Recent Updates:
+(2.0.2)
+- Latest LCR Attendance Layout: Process Attendance works with LCR's November 2026 attendance page, selecting the correct Sunday and the attendance button for the chosen class.
+- Safer Name Matching: Only exact name matches are marked automatically (middle names ignored); close matches appear as one-click suggestions to confirm, and members who share a name are never auto-marked.
+- Faster, Self-Checking Attendance Marking: Attendees are marked in a paced batch, then every mark is verified and anything LCR dropped is re-marked before the review step.
+- Safe Page Setup: Attendance stops before marking anything if the month, class, or Sunday can't be confirmed, waits longer for LCR to load, and offers Try Again; visitor counts save all-or-nothing. Pressing Escape logs any clicks already sent so you can see exactly what saved.
+- Trip Planner PDF Export: Download a PDF with a page per group, each with a map of the route, numbered stops, and a table of the columns you choose.
+- Trip Planner Groups & Routes: Get exactly the number of groups requested, set a minimum group size, keep households together in one group, give each group its own starting address, and see one road route per group with improved stop ordering.
+- Maps Without an API Key: Street maps now load without a Mapbox key (USGS in the US, Esri elsewhere), on screen and in PDFs.
+- API Key Security: Keys typed into the Trip Planner are saved only when you click Save, always encrypted with your PIN; revealing a saved key requires the PIN.
+- Reliable Report Export: Each page is read only after it loads, long reports are no longer silently cut off, and suggested filenames are cleaner and use your local date.
+- Fixes & Compatibility: Ward Boundary Audit reports load failures instead of a false all-clear, Multiple Callings no longer double-counts duplicate rows, Table Filters include the chosen end date, and Firefox/Safari fixes for popup actions, PIN reset, opening the Trip Planner, and dark mode.
+
 (2.0.1)
 - Popup Window Sizing Fix: Resolved issue where Firefox and Safari extension windows were cut off at the bottom by removing restrictive container height constraints and allowing natural sizing up to 600px.
 - Vertical Scrolling Support: Added smooth momentum vertical scrolling and custom scrollbars to the popup content container, ensuring all actions, passive tools, and settings remain accessible regardless of window constraints.
@@ -56,13 +68,6 @@ Recent Updates:
 - Encrypted Storage & Security: Client-side AES-GCM and SHA-256 salted PIN protection for secure API key storage and diagnostic logs.
 - Privacy & PII Anonymizer: Automated in-memory DOM anonymizer for safe development without transmitting member records.
 
-(1.5.0)
-- 2026 Second-Hour Split Attendance: Full support for the new LCR schedule allowing attendance entry for Sunday School, Class/Quorum (Elders Quorum/Relief Society), or both simultaneously.
-- Single Sunday & Single Class Navigation: Modernized navigation flow to operate directly on Single Sunday date bar tabs and dynamic Class/Quorum dropdown filters.
-- Automated Multi-Organization Visitor Processing: Visitor counts automatically route to their mapped organization views (Men -> Elders Quorum, Women -> Relief Society, Youth -> Aaronic Priesthood/Young Women, Children -> Primary) and save per organization.
-- Smart Organization Reset: Restores the view back to All Classes and Quorums after visitor processing completes.
-- Enhanced Modal Usability: Redesigned class selection with high-contrast indicator cards, modal-wide paste detection, and locked top scroll position on launch.
-
 ---
 Note: This tool is an independent open-source project and is not an official application of The Church of Jesus Christ of Latter-day Saints.
 ```
@@ -73,15 +78,15 @@ Note: This tool is an independent open-source project and is not an official app
 
 When submitting updates in the Chrome Developer Dashboard, use these justifications:
 
-| Permission                                                                                                                        | Type            | Justification                                                                                                                                             |
-| --------------------------------------------------------------------------------------------------------------------------------- | --------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `scripting`                                                                                                                       | permission      | Used to inject helper tools, flashcard modals, and report utilities into active LCR and Directory tabs upon explicit user action.                         |
-| `storage`                                                                                                                         | permission      | Used to cache member photos, catalog API keys, trip planner working data, and user preferences locally on the client.                                     |
-| `https://lcr.churchofjesuschrist.org/*`<br>`https://lcrf.churchofjesuschrist.org/*`<br>`https://lcrffe.churchofjesuschrist.org/*` | host_permission | Target web application where the extension provides table filtering, export, and attendance assistance.                                                   |
-| `https://directory.churchofjesuschrist.org/*`                                                                                     | host_permission | Target directory page where the extension provides boundary audits, flashcards, and Trip Planner household coordinates.                                   |
-| `https://mltp-api.churchofjesuschrist.org/*`<br>`https://ws.churchofjesuschrist.org/*`                                            | host_permission | Official Church API and media endpoints used to fetch portrait metadata and load authenticated profile photos for Member Flashcards and No Photo reports. |
-| `https://nominatim.openstreetmap.org/*`<br>`https://us1.locationiq.com/*`<br>`https://api.mapbox.com/*`                           | host_permission | Optional Trip Planning fallback geocoding and Mapbox road routing.                                                                                        |
-| `https://*.basemaps.cartocdn.com/*`                                                                                               | host_permission | Carto Voyager map tiles used as the Trip Planner basemap.                                                                                                 |
+| Permission                                                                                                                        | Type            | Justification                                                                                                                                                                                                              |
+| --------------------------------------------------------------------------------------------------------------------------------- | --------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `scripting`                                                                                                                       | permission      | Used to inject helper tools, flashcard modals, and report utilities into active LCR and Directory tabs upon explicit user action.                                                                                          |
+| `storage`                                                                                                                         | permission      | Used to cache member photos, catalog API keys, trip planner working data, and user preferences locally on the client.                                                                                                      |
+| `https://lcr.churchofjesuschrist.org/*`<br>`https://lcrf.churchofjesuschrist.org/*`<br>`https://lcrffe.churchofjesuschrist.org/*` | host_permission | Target web application where the extension provides table filtering, export, and attendance assistance.                                                                                                                    |
+| `https://directory.churchofjesuschrist.org/*`                                                                                     | host_permission | Target directory page where the extension provides boundary audits, flashcards, and Trip Planner household coordinates.                                                                                                    |
+| `https://mltp-api.churchofjesuschrist.org/*`<br>`https://ws.churchofjesuschrist.org/*`                                            | host_permission | Official Church API and media endpoints used to fetch portrait metadata and load authenticated profile photos for Member Flashcards and No Photo reports.                                                                  |
+| `https://nominatim.openstreetmap.org/*`<br>`https://us1.locationiq.com/*`<br>`https://api.mapbox.com/*`                           | host_permission | Optional Trip Planning fallback geocoding and Mapbox road routing.                                                                                                                                                         |
+| `https://*.basemaps.cartocdn.com/*`                                                                                               | host_permission | No longer requested by the current version (Carto now requires an API key; maps use USGS or Esri tiles, or Mapbox with a saved key). Kept in the manifest for now and scheduled for removal in a future permission update. |
 
 ---
 

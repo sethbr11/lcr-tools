@@ -1,6 +1,6 @@
 {
   "name": "lcr-tools-extension",
-  "version": "2.0.1",
+  "version": "2.0.2",
   "description": "A cross-browser extension to enhance and streamline LCR (Leader and Clerk Resources).",
   "type": "module",
   "scripts": {
@@ -26,9 +26,9 @@
   },
   "dependencies": {
     "@turf/turf": "^7.2.0",
+    "fflate": "^0.8.3",
     "html2canvas": "^1.4.1",
     "jspdf": "^4.2.1",
-    "jszip": "^3.10.1",
     "leaflet": "^1.9.4",
     "papaparse": "^5.5.2"
   },
@@ -40,11 +40,12 @@
     "@types/leaflet": "^1.9.16",
     "@types/node": "^22.13.9",
     "@types/papaparse": "^5.3.15",
-    "@vitest/coverage-v8": "^5.0.1",
+    "@vitest/coverage-v8": "^5.0.5",
     "jsdom": "^26.0.0",
     "prettier": "^3.9.6",
     "typescript": "^5.8.2",
-    "vitest": "^5.0.1",
+    "vite": "~7.3.7",
+    "vitest": "^5.0.5",
     "wxt": "^0.21.4"
   }
 }

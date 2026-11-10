@@ -2,7 +2,7 @@ import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { browser } from 'wxt/browser';
 import { Constants, Dom } from '@/actions/tripPlanning/types';
 import * as utils from '@/utils';
-import { showTripPinModal } from '@/actions/tripPlanning/ui/pinModalHelper';
+import { requestTripPin, showTripPinModal } from '@/actions/tripPlanning/ui/pinModalHelper';
 import { updateProviderControls } from '@/actions/tripPlanning/ui/uiHelper';
 
 describe('tripPinModalHelper and Trip Planner Autofill', () => {
@@ -66,72 +66,67 @@ describe('tripPinModalHelper and Trip Planner Autofill', () => {
     await utils.lockSession();
   });
 
+  /** Opens the autofill PIN dialog and waits for it (it first checks whether a PIN exists). */
+  const openPinModal = async (onUnlocked = vi.fn()) => {
+    showTripPinModal(onUnlocked);
+    await vi.waitFor(() =>
+      expect(document.getElementById(Dom.TRIP_PIN_MODAL_OVERLAY_ID)).not.toBeNull()
+    );
+    return onUnlocked;
+  };
+  const field = (id: string) => document.getElementById(id) as HTMLInputElement;
+  const submit = () =>
+    (document.getElementById(Dom.TRIP_PIN_MODAL_SUBMIT_ID) as HTMLButtonElement).click();
+
   describe('showTripPinModal', () => {
-    it('renders the PIN unlock modal with header, description, and inputs', () => {
-      showTripPinModal(vi.fn());
+    it('renders the PIN unlock modal with header, description, and inputs', async () => {
+      localStorageData[Constants.PIN_STORAGE_KEY] =
+        await utils.createPinVerificationSentinel('1234');
+      await openPinModal();
 
       const overlay = document.getElementById(Dom.TRIP_PIN_MODAL_OVERLAY_ID);
-      expect(overlay).not.toBeNull();
       expect(overlay?.textContent).toContain(Constants.TRIP_PIN_MODAL_TITLE);
       expect(overlay?.textContent).toContain(Constants.TRIP_PIN_MODAL_DESC);
-
-      const input = document.getElementById(Dom.TRIP_PIN_MODAL_INPUT_ID);
-      expect(input).not.toBeNull();
+      expect(document.getElementById(Dom.TRIP_PIN_MODAL_INPUT_ID)).not.toBeNull();
+      expect(document.getElementById(Dom.PIN_MODAL_CONFIRM_INPUT_ID)).toBeNull();
     });
 
     it('rejects invalid PIN formats with an error banner', async () => {
-      showTripPinModal(vi.fn());
-
-      const input = document.getElementById(Dom.TRIP_PIN_MODAL_INPUT_ID) as HTMLInputElement;
-      const submitBtn = document.getElementById(Dom.TRIP_PIN_MODAL_SUBMIT_ID) as HTMLButtonElement;
-      const statusBanner = document.getElementById(Dom.TRIP_PIN_MODAL_STATUS_ID);
-
-      input.value = '12';
-      submitBtn.click();
+      await openPinModal();
+      field(Dom.TRIP_PIN_MODAL_INPUT_ID).value = '12';
+      submit();
 
       await vi.waitFor(() => {
-        expect(statusBanner?.textContent).toBe(Constants.PIN_INVALID_LENGTH);
+        expect(document.getElementById(Dom.TRIP_PIN_MODAL_STATUS_ID)?.textContent).toBe(
+          Constants.PIN_INVALID_LENGTH
+        );
       });
     });
 
     it('rejects incorrect PINs when sentinel verification fails', async () => {
-      const sentinel = await utils.createPinVerificationSentinel('1234');
-      localStorageData[Constants.PIN_STORAGE_KEY] = sentinel;
-
-      showTripPinModal(vi.fn());
-
-      const input = document.getElementById(Dom.TRIP_PIN_MODAL_INPUT_ID) as HTMLInputElement;
-      const submitBtn = document.getElementById(Dom.TRIP_PIN_MODAL_SUBMIT_ID) as HTMLButtonElement;
-      const statusBanner = document.getElementById(Dom.TRIP_PIN_MODAL_STATUS_ID);
-
-      input.value = '9999';
-      submitBtn.click();
+      localStorageData[Constants.PIN_STORAGE_KEY] =
+        await utils.createPinVerificationSentinel('1234');
+      await openPinModal();
+      field(Dom.TRIP_PIN_MODAL_INPUT_ID).value = '9999';
+      submit();
 
       await vi.waitFor(() => {
-        expect(statusBanner?.textContent).toBe(Constants.PIN_INCORRECT);
+        expect(document.getElementById(Dom.TRIP_PIN_MODAL_STATUS_ID)?.textContent).toBe(
+          Constants.PIN_INCORRECT
+        );
       });
       expect(await utils.isSessionUnlocked()).toBe(false);
     });
 
     it('unlocks session, decrypts stored keys, invokes callback, and closes modal on valid PIN', async () => {
       const pin = '4321';
-      const sentinel = await utils.createPinVerificationSentinel(pin);
-      localStorageData[Constants.PIN_STORAGE_KEY] = sentinel;
-
+      localStorageData[Constants.PIN_STORAGE_KEY] = await utils.createPinVerificationSentinel(pin);
       const encrypted = await utils.encryptData({ mapbox: 'secret-mb-token' }, pin);
-      localStorageData[Constants.API_KEYS_STORAGE_KEY] = {
-        ...encrypted,
-        keyIds: ['mapbox'],
-      };
+      localStorageData[Constants.API_KEYS_STORAGE_KEY] = { ...encrypted, keyIds: ['mapbox'] };
 
-      const onUnlocked = vi.fn();
-      showTripPinModal(onUnlocked);
-
-      const input = document.getElementById(Dom.TRIP_PIN_MODAL_INPUT_ID) as HTMLInputElement;
-      const submitBtn = document.getElementById(Dom.TRIP_PIN_MODAL_SUBMIT_ID) as HTMLButtonElement;
-
-      input.value = pin;
-      submitBtn.click();
+      const onUnlocked = await openPinModal();
+      field(Dom.TRIP_PIN_MODAL_INPUT_ID).value = pin;
+      submit();
 
       await vi.waitFor(() => {
         expect(onUnlocked).toHaveBeenCalledWith({ mapbox: 'secret-mb-token' });
@@ -140,18 +135,53 @@ describe('tripPinModalHelper and Trip Planner Autofill', () => {
       expect(await utils.isSessionUnlocked()).toBe(true);
     });
 
-    it('closes modal when Cancel button, Close button, or Escape key is pressed', () => {
-      showTripPinModal(vi.fn());
-      expect(document.getElementById(Dom.TRIP_PIN_MODAL_OVERLAY_ID)).not.toBeNull();
+    it('creates a PIN first when none exists, encrypting keys saved before PINs were required', async () => {
+      localStorageData[Constants.API_KEYS_STORAGE_KEY] = { mapbox: 'legacy-token' };
+      const onUnlocked = await openPinModal();
+      expect(document.body.textContent).toContain(Constants.TRIP_PIN_SETUP_TITLE);
 
+      field(Dom.TRIP_PIN_MODAL_INPUT_ID).value = '2468';
+      field(Dom.PIN_MODAL_CONFIRM_INPUT_ID).value = '1357';
+      submit();
+      await vi.waitFor(() =>
+        expect(document.getElementById(Dom.TRIP_PIN_MODAL_STATUS_ID)?.textContent).toBe(
+          Constants.PIN_MISMATCH
+        )
+      );
+
+      field(Dom.PIN_MODAL_CONFIRM_INPUT_ID).value = '2468';
+      submit();
+      await vi.waitFor(() => expect(onUnlocked).toHaveBeenCalledWith({ mapbox: 'legacy-token' }));
+      const stored = localStorageData[Constants.API_KEYS_STORAGE_KEY] as Record<string, unknown>;
+      expect(stored.mapbox).toBeUndefined();
+      expect(typeof stored.ciphertext).toBe('string');
+      expect(localStorageData[Constants.PIN_STORAGE_KEY]).toBeDefined();
+    });
+
+    it('verify mode checks the PIN without unlocking the session', async () => {
+      localStorageData[Constants.PIN_STORAGE_KEY] =
+        await utils.createPinVerificationSentinel('1234');
+      const accepted = requestTripPin('verify');
+      await vi.waitFor(() =>
+        expect(document.body.textContent).toContain(Constants.TRIP_PIN_VERIFY_TITLE)
+      );
+      field(Dom.TRIP_PIN_MODAL_INPUT_ID).value = '1234';
+      submit();
+
+      expect(await accepted).toBe(true);
+      expect(await utils.isSessionUnlocked()).toBe(false);
+    });
+
+    it('closes modal when Cancel button, Close button, or Escape key is pressed', async () => {
+      await openPinModal();
       document.getElementById(Dom.TRIP_PIN_MODAL_CANCEL_ID)?.click();
       expect(document.getElementById(Dom.TRIP_PIN_MODAL_OVERLAY_ID)).toBeNull();
 
-      showTripPinModal(vi.fn());
+      await openPinModal();
       document.getElementById(Dom.TRIP_PIN_MODAL_CLOSE_ID)?.click();
       expect(document.getElementById(Dom.TRIP_PIN_MODAL_OVERLAY_ID)).toBeNull();
 
-      showTripPinModal(vi.fn());
+      await openPinModal();
       document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }));
       expect(document.getElementById(Dom.TRIP_PIN_MODAL_OVERLAY_ID)).toBeNull();
     });

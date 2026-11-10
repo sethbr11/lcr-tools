@@ -2,7 +2,6 @@ import { browser } from 'wxt/browser';
 import { Constants, Dom, Types } from '@/types';
 import {
   clearSecurityData,
-  createPinVerificationSentinel,
   hasSecurityPin,
   isSessionUnlocked,
   lockSession,
@@ -10,8 +9,8 @@ import {
   validatePinFormat,
   verifyPin,
 } from '@/utils/security/cryptoUtils';
-import { migrateApiKeysToEncryption } from '@/utils/security/apiKeyStorageUtils';
-import { migrateNicknamesToEncryption } from '@/utils/security/storageUtils';
+import { showConfirmationModal } from '@/utils/ui/uiUtils';
+import { establishSecurityPin } from '@/utils/security/pinSetupUtils';
 import { showStatusMessage } from './popupActionHelper';
 
 /** Active target view after PIN is validated or created. */
@@ -158,13 +157,7 @@ async function handlePinSubmit(switchView: (target: Types.PopupView) => void): P
       return;
     }
 
-    const sentinel = await createPinVerificationSentinel(pin);
-    if (browser?.storage?.local) {
-      await browser.storage.local.set({ [Constants.PIN_STORAGE_KEY]: sentinel });
-    }
-    await migrateApiKeysToEncryption(pin);
-    await migrateNicknamesToEncryption(pin);
-    await setUnlockedPin(pin);
+    await establishSecurityPin(pin);
     await updateLockSessionCard();
     clearPinInputs();
     switchView(pendingTargetView);
@@ -189,8 +182,14 @@ async function handlePinSubmit(switchView: (target: Types.PopupView) => void): P
 
 /** Confirms with user and wipes all encrypted credentials and security PIN. */
 async function handlePinReset(switchView: (target: Types.PopupView) => void): Promise<void> {
-  // eslint-disable-next-line no-alert
-  const confirmed = window.confirm(Constants.PIN_RESET_CONFIRM);
+  // window.confirm() is not shown inside Firefox/Safari extension popups, so use an in-page dialog
+  const confirmed = await showConfirmationModal({
+    title: 'Reset PIN?',
+    message: Constants.PIN_RESET_CONFIRM,
+    confirmText: 'Reset PIN',
+    cancelText: 'Cancel',
+    confirmColor: 'danger',
+  });
   if (!confirmed) return;
 
   await clearSecurityData();

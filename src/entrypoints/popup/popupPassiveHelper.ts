@@ -31,7 +31,7 @@ export async function renderPassiveActions(
     return 0;
   }
 
-  itemsContainer.innerHTML = '';
+  itemsContainer.replaceChildren();
 
   for (const action of passiveActions) {
     if (!action.storageKey) continue;

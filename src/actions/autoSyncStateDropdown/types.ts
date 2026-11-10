@@ -122,6 +122,8 @@ export const Constants = {
     'Could not auto-sync state dropdown. Please click to verify your state selection.',
   /** Polling interval in milliseconds between DOM inspections for loading spinners. */
   STATE_SYNC_POLL_INTERVAL_MS: 400,
+  /** Delay used to batch bursts of page mutations into a single dropdown check. */
+  STATE_SYNC_MUTATION_DEBOUNCE_MS: 150,
   /** Maximum consecutive polling cycles while spinners are active before timing out. */
   STATE_SYNC_MAX_POLL_ATTEMPTS: 25,
   /** Delay in milliseconds between value setting cycles to accommodate React 18 event batching. */

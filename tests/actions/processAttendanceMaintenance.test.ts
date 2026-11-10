@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { runProcessAttendance } from '@/actions/processAttendance';
 import { Dom, Constants } from '@/actions/processAttendance/types';
 
@@ -66,32 +66,62 @@ describe('processAttendance - maintenance and defensive verification', () => {
     expect(mailLink.href).toContain(Constants.MAINTENANCE_EMAIL);
   });
 
-  it('should abort and display maintenance modal if 0 ward members are discovered on roll', async () => {
-    const tbody = document.querySelector('#attendance-table tbody');
-    if (tbody) tbody.innerHTML = '';
-
-    const actionPromise = runProcessAttendance();
-
+  /** Pastes one roster row into the setup modal and clicks Process. */
+  const pasteAndProcess = () => {
     const overlay = document.querySelector(`#${Dom.UI_OVERLAY_ID}`);
-    expect(overlay).not.toBeNull();
-
     const pasteCatcher = overlay?.querySelector('#lcr-tools-paste-catcher') as HTMLTextAreaElement;
     const pasteEvent = Object.assign(new Event('paste', { bubbles: true }), {
       clipboardData: { getData: () => '2026-09-13\tJohn\tSmith' },
     }) as unknown as ClipboardEvent;
     pasteCatcher.dispatchEvent(pasteEvent);
+    (overlay?.querySelector(`#${Dom.PROCESS_BTN_ID}`) as HTMLButtonElement).click();
+  };
 
-    const processBtn = overlay?.querySelector(`#${Dom.PROCESS_BTN_ID}`) as HTMLButtonElement;
-    processBtn.click();
+  /** Waits for the "LCR isn't ready yet" prompt and clicks the button with the given label. */
+  const answerRetryPrompt = async (label: 'Try again' | 'Cancel') => {
+    const findButton = () =>
+      Array.from(document.querySelectorAll<HTMLButtonElement>('button')).find(
+        (b) => b.textContent?.trim() === label
+      );
+    await vi.waitFor(() => expect(findButton()).toBeDefined(), { timeout: 3000 });
+    expect(document.body.textContent).toContain("LCR isn't ready yet");
+    findButton()?.click();
+  };
 
+  it('offers a retry when no ward members load, and cancelling marks nothing', async () => {
+    const tbody = document.querySelector('#attendance-table tbody');
+    const savedRows = tbody?.innerHTML ?? '';
+    if (tbody) tbody.innerHTML = '';
+
+    const actionPromise = runProcessAttendance();
+    pasteAndProcess();
+    await answerRetryPrompt('Cancel');
     const result = await actionPromise;
 
     expect(result.success).toBe(false);
-    expect(result.error).toBe('LCR setup mismatch - no members found');
+    expect(result.error).toBe('No ward members appeared on the attendance roll.');
+    expect(savedRows).toContain('aria-pressed="false"');
+  });
 
-    const modal = document.querySelector(`#${Dom.MAINTENANCE_MODAL_ID}`);
-    expect(modal).not.toBeNull();
-    expect(modal?.textContent).toContain('LCR Maintenance Required');
-    expect(modal?.textContent).toContain(Constants.MAINTENANCE_EMAIL);
+  it('retries page setup without re-pasting once the roll finishes loading', async () => {
+    const tbody = document.querySelector('#attendance-table tbody') as HTMLElement;
+    const savedRows = tbody.innerHTML;
+    tbody.innerHTML = '';
+
+    const actionPromise = runProcessAttendance({ isSimulation: true });
+    pasteAndProcess();
+    await answerRetryPrompt('Try again');
+    tbody.innerHTML = savedRows;
+
+    // Past the roll step, the run reaches the review/completion UI instead of the retry prompt
+    await vi.waitFor(
+      () =>
+        expect(
+          document.querySelector(`#${Dom.REVIEW_OVERLAY_ID}, #${Dom.COMPLETION_OVERLAY_ID}`)
+        ).not.toBeNull(),
+      { timeout: 5000 }
+    );
+    expect(document.body.textContent).not.toContain("LCR isn't ready yet");
+    void actionPromise;
   }, 10000);
 });

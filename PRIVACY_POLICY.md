@@ -1,6 +1,6 @@
 # Privacy Policy for LCR Tools
 
-**Last Updated:** September 18, 2026
+**Last Updated:** November 9, 2026
 
 This privacy policy explains how the **LCR Tools** browser extension ("the extension") handles user data. Our core architectural principle is that **your data belongs exclusively to you and your local browser session**.
 
@@ -39,9 +39,11 @@ The extension utilizes your browser's isolated local storage (`browser.storage.l
    - **No Member PII:** Stored records contain only calling titles, organization names, group labels, and ignore enabled/disabled flags. Member names are never written to these keys.
    - **Local Partition:** Definitions remain on-device in `browser.storage.local` and are never transmitted or synced.
    - **User Management:** Users can add, edit, remove, or toggle these rules from the in-page "Manage Groups" editor, including deleting the built-in presets.
-5. **Trip Planner Working Set:** Member names, addresses, and optional coordinates extracted from the Members Moved In report are stored briefly in `tripPlanningData` / `tripPlanningHeaders` so the planner tab can load them. Geocode results are cached by address string in `geocode_cache` to avoid repeat lookups. An optional user-saved default starting address is stored in `trip_planner_starting_address`.
+5. **Trip Planner Working Set:** Member names, addresses, and optional coordinates extracted from the Members Moved In report are stored briefly in `tripPlanningData` / `tripPlanningHeaders` so the planner tab can load them. Geocode results are cached by address string in `geocode_cache` to avoid repeat lookups. The last starting address the user saved for a group is stored in `trip_planner_starting_address` so it can be offered for other groups, and the column names chosen for the PDF export (no member data) are stored in `trip_planner_pdf_fields`.
 6. **Catalog API Keys:** Mapbox and LocationIQ keys that the extension asks for may be stored in `lcr_api_keys`.
-   - **Client-Side Encryption at Rest:** When a Security PIN is configured, API keys are encrypted at rest with AES-256-GCM using PBKDF2 key derivation.
+   - **Saved Only on Request:** A key typed into the Trip Planner is used only for that visit unless the user clicks **Save key** (or **Replace saved key**). Nothing is saved automatically, and only one key is kept per service.
+   - **Client-Side Encryption at Rest:** Saved API keys are always encrypted at rest with AES-256-GCM using PBKDF2 key derivation. Saving a key requires a Security PIN; if none exists, the user is asked to create one first. Keys saved by earlier versions without a PIN are not used or displayed until a PIN is created, which encrypts them.
+   - **PIN-Gated Reveal:** Keys autofilled into the Trip Planner stay masked; revealing one requires re-entering the PIN.
    - **Host & PIN Gated Access:** Stored keys remain on-device, are masked by default, and are never synced. Popup access to view or modify stored API keys requires active PIN authentication and is gated strictly to authenticated Church LCR domains (`lcr`, `lcrf`, or `lcrffe.churchofjesuschrist.org`); the extension refuses to read or display stored keys unless the active tab is on an LCR host.
 7. **Security PIN Sentinel & Session Key:**
    - **Verification Sentinel (`lcr_security_pin_sentinel`):** Stored in `browser.storage.local` as an encrypted payload containing a fixed sentinel string. It validates correct PIN entry without storing the PIN itself in plaintext or as an unkeyed hash.
@@ -49,10 +51,10 @@ The extension utilizes your browser's isolated local storage (`browser.storage.l
 
 ### C. File Downloads & CSV Export
 
-Features such as **Download Report Data**, **Find Multiple Callings**, **Ward Boundary Audit**, **Members with No Photo**, attendance action logs, and **Trip Planning** generate CSV files directly within your browser using client-side JavaScript.
+Features such as **Download Report Data**, **Find Multiple Callings**, **Ward Boundary Audit**, **Members with No Photo**, attendance action logs, and **Trip Planning** generate CSV files directly within your browser using client-side JavaScript. The Trip Planner can also generate a PDF (one page per group, with a map and the columns the user picks) entirely in the browser.
 
 - These files are saved directly to your local computer's download folder.
-- **Data Stewardship:** In accordance with Church _General Handbook_ Section 33.8, CSV downloads from **Download Report Data**, **Find Multiple Callings**, **Ward Boundary Audit**, **Members with No Photo**, attendance action logs, and **Trip Planning** prompt a stewardship confirmation before the file is saved. Exported files should be used exclusively for authorized calling tasks, stored securely, and deleted promptly once the task is complete.
+- **Data Stewardship:** In accordance with Church _General Handbook_ Section 33.8, CSV downloads from **Download Report Data**, **Find Multiple Callings**, **Ward Boundary Audit**, **Members with No Photo**, attendance action logs, and **Trip Planning** (CSV and PDF) prompt a stewardship confirmation before the file is saved. Exported files should be used exclusively for authorized calling tasks, stored securely, and deleted promptly once the task is complete.
 
 ### D. Trip Planning Coordinates and Mapping
 
@@ -60,22 +62,22 @@ When utilizing the **Trip Planning** route organizer:
 
 - **Preferred method:** The extension first tries to reuse Church Directory household coordinates (`GET /api/v4/households?unit=`) from the signed-in Church Account session. Name matching happens locally. Matched rows are plotted without sending addresses to any third-party geocoder.
 - **Fallback method:** Only unmatched rows send **street address strings** to Nominatim, LocationIQ, or Mapbox. **Member names, phone numbers, email addresses, unit numbers, and member IDs are never attached to or transmitted in these requests.**
-- **Tiles:** The map loads Carto Voyager raster tiles as `z/x/y` image requests that do not include member data. If a Mapbox key is stored, Mapbox Streets tiles may be used instead.
-- **Road routing:** Optional Mapbox Matrix and Directions requests contain coordinates only.
+- **Tiles:** The map loads raster tiles from the USGS National Map (`basemap.nationalmap.gov`, for US locations) or Esri (`server.arcgisonline.com`, elsewhere) as `z/x/y` image requests that do not include member data. If a Mapbox key is saved, Mapbox Streets tiles are used instead. The same tile requests are made when drawing the maps in a PDF export.
+- **Road routing:** Optional Mapbox Matrix requests (travel times between stops) and one Mapbox Directions request per group (the road path drawn on the map) contain coordinates only.
 
 ---
 
 ## 3. Extension Permissions Justification
 
-| Permission                                                                                                                        | Type | Justification                                                                                                                                                                                        |
-| :-------------------------------------------------------------------------------------------------------------------------------- | :--- | :--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `scripting`                                                                                                                       | API  | Enables injection of UI modals, flashcard overlays, and table filters into active tabs upon user invocation.                                                                                         |
-| `storage`                                                                                                                         | API  | Persists user preferences, calling-group and ignored-calling definitions, attendance nicknames, catalog API keys, trip planner working data, and short-lived photo cache locally within the browser. |
-| `https://lcr.churchofjesuschrist.org/*`<br>`https://lcrf.churchofjesuschrist.org/*`<br>`https://lcrffe.churchofjesuschrist.org/*` | Host | Target web application where the extension provides table filtering, export, and attendance assistance.                                                                                              |
-| `https://directory.churchofjesuschrist.org/*`                                                                                     | Host | Target directory page where the extension provides boundary audits, member flashcard study tools, and Trip Planner household coordinates.                                                            |
-| `https://mltp-api.churchofjesuschrist.org/*`<br>`https://ws.churchofjesuschrist.org/*`                                            | Host | Official Church API and media endpoints used to fetch portrait metadata and load authenticated profile photos for Member Flashcards and No Photo reports.                                            |
-| `https://nominatim.openstreetmap.org/*`<br>`https://us1.locationiq.com/*`<br>`https://api.mapbox.com/*`                           | Host | Optional Trip Planning fallback geocoding and Mapbox road routing. Address strings only for geocode; coordinates only for routing.                                                                   |
-| `https://*.basemaps.cartocdn.com/*`                                                                                               | Host | Carto Voyager map tiles used as the Trip Planner basemap (`z/x/y` requests only).                                                                                                                    |
+| Permission                                                                                                                        | Type | Justification                                                                                                                                                                                                              |
+| :-------------------------------------------------------------------------------------------------------------------------------- | :--- | :------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `scripting`                                                                                                                       | API  | Enables injection of UI modals, flashcard overlays, and table filters into active tabs upon user invocation.                                                                                                               |
+| `storage`                                                                                                                         | API  | Persists user preferences, calling-group and ignored-calling definitions, attendance nicknames, catalog API keys, trip planner working data, and short-lived photo cache locally within the browser.                       |
+| `https://lcr.churchofjesuschrist.org/*`<br>`https://lcrf.churchofjesuschrist.org/*`<br>`https://lcrffe.churchofjesuschrist.org/*` | Host | Target web application where the extension provides table filtering, export, and attendance assistance.                                                                                                                    |
+| `https://directory.churchofjesuschrist.org/*`                                                                                     | Host | Target directory page where the extension provides boundary audits, member flashcard study tools, and Trip Planner household coordinates.                                                                                  |
+| `https://mltp-api.churchofjesuschrist.org/*`<br>`https://ws.churchofjesuschrist.org/*`                                            | Host | Official Church API and media endpoints used to fetch portrait metadata and load authenticated profile photos for Member Flashcards and No Photo reports.                                                                  |
+| `https://nominatim.openstreetmap.org/*`<br>`https://us1.locationiq.com/*`<br>`https://api.mapbox.com/*`                           | Host | Optional Trip Planning fallback geocoding and Mapbox road routing. Address strings only for geocode; coordinates only for routing.                                                                                         |
+| `https://*.basemaps.cartocdn.com/*`                                                                                               | Host | No longer requested by the current version (Carto now requires an API key; maps use USGS or Esri tiles, or Mapbox with a saved key). Kept in the manifest for now and scheduled for removal in a future permission update. |
 
 ---
 

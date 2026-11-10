@@ -1,11 +1,5 @@
-import { describe, it, expect, beforeEach, vi } from 'vitest';
-import {
-  downloadCsv,
-  downloadCsvZip,
-  generateFilename,
-  formatCsvCell,
-  blobToDataUrl,
-} from '@/utils/fileUtils';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
+import { downloadCsv, downloadCsvZip, generateFilename, blobToDataUrl } from '@/utils/fileUtils';
 import * as uiUtils from '@/utils/ui/uiUtils';
 
 describe('fileUtils', () => {
@@ -16,6 +10,15 @@ describe('fileUtils', () => {
   });
 
   describe('generateFilename', () => {
+    beforeEach(() => {
+      vi.useFakeTimers({ toFake: ['Date'] });
+      vi.setSystemTime(new Date(2026, 10, 1, 22, 0));
+    });
+
+    afterEach(() => {
+      vi.useRealTimers();
+    });
+
     it('should strip church branding and format clean filenames with date', () => {
       const filename = generateFilename('csv', 'elders');
       expect(filename).toContain('quarterly_report');
@@ -26,9 +29,30 @@ describe('fileUtils', () => {
 
     it('should fallback to default prefix if page title is blank', () => {
       document.title = '';
-      const filename = generateFilename('zip');
-      expect(filename.startsWith('_export_')).toBe(true);
-      expect(filename.endsWith('.zip')).toBe(true);
+      expect(generateFilename('zip')).toBe('lcr_export_2026-11-01.zip');
+    });
+
+    it('should drop a suffix that duplicates the title', () => {
+      document.title = 'Member Directory';
+      expect(generateFilename('csv', 'Member_Directory')).toBe('member_directory_2026-11-01.csv');
+    });
+
+    it('should keep a distinct suffix', () => {
+      document.title = 'Class and Quorum Attendance';
+      expect(generateFilename('csv', 'All_Organizations')).toBe(
+        'class_and_quorum_attendance_all_organizations_2026-11-01.csv'
+      );
+    });
+
+    it('should strip branding from the title', () => {
+      document.title = 'Members – Leader and Clerk Resources';
+      expect(generateFilename('csv')).toBe('members_2026-11-01.csv');
+    });
+
+    it('should normalize suffixes with odd characters', () => {
+      expect(generateFilename('csv', "High Priests' Group (2)")).toBe(
+        'quarterly_report_high_priests_group_2_2026-11-01.csv'
+      );
     });
   });
 
@@ -78,13 +102,6 @@ describe('fileUtils', () => {
         expect.stringContaining('No files to zip'),
         expect.objectContaining({ type: 'warning' })
       );
-    });
-  });
-
-  describe('formatCsvCell', () => {
-    it('should quote values with commas or quotes', () => {
-      expect(formatCsvCell('Hello, World')).toBe('"Hello, World"');
-      expect(formatCsvCell('Simple')).toBe('Simple');
     });
   });
 

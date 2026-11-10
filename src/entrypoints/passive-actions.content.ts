@@ -13,10 +13,6 @@ export default defineContentScript({
     const updateStateSyncObserver = async (): Promise<void> => {
       const enabled = await getPassiveActionEnabled(Constants.PASSIVE_STATE_DROPDOWN_KEY, false);
 
-      console.log(
-        `[LCR Tools] Passive content script initialized. State auto-sync is ${enabled ? 'ENABLED' : 'DISABLED'}.`
-      );
-
       if (enabled && !cleanupStateObserver) {
         cleanupStateObserver = runAutoSyncStateDropdown();
       } else if (!enabled && cleanupStateObserver) {

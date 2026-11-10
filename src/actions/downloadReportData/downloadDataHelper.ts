@@ -1,9 +1,9 @@
 import Papa from 'papaparse';
 // prettier-ignore
-import { autoScrollToLoadContent, confirmDataStewardshipDownload, downloadCsv, downloadCsvZip,
-  formatCSVCell, generateFilename, goToNextPage, hideLoadingIndicator, isAborted, isLastPage,
-  navigateToFirstPage, scrollToTop, showLoadingIndicator, showToast, tableToCSV,
-  Templates } from './utils';
+import { autoScrollToLoadContent, confirmDataStewardshipDownload, createBackdrop, downloadCsv, downloadCsvZip,
+  formatCSVCell, generateFilename, getFirstRowText, goToNextPage, hideLoadingIndicator, isAborted, isLastPage,
+  navigateToFirstPage, scrollToTop, setHtml, showLoadingIndicator, showToast, tableToCSV,
+  Templates, waitForTableRowsToChange } from './utils';
 import { Constants, Dom, Regex, Types } from './types';
 
 /* ==========================================================================
@@ -31,7 +31,7 @@ export async function extractPaginatedTableData(table: Types.TableInfo): Promise
   if (isAborted()) return combinedCsvRows;
 
   // Step A: Rewind to first page
-  if (table.needs.includes('pagination')) await navigateToFirstPage();
+  if (table.needs.includes('pagination')) await navigateToFirstPage(undefined, table.table);
 
   // Step B: Loop across pages
   let hasMore = true;
@@ -58,12 +58,28 @@ export async function extractPaginatedTableData(table: Types.TableInfo): Promise
 
     pageCount++;
 
-    // Handle pagination
+    // Handle pagination, reading the next page only once its rows have actually rendered
     if (table.needs.includes('pagination') && !isLastPage()) {
-      hasMore = await goToNextPage();
+      const firstRowBefore = getFirstRowText(table.table);
+      hasMore =
+        (await goToNextPage()) && (await waitForTableRowsToChange(table.table, firstRowBefore));
+      if (!hasMore && !isLastPage()) {
+        showToast(
+          `${table.name}: the next page didn't load, so the export stops at page ${pageCount}.`,
+          {
+            type: 'warning',
+          }
+        );
+      }
     } else {
       hasMore = false;
     }
+  }
+
+  if (hasMore && pageCount >= maxPages) {
+    showToast(`${table.name}: stopped after ${maxPages} pages; later pages are not included.`, {
+      type: 'warning',
+    });
   }
 
   return combinedCsvRows;
@@ -83,11 +99,7 @@ export async function exportCsvPayloads(csvFiles: Types.GeneratedCsvFile[]): Pro
     return false;
   }
 
-  const confirmed = await confirmDataStewardshipDownload();
-  if (!confirmed) {
-    showToast(Constants.STEWARDSHIP_CANCELLED_TOAST, { type: 'info' });
-    return false;
-  }
+  if (!(await confirmDataStewardshipDownload())) return false;
 
   const isZip = csvFiles.length > 1;
   const defaultFilename = isZip ? generateFilename('zip', 'reports') : csvFiles[0].filename;
@@ -154,31 +166,26 @@ export function promptSaveFilenameModal(
   isZip: boolean
 ): Promise<string | null> {
   return new Promise((resolve) => {
-    const backdrop = document.createElement('div');
-    backdrop.id = Dom.FILENAME_MODAL_ID;
-    backdrop.className = 'lcr-tools-modal-backdrop';
-    Object.assign(backdrop.style, {
-      position: 'fixed',
-      top: '0',
-      left: '0',
-      width: '100vw',
-      height: '100vh',
-      backgroundColor: 'rgba(0, 0, 0, 0.55)',
-      zIndex: String(Dom.CONFIRM_MODAL_Z_INDEX),
-      display: 'flex',
-      justifyContent: 'center',
-      alignItems: 'center',
-      fontFamily: 'system-ui, -apple-system, sans-serif',
-    });
+    const backdrop = createBackdrop(
+      {
+        backgroundColor: 'rgba(0, 0, 0, 0.55)',
+        zIndex: Dom.CONFIRM_MODAL_Z_INDEX,
+        fontFamily: 'system-ui, -apple-system, sans-serif',
+      },
+      Dom.FILENAME_MODAL_ID
+    );
 
-    backdrop.innerHTML = Templates.filenamePromptDialog({
-      title: Constants.FILENAME_MODAL_TITLE,
-      prompt: Constants.FILENAME_MODAL_PROMPT,
-      defaultValue: defaultFilename,
-      hint: isZip ? Constants.FILENAME_MODAL_ZIP_HINT : Constants.FILENAME_MODAL_CSV_HINT,
-      cancelText: Constants.FILENAME_CANCEL_BTN_TEXT,
-      confirmText: Constants.FILENAME_CONFIRM_BTN_TEXT,
-    });
+    setHtml(
+      backdrop,
+      Templates.filenamePromptDialog({
+        title: Constants.FILENAME_MODAL_TITLE,
+        prompt: Constants.FILENAME_MODAL_PROMPT,
+        defaultValue: defaultFilename,
+        hint: isZip ? Constants.FILENAME_MODAL_ZIP_HINT : Constants.FILENAME_MODAL_CSV_HINT,
+        cancelText: Constants.FILENAME_CANCEL_BTN_TEXT,
+        confirmText: Constants.FILENAME_CONFIRM_BTN_TEXT,
+      })
+    );
 
     document.body.appendChild(backdrop);
 

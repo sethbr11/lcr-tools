@@ -106,7 +106,7 @@ function applyQueuedStatus(
   undoDetail: string,
   onUndo: () => void
 ): void {
-  ctx.tr.innerHTML = getUnmatchedQueuedStatusHtml(messageEscaped, cellClass);
+  Utils.setHtml(ctx.tr, getUnmatchedQueuedStatusHtml(messageEscaped, cellClass));
   decrementUnmatchedCount(ctx.overlay);
   ctx.tr
     .querySelector<HTMLButtonElement>(`.${Dom.QUEUED_UNDO_BTN}`)

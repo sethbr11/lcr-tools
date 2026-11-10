@@ -172,3 +172,38 @@
   font-size: 12px;
   margin-bottom: 12px;
 }
+
+/* PDF column chooser */
+.trip-pdf-card {
+  max-width: 480px;
+}
+
+.trip-pdf-desc {
+  margin: 0 0 10px;
+  font-size: 13px;
+  line-height: 1.5;
+  color: #4a5568;
+}
+
+.trip-pdf-quick {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 8px;
+}
+
+.trip-pdf-fields {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 6px 16px;
+  max-height: 320px;
+  overflow-y: auto;
+}
+
+.trip-pdf-field {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: #2d3748;
+  cursor: pointer;
+}

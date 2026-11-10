@@ -1,7 +1,8 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { runProcessAttendance } from '@/actions/processAttendance';
-import { matchMemberName } from '@/actions/processAttendance/utils';
+import { findExactMemberMatches, suggestMemberMatch } from '@/actions/processAttendance/utils';
 import { Dom } from '@/actions/processAttendance/types';
+import { waitForElement, waitForAssertion } from '../helpers/waitFor';
 
 /* ==========================================================================
    INTENT TESTS — outcomes users/LCR care about, not helper internals
@@ -19,6 +20,7 @@ describe('processAttendance - intended matching and roll-load behavior', () => {
         <option value="2026-09" selected>September 2026</option>
       </select>
       <select class="eden-form-part-input__control" id="class-dropdown">
+        <option value="ALL">All Classes and Quorums</option>
         <option value="adult-ss" selected>Adult Sunday School</option>
       </select>
       <div class="eden-button-bar">
@@ -51,10 +53,11 @@ describe('processAttendance - intended matching and roll-load behavior', () => {
     });
   });
 
-  it('fuzzy-matches near-miss pasted names onto the ward roll and marks them present', async () => {
+  it('auto-marks exact names and marks near-miss names only after the user confirms the suggestion', async () => {
     const wardNames = ['Smith, Jonathan', 'Doe, Elizabeth'];
-    expect(matchMemberName('Jon Smith', wardNames)).toBe('Smith, Jonathan');
-    expect(matchMemberName('Elizabeth Doe', wardNames)).toBe('Doe, Elizabeth');
+    expect(findExactMemberMatches('Jon Smith', wardNames)).toEqual([]);
+    expect(suggestMemberMatch('Jon Smith', wardNames)).toBe('Smith, Jonathan');
+    expect(findExactMemberMatches('Elizabeth Doe', wardNames)).toEqual(['Doe, Elizabeth']);
 
     const actionPromise = runProcessAttendance();
     const overlay = document.querySelector(`#${Dom.UI_OVERLAY_ID}`);
@@ -74,15 +77,19 @@ describe('processAttendance - intended matching and roll-load behavior', () => {
 
     (overlay?.querySelector(`#${Dom.PROCESS_BTN_ID}`) as HTMLButtonElement).click();
 
-    await new Promise((r) => setTimeout(r, 50));
+    await waitForAssertion(() =>
+      expect(document.getElementById('btn-elizabeth')?.getAttribute('aria-pressed')).toBe('true')
+    );
+    expect(document.getElementById('btn-jonathan')?.getAttribute('aria-pressed')).toBe('false');
+    (await waitForElement<HTMLButtonElement>(`.${Dom.FUZZY_BTN}`)).click();
+    expect(document.getElementById('btn-jonathan')?.getAttribute('aria-pressed')).toBe('false');
     (document.querySelector(`#${Dom.REVIEW_CONTINUE_ID}`) as HTMLButtonElement)?.click();
-    await new Promise((r) => setTimeout(r, 80));
-    (document.querySelector(`#${Dom.COMPLETION_DONE_ID}`) as HTMLButtonElement)?.click();
+    (await waitForElement<HTMLButtonElement>(`#${Dom.COMPLETION_DONE_ID}`)).click();
 
     const result = await actionPromise;
 
     expect(result.success).toBe(true);
-    expect(result.data?.marked).toBeGreaterThanOrEqual(1);
+    expect(result.data?.marked).toBeGreaterThanOrEqual(2);
     expect(document.getElementById('btn-jonathan')?.getAttribute('aria-pressed')).toBe('true');
   });
 
@@ -123,10 +130,8 @@ describe('processAttendance - intended matching and roll-load behavior', () => {
       });
     }
 
-    await new Promise((r) => setTimeout(r, 400));
-    (document.querySelector(`#${Dom.REVIEW_CONTINUE_ID}`) as HTMLButtonElement)?.click();
-    await new Promise((r) => setTimeout(r, 80));
-    (document.querySelector(`#${Dom.COMPLETION_DONE_ID}`) as HTMLButtonElement)?.click();
+    (await waitForElement<HTMLButtonElement>(`#${Dom.REVIEW_CONTINUE_ID}`)).click();
+    (await waitForElement<HTMLButtonElement>(`#${Dom.COMPLETION_DONE_ID}`)).click();
 
     const result = await actionPromise;
     expect(result.success).toBe(true);
@@ -174,10 +179,8 @@ describe('processAttendance - intended matching and roll-load behavior', () => {
     pasteCatcher.dispatchEvent(pasteEvent);
     (overlay?.querySelector(`#${Dom.PROCESS_BTN_ID}`) as HTMLButtonElement).click();
 
-    await new Promise((r) => setTimeout(r, 1500));
-    (document.querySelector(`#${Dom.REVIEW_CONTINUE_ID}`) as HTMLButtonElement)?.click();
-    await new Promise((r) => setTimeout(r, 1500));
-    (document.querySelector(`#${Dom.COMPLETION_DONE_ID}`) as HTMLButtonElement)?.click();
+    (await waitForElement<HTMLButtonElement>(`#${Dom.REVIEW_CONTINUE_ID}`)).click();
+    (await waitForElement<HTMLButtonElement>(`#${Dom.COMPLETION_DONE_ID}`)).click();
 
     const result = await actionPromise;
     expect(result.success).toBe(true);

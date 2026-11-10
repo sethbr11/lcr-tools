@@ -3,6 +3,7 @@ import { browser } from 'wxt/browser';
 import { displayManageNicknamesModal } from '@/actions/processAttendance/results/nicknameHelper';
 import { getSavedNicknames, saveNicknameMapping } from '@/utils/security/storageUtils';
 import { Dom } from '@/actions/processAttendance/types';
+import { waitForAssertion } from '../helpers/waitFor';
 
 describe('processAttendance - grouped nickname modal and single alias deletion', () => {
   let memoryStorage: Record<string, unknown> = {};
@@ -68,8 +69,7 @@ describe('processAttendance - grouped nickname modal and single alias deletion',
     expect(jonDeleteBtn).not.toBeNull();
     jonDeleteBtn?.click();
 
-    await new Promise((r) => setTimeout(r, 50));
-    expect(onUpdated).toHaveBeenCalled();
+    await waitForAssertion(() => expect(onUpdated).toHaveBeenCalled());
 
     // Group should still exist with 'Johnny'
     group = modal?.querySelector(`.${Dom.NICKNAME_GROUP}`);
@@ -99,9 +99,9 @@ describe('processAttendance - grouped nickname modal and single alias deletion',
     const deleteBtn = modal?.querySelector<HTMLButtonElement>(`button[data-alias="Bob"]`);
     deleteBtn?.click();
 
-    await new Promise((r) => setTimeout(r, 50));
-
-    expect(modal?.querySelectorAll(`.${Dom.NICKNAME_GROUP}`)).toHaveLength(0);
+    await waitForAssertion(() =>
+      expect(modal?.querySelectorAll(`.${Dom.NICKNAME_GROUP}`)).toHaveLength(0)
+    );
     expect(modal?.textContent).toContain('No saved nickname mappings found');
   });
 });

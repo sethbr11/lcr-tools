@@ -4,6 +4,7 @@
     <meta charset="UTF-8" />
     <title>Trip Planner - LCR Tools</title>
     <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="color-scheme" content="light only" />
     <link rel="stylesheet" href="./style.css" />
   </head>
   <body>
@@ -45,6 +46,16 @@
             <div class="stat-label">Export</div>
             <div class="stat-value stat-value-action">Download CSV</div>
           </button>
+          <button
+            type="button"
+            id="exportPdfBtn"
+            class="stat-card stat-card-btn"
+            disabled
+            title="Download a PDF with a map and table for each group"
+          >
+            <div class="stat-label">Export</div>
+            <div class="stat-value stat-value-action">Download PDF</div>
+          </button>
         </div>
       </header>
 
@@ -73,6 +84,9 @@
                   style="display: none"
                 >
                   Autofill
+                </button>
+                <button type="button" id="apiKeySaveBtn" class="ghost-btn" style="display: none">
+                  Save key
                 </button>
               </div>
               <button id="geocodeBtn" class="lcr-tools-btn lcr-tools-btn-primary" type="button">
@@ -115,6 +129,15 @@
                 <div class="control-row">
                   <label for="clusterCount">Number of Groups:</label>
                   <input type="number" id="clusterCount" value="1" min="1" max="20" step="1" />
+                  <label for="countMinSize">Min per group:</label>
+                  <input
+                    type="number"
+                    id="countMinSize"
+                    value="1"
+                    min="1"
+                    step="1"
+                    title="Each group gets at least this many people (1 = no minimum)"
+                  />
                 </div>
               </div>
               <div id="bySizeControls" class="method-controls" style="display: none">
@@ -175,20 +198,10 @@
                   </button>
                 </div>
               </div>
-              <div class="control-row starting-address-row">
-                <label for="startingAddressInput">Starting Address (optional):</label>
-                <div class="input-with-action">
-                  <input type="text" id="startingAddressInput" placeholder="e.g., 123 Main St" />
-                  <button
-                    type="button"
-                    id="saveStartingAddressBtn"
-                    class="ghost-btn"
-                    title="Save as default starting address"
-                  >
-                    Save Default
-                  </button>
-                </div>
-              </div>
+              <p class="step-hint">
+                Starting addresses are set per group under <strong>Cluster Details</strong> (use
+                <em>Change</em> on each group). Groups without one start at their first stop.
+              </p>
               <button
                 id="optimizeBtn"
                 type="button"

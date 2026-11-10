@@ -66,11 +66,8 @@ export async function runNoPhotoList(): Promise<Types.ActionResult<Types.NoPhoto
   }
 
   // Step 4: Stewardship confirmation, then CSV download
-  const confirmed = await confirmDataStewardshipDownload();
-  if (!confirmed) {
-    showToast(Constants.STEWARDSHIP_CANCELLED_TOAST, { type: 'info' });
+  if (!(await confirmDataStewardshipDownload()))
     return { success: false, error: 'Cancelled by user' };
-  }
 
   downloadNoPhotoCsv(missing);
   showToast(replaceTemplate(Constants.FOUND_MISSING_PHOTOS, { count: missing.length }), {

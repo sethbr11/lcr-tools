@@ -81,7 +81,17 @@ export async function runTripPlanning(): Promise<Types.ActionResult<Types.TripPl
 
     if (browser?.tabs?.create) {
       await browser.tabs.create({ url: pageUrl });
-    } else {
+    } else if (!window.open(pageUrl, '_blank')) {
+      // Popup blockers (Firefox, Safari) reject window.open once the click is a few seconds old;
+      // ask for a fresh click instead of failing silently.
+      hideLoadingIndicator();
+      const openNow = await showConfirmationModal({
+        title: Constants.READY_TITLE,
+        message: Constants.READY_MESSAGE,
+        confirmText: Constants.CONFIRM_OPEN_TEXT,
+        cancelText: Constants.CONFIRM_CANCEL_TEXT,
+      });
+      if (!openNow) return { success: false, error: 'Cancelled by user' };
       window.open(pageUrl, '_blank');
     }
 

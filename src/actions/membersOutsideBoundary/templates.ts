@@ -4,7 +4,6 @@ import { Dom, Types } from './types';
 /**
  * HTML templates for membersOutsideBoundary action UI components.
  */
-
 export const Templates = {
   /** Main audit results modal body template. */
   resultsModal: (

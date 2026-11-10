@@ -1,7 +1,7 @@
 import * as Utils from '../utils';
 import { Constants, Dom, Types } from '../types';
 import { switchToMembersTab } from '../lcr/syncHelper';
-import { isButtonBusy, isButtonPresent } from '../lcr/markHelper';
+import { findAttendanceButton, isButtonBusy, isButtonPresent } from '../lcr/markHelper';
 import { clickSaveButton, setNativeInputValue, switchToVisitorsTab } from '../lcr/visitorsHelper';
 
 /* ==========================================================================
@@ -29,7 +29,6 @@ export async function simulateMemberRollProcessing(
     let hasTestedToggle = false;
     const unmatchedList: Types.UnmatchedRecord[] = [];
     const logs: Types.AttendanceLogEntry[] = [];
-    const wardNames = wardMembers.map((m) => m.fullName);
 
     for (let i = 0; i < attendees.length; i++) {
       if (Utils.isAborted()) break;
@@ -38,69 +37,43 @@ export async function simulateMemberRollProcessing(
       const fullName = `${attendee.firstName} ${attendee.lastName}`.trim();
       // prettier-ignore
       Utils.showLoadingIndicator(`Simulating ${i + 1} of ${attendees.length} attendees...`, 'Press ESC to cancel simulation');
-      const matchedWardName = Utils.matchMemberName(fullName, wardNames);
+      const exactIndices = Utils.findExactMemberIndices(fullName, wardMembers);
 
-      if (matchedWardName) {
-        const member = wardMembers.find((m) => m.fullName === matchedWardName);
-        if (member) {
-          if (typeof member.row?.scrollIntoView === 'function') {
-            member.row.scrollIntoView({ behavior: 'smooth', block: 'center' });
-            await Utils.sleep(Constants.SIM_VISUAL_PAUSE_MS);
-          }
+      if (exactIndices.length === 1) {
+        const member = wardMembers[exactIndices[0]];
+        if (typeof member.row?.scrollIntoView === 'function') {
+          member.row.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          await Utils.sleep(Constants.SIM_VISUAL_PAUSE_MS);
+        }
 
-          if (Utils.isAborted()) break;
+        if (Utils.isAborted()) break;
 
-          if (member.isPresent) {
-            alreadyMarked++;
-            Utils.pushAttendanceLog(logs, {
-              date: targetDate,
-              action: 'VERIFY',
-              target: member.fullName,
-              firstName: attendee.firstName,
-              lastName: attendee.lastName,
-              lcrUpdateStatus: 'Simulated - Already Present (No Click)',
-            });
-          } else if (!hasTestedToggle) {
-            const toggleSuccess = await testMemberToggle(member);
+        let action = 'VERIFY';
+        let status = 'Simulated - Match Confirmed (Did Not Click)';
+        if (member.isPresent) {
+          alreadyMarked++;
+          status = 'Simulated - Already Present (No Click)';
+        } else {
+          newlyMarked++;
+          if (!hasTestedToggle) {
             hasTestedToggle = true;
-            newlyMarked++;
-            Utils.pushAttendanceLog(logs, {
-              date: targetDate,
-              action: 'CLICK',
-              target: member.fullName,
-              firstName: attendee.firstName,
-              lastName: attendee.lastName,
-              lcrUpdateStatus: toggleSuccess
-                ? 'Simulated - Toggle Tested ON/OFF (Restored)'
-                : 'Simulated - Toggle Test Error',
-            });
-          } else {
-            newlyMarked++;
-            Utils.pushAttendanceLog(logs, {
-              date: targetDate,
-              action: 'VERIFY',
-              target: member.fullName,
-              firstName: attendee.firstName,
-              lastName: attendee.lastName,
-              lcrUpdateStatus: 'Simulated - Match Confirmed (Did Not Click)',
-            });
+            action = 'CLICK';
+            status = (await testMemberToggle(member))
+              ? 'Simulated - Toggle Tested ON/OFF (Restored)'
+              : 'Simulated - Toggle Test Error';
           }
         }
-      } else {
-        unmatchedList.push({
-          firstName: attendee.firstName,
-          lastName: attendee.lastName,
-          fullName,
-          date: targetDate,
-        });
         Utils.pushAttendanceLog(logs, {
           date: targetDate,
-          action: 'UNMATCHED',
-          target: fullName,
+          action,
+          target: member.fullName,
           firstName: attendee.firstName,
           lastName: attendee.lastName,
-          lcrUpdateStatus: 'Unmatched (Simulated)',
+          lcrUpdateStatus: status,
         });
+      } else {
+        // prettier-ignore
+        Utils.recordUnmatchedAttendee(attendee, exactIndices, wardMembers, targetDate, true, unmatchedList, logs);
       }
     }
 
@@ -211,7 +184,7 @@ export async function simulateVisitorEntryAndRestore(
 /** Tests toggling a member button ON then immediately back OFF to verify interactivity. */
 async function testMemberToggle(member: Types.WardMember): Promise<boolean> {
   if (!member.row || Utils.isAborted()) return false;
-  const btn = member.row.querySelector<HTMLButtonElement>(Dom.ATTENDANCE_BUTTON);
+  const btn = findAttendanceButton(member.row, member.fullName);
   if (!btn) return false;
 
   await Utils.sleep(Constants.SIM_VISUAL_PAUSE_MS);

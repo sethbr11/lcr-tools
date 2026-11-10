@@ -1,8 +1,10 @@
 import L from 'leaflet';
 import * as turf from '@turf/turf';
-import { escapeHtml } from '../utils';
+import { escapeHtml, setHtml } from '../utils';
 import { Constants, Dom, Types } from '../types';
-import { getClusterColors } from './stateHelper';
+import { getClusterColors, getTripState } from './stateHelper';
+import { chooseKeylessBasemap } from './basemapHelper';
+import { renderClusterStartControl } from './clusterStartHelper';
 
 let map: L.Map | null = null;
 let markerLayer: L.LayerGroup | null = null;
@@ -14,7 +16,7 @@ let tileLayer: L.TileLayer | null = null;
    ========================================================================== */
 
 /**
- * Creates the Leaflet map using Carto Voyager tiles, or Mapbox Streets when a token is supplied.
+ * Creates the Leaflet map using Mapbox Streets when a token is supplied, otherwise USGS or Esri tiles.
  *
  * @param mapboxToken - Optional Mapbox token used only for the Streets raster layer.
  */
@@ -32,7 +34,7 @@ export function initTripMap(mapboxToken = ''): void {
 }
 
 /**
- * Replaces the basemap when a Mapbox token becomes available after init.
+ * Replaces the basemap, e.g. when a Mapbox token becomes available or members finish loading.
  *
  * @param mapboxToken - Optional Mapbox token.
  */
@@ -73,6 +75,13 @@ export function drawMarkers(points: Types.TripMapMember[], isClustered = false):
 }
 
 /**
+ * Removes drawn routes and stop markers, e.g. after re-clustering makes them stale.
+ */
+export function clearRoutes(): void {
+  routeLayer?.clearLayers();
+}
+
+/**
  * Draws colored polylines and start/end markers for optimized cluster routes.
  *
  * @param routes - Optimized per-cluster routes.
@@ -92,14 +101,35 @@ export function drawRoutes(routes: Types.OptimizedRoute[]): void {
       ? Dom.MARKER_OUTLIER_COLOR
       : colors[((route.cluster % colors.length) + colors.length) % colors.length];
 
-    if (route.points.length > 1) {
-      const latlngs: L.LatLngExpression[] = route.points.map((point) => [point.lat, point.lng]);
-      const line = turf.lineString(route.points.map((point) => [point.lng, point.lat]));
-      route.displayDistance = turf.length(line, { units: 'miles' });
+    const linePoints = route.startPoint ? [route.startPoint, ...route.points] : route.points;
+    if (linePoints.length > 1) {
+      // Prefer the road path from Mapbox; otherwise connect stops with straight lines
+      const latlngs: L.LatLngExpression[] =
+        route.geometry && route.geometry.length > 1
+          ? route.geometry
+          : linePoints.map((point) => [point.lat, point.lng]);
+      if (route.displayDistance === undefined) {
+        const line = turf.lineString(linePoints.map((point) => [point.lng, point.lat]));
+        route.displayDistance = turf.length(line, { units: 'miles' });
+      }
 
       L.polyline(latlngs, { color, weight: 3, opacity: 0.8 })
         .bindPopup(
           `<b>${isOutlier ? 'Outlier' : `Cluster ${route.cluster + 1}`}</b><br>Distance: ${route.displayDistance.toFixed(1)} miles`
+        )
+        .addTo(routesLayer);
+    }
+
+    if (route.startPoint) {
+      L.circleMarker([route.startPoint.lat, route.startPoint.lng], {
+        radius: 7,
+        fillColor: Dom.MARKER_START_COLOR,
+        color: color,
+        weight: 3,
+        fillOpacity: 1,
+      })
+        .bindPopup(
+          `<b>Starting point</b><br>${isOutlier ? 'Outlier' : `Cluster ${route.cluster + 1}`}`
         )
         .addTo(routesLayer);
     }
@@ -165,6 +195,9 @@ export function updateClusterList(
     return left.localeCompare(right, undefined, { numeric: true });
   });
 
+  const clusterIds = Array.from(groups.values())
+    .map((group) => group.id)
+    .filter((id) => id !== -1);
   for (const key of keys) {
     const group = groups.get(key);
     if (!group) continue;
@@ -184,7 +217,9 @@ export function updateClusterList(
           ? matchedRoute.distance
           : null;
 
-    item.innerHTML = `
+    setHtml(
+      item,
+      `
       <div class="${Dom.CLUSTER_HEADER_CLASS}">
         <div class="${Dom.CLUSTER_COLOR_CLASS}" style="background:${color};"></div>
         <div class="${Dom.CLUSTER_TITLE_CLASS}">${escapeHtml(key)} (${group.members.length} members)</div>
@@ -200,7 +235,9 @@ export function updateClusterList(
           .map((member) => `<li>${escapeHtml(member.name)}</li>`)
           .join('')}</ul>
       </div>
-    `;
+    `
+    );
+    if (!isOutlier) renderClusterStartControl(item, group.id, clusterIds);
     container.appendChild(item);
   }
 }
@@ -256,10 +293,22 @@ function createTileLayer(mapboxToken: string): L.TileLayer {
       zoomOffset: Constants.MAP_ZOOM_OFFSET,
     });
   }
-  return L.tileLayer(Constants.CARTO_TILE_URL, {
-    attribution: Constants.CARTO_ATTRIBUTION,
+  // OpenStreetMap blocks extensions and CARTO needs a key: use USGS (US) or Esri (elsewhere)
+  const { geocoded, records } = getTripState();
+  const located = geocoded.length > 0 ? geocoded : records.filter(hasCoordinates);
+  const basemap = chooseKeylessBasemap(located);
+  return L.tileLayer(basemap.tileUrl, {
+    attribution: basemap.attributionHtml,
     maxZoom: Constants.MAP_MAX_ZOOM,
+    maxNativeZoom: basemap.maxNativeZoom,
   });
+}
+
+/** True when a stored record already has numeric coordinates. */
+function hasCoordinates(
+  record: Types.TripPlanningMember
+): record is Types.TripPlanningMember & Types.CoordinatePoint {
+  return typeof record.lat === 'number' && typeof record.lng === 'number';
 }
 
 /** Fits map bounds to contain every plotted coordinate. */

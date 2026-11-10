@@ -41,6 +41,10 @@ export const Constants = {
   PAGINATION_SCROLL_DELAY_MS: 300,
   /** Default delay in milliseconds between pagination navigation clicks. */
   DEFAULT_PAGINATION_DELAY_MS: 500,
+  /** Default time in milliseconds to wait for a paged table's first row to change. */
+  TABLE_ROWS_CHANGE_TIMEOUT_MS: 5000,
+  /** Polling interval in milliseconds while waiting for a paged table's rows to change. */
+  TABLE_ROWS_CHANGE_POLL_MS: 150,
   /** Storage key used to persist member photo cache entries. */
   PHOTO_CACHE_KEY: 'lcr_photo_cache',
   /** Storage key used to persist photo cache configuration settings. */
@@ -51,6 +55,8 @@ export const Constants = {
   PHOTO_CACHE_TTL_MS: 24 * 60 * 60 * 1000,
   /** Default filename for diagnostic CSV log export. */
   DEFAULT_LOG_FILENAME: 'lcr_action_log.csv',
+  /** Column headers for action log CSV exports. */
+  LOG_CSV_HEADERS: ['Timestamp', 'Action', 'Target', 'Level', 'Details'],
   /** Abbreviated calendar month names in chronological order. */
   // prettier-ignore
   SHORT_MONTH_NAMES: ['jan','feb','mar','apr','may','jun','jul','aug','sep','oct','nov','dec'],
@@ -123,6 +129,8 @@ export const Constants = {
   API_KEYS_SAVED: 'API key saved.',
   /** Status shown after an API key is cleared. */
   API_KEYS_CLEARED: 'API key cleared.',
+  /** Shown when an API key can't be saved or cleared because the PIN session is locked. */
+  API_KEYS_LOCKED_ERROR: 'Session is locked. Unlock with your PIN, then try again.',
   /** Placeholder shown in masked API key inputs. */
   API_KEYS_INPUT_PLACEHOLDER: 'Paste key',
   /** Button label that reveals a hidden API key value. */
@@ -195,6 +203,40 @@ export const Constants = {
   TRIP_PIN_MODAL_SUBMIT: 'Unlock & Autofill',
   /** Toast message shown after successfully unlocking and autofilling API key. */
   TRIP_PIN_MODAL_SUCCESS: 'API key autofilled successfully.',
+  /** Title of the trip planner dialog that creates a PIN before saving a key. */
+  TRIP_PIN_SETUP_TITLE: 'Create a Security PIN',
+  /** Explanation in the trip planner dialog that creates a PIN before saving a key. */
+  TRIP_PIN_SETUP_DESC:
+    'Saved API keys are always encrypted with a PIN. Choose a 4–8 digit PIN; you will enter it to use or reveal saved keys.',
+  /** Submit button text in the trip planner PIN creation dialog. */
+  TRIP_PIN_SETUP_SUBMIT: 'Create PIN',
+  /** Label for the PIN confirmation field when creating a PIN in the trip planner. */
+  TRIP_PIN_CONFIRM_LABEL: 'Confirm PIN:',
+  /** Title of the trip planner dialog that re-checks the PIN before revealing a saved key. */
+  TRIP_PIN_VERIFY_TITLE: 'Enter PIN to Reveal Key',
+  /** Explanation in the trip planner dialog that re-checks the PIN before revealing a saved key. */
+  TRIP_PIN_VERIFY_DESC: 'Saved keys stay hidden. Enter your security PIN to show this one.',
+  /** Submit button text in the trip planner PIN re-check dialog. */
+  TRIP_PIN_VERIFY_SUBMIT: 'Show Key',
+  /** Title of the trip planner dialog that unlocks the session before saving a key. */
+  TRIP_PIN_SAVE_TITLE: 'Unlock to Save Key',
+  /** Explanation in the trip planner dialog that unlocks the session before saving a key. */
+  TRIP_PIN_SAVE_DESC: 'Enter your security PIN to encrypt and save this API key.',
+  /** Submit button text in the trip planner unlock-to-save dialog. */
+  TRIP_PIN_SAVE_SUBMIT: 'Unlock & Save',
+  /** Planner button label that saves a typed API key when none is saved yet. */
+  TRIP_KEY_SAVE_LABEL: 'Save key',
+  /** Planner button label that overwrites the API key already saved for this service. */
+  TRIP_KEY_REPLACE_LABEL: 'Replace saved key',
+  /** Title of the confirmation shown before overwriting a saved API key. */
+  TRIP_KEY_REPLACE_TITLE: 'Replace saved key?',
+  /** Message of the confirmation shown before overwriting a saved API key. */
+  TRIP_KEY_REPLACE_MESSAGE:
+    'A key is already saved for this service. Replace it with the key in this box? Only one key is kept per service.',
+  /** Toast shown after a planner API key is encrypted and saved. */
+  TRIP_KEY_SAVED_TOAST: 'API key encrypted and saved.',
+  /** Toast shown when a planner API key could not be saved. */
+  TRIP_KEY_SAVE_FAILED_TOAST: 'The API key could not be saved. Please try again.',
   /** Label for the autofill key button on trip planner page. */
   TRIP_PIN_AUTOFILL_LABEL: 'Autofill',
   /** Local storage key used to persist state dropdown auto-sync passive preference. */
@@ -205,4 +247,16 @@ export const Constants = {
   PASSIVE_TOOL_ENABLED_TOAST: 'Passive tool enabled.',
   /** Toast message shown when a passive tool is toggled off. */
   PASSIVE_TOOL_DISABLED_TOAST: 'Passive tool disabled.',
+  /** Loader text shown while an Escape abort is wrapping up. */
+  LOADER_ABORT_MESSAGE: 'Process aborting at user request...',
+  /** Milliseconds the loader shows the abort message before it is removed. */
+  LOADER_ABORT_REMOVE_DELAY_MS: 1000,
+  /** Pause in milliseconds between batches in processInBatches, to avoid flooding Church APIs. */
+  BATCH_PROCESS_GAP_MS: 100,
+  /** Default number of months to show when expanding a "Months to show" dropdown. */
+  MONTHS_TO_SHOW_DEFAULT: 12,
+  /** Default milliseconds to wait for the table to grow after expanding "Months to show". */
+  MONTHS_TO_SHOW_TIMEOUT_MS: 2000,
+  /** Polling interval in milliseconds while waiting for the table to grow after expanding months. */
+  MONTHS_TO_SHOW_POLL_MS: 100,
 } as const;
