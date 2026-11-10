@@ -1,13 +1,8 @@
+@import '../../styles/lightTheme.css';
 @import './controls.css';
 @import './sidebar.css';
 @import './modal.css';
 @import 'leaflet/dist/leaflet.css';
-
-/* The UI is designed light-only; without this, Safari's dark mode recolors form controls and
-   system text so it can become unreadable on our light backgrounds */
-:root {
-  color-scheme: light;
-}
 
 * {
   box-sizing: border-box;

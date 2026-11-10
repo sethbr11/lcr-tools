@@ -26,6 +26,8 @@ extension/
 ├── .gitignore                # Ignored build outputs and temporary files
 ├── src/
 │   ├── env.d.ts              # Ambient types (Vite client, CSS imports)
+│   ├── styles/
+│   │   └── lightTheme.css    # Shared light-only theme for extension pages (Safari dark-mode controls)
 │   ├── types/
 │   │   └── index.ts          # Shared global Types, Constants, Regex, and Dom
 │   ├── utils/                # Shared utilities across all actions
