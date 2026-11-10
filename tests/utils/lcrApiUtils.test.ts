@@ -1,6 +1,7 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import {
   fetchMemberCard,
+  fetchSessionJson,
   processInBatches,
   getMemberInfoFromRow,
   parseUnitNumberFromText,
@@ -304,6 +305,24 @@ describe('lcrApiUtils', () => {
           'https://directory.churchofjesuschrist.org/api/v4/households'
         )
       ).toBeNull();
+    });
+  });
+
+  describe('fetchSessionJson', () => {
+    const failingFetch = (() => Promise.reject(new TypeError('Failed to fetch'))) as typeof fetch;
+
+    it('returns null and logs when the request fails', async () => {
+      const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+      expect(await fetchSessionJson('https://example.com/api', failingFetch)).toBeNull();
+      expect(errorSpy).toHaveBeenCalled();
+      errorSpy.mockRestore();
+    });
+
+    it('returns null without logging for an expected failure', async () => {
+      const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+      expect(await fetchSessionJson('https://example.com/api', failingFetch, false)).toBeNull();
+      expect(errorSpy).not.toHaveBeenCalled();
+      errorSpy.mockRestore();
     });
   });
 });

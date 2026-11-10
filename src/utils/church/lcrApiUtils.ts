@@ -48,11 +48,13 @@ export async function fetchMemberCard(memberId: string): Promise<Types.LcrMember
  *
  * @param url - Endpoint URL.
  * @param fetchImpl - Fetch implementation (injectable for tests).
+ * @param logFailures - Whether to log network errors to the console (off for expected failures).
  * @returns Parsed JSON, or null on a network error, non-OK status, or invalid JSON.
  */
 export async function fetchSessionJson<T>(
   url: string,
-  fetchImpl: typeof fetch = fetch
+  fetchImpl: typeof fetch = fetch,
+  logFailures: boolean = true
 ): Promise<T | null> {
   try {
     const response = await fetchImpl(url, {
@@ -62,7 +64,7 @@ export async function fetchSessionJson<T>(
     if (!response.ok) return null;
     return (await response.json()) as T;
   } catch (err) {
-    console.error('LCR Tools: Church request failed:', err);
+    if (logFailures) console.error('LCR Tools: Church request failed:', err);
     return null;
   }
 }
