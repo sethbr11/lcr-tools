@@ -84,6 +84,8 @@ function __amoSanitize(el, h) {
   }),
   zip: {
     exclude: ['**/*.md'],
+    // Source package for Firefox (AMO) review: only what is needed to rebuild the extension
+    excludeSources: ['coverage/**', 'images/**', 'output/**'],
   },
   hooks: {
     'entrypoints:resolved': (wxt, entrypoints) => {

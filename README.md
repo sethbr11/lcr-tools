@@ -38,7 +38,7 @@ A modern, cross-browser extension for Chrome (Manifest V3), Firefox (Manifest V2
 
 ### Prerequisites
 
-- [Node.js](https://nodejs.org/) (v18 or higher recommended)
+- [Node.js](https://nodejs.org/) 20.19+ or 22.12+ (required by Vite 7; CI uses Node 20)
 - `npm`
 
 ### Installation
@@ -112,6 +112,44 @@ npm run build:safari   # Safari MV2  -> output/safari-mv2
 # Package production builds into distributable zip archives
 npm run zip:all
 ```
+
+### Reproducing the Firefox build (for AMO reviewers)
+
+The Firefox package is bundled and minified by [WXT](https://wxt.dev/) (built on Vite), so the
+full source is submitted with each release as `lcr-tools-extension-<version>-sources.zip`
+(created by `npx wxt zip -b firefox`). Every file under `src/` is hand-written TypeScript, CSS, or
+HTML; the only third-party code comes from open-source npm packages pinned in `package-lock.json`.
+
+**Build environment**
+
+- Operating system: macOS, Linux, or Windows (any OS that runs Node.js). Release builds run on
+  Ubuntu (GitHub Actions `ubuntu-latest`) and are also verified on macOS.
+- Node.js **20.19+ or 22.12+** (Vite 7 requirement) with the npm that ships with it (npm 10+).
+  Install from [nodejs.org](https://nodejs.org/en/download) or with a version manager, for example
+  `nvm install 22 && nvm use 22`. Check with `node --version` and `npm --version`.
+- No other programs, global packages, environment variables, or API keys are needed. `npm ci`
+  needs network access to the npm registry to download the pinned dependencies.
+
+**Build steps**
+
+1. Unzip the sources zip and open a terminal in that folder (the one containing `package.json`).
+2. Run the build script, which checks the Node.js version, installs the exact locked dependencies
+   (`npm ci`), and builds the Firefox package (`npm run build:firefox`):
+
+   ```bash
+   sh scripts/build-firefox.sh
+   ```
+
+3. The built extension is in `output/firefox-mv2`. Its files are identical to the contents of
+   `lcr-tools-extension-<version>-firefox.zip`.
+
+**Build-time adjustments to dependencies** (Vite plugins and aliases in `wxt.config.ts`, applied
+automatically by the build; nothing to do by hand):
+
+- jsPDF's optional `html2canvas`, `dompurify`, and `canvg` imports resolve to an empty module
+  (`src/vendor/optionalDependencyStub.ts`), since LCR Tools never uses jsPDF's HTML/SVG rendering.
+- `innerHTML` assignments in Leaflet and jsPDF are rewritten to `textContent`, `replaceChildren()`,
+  or `DOMParser`-based insertion, so the bundle has no `innerHTML` writes.
 
 ---
 
